@@ -456,9 +456,9 @@ function drawLyricsPanel(ctx, W, H, time, wrappedLyrics, font, alignment, durati
     const wy = (top + wi * lh_act + activeSz * 0.5) * scale;
 
     // 1. Subtle white glow to bloom outward
-    // Hardcoded to 20px so it always shows up in the video, bypassing Skia scaling bugs
-    ctx.shadowColor = 'rgba(255, 255, 255, 0.7)';
-    ctx.shadowBlur = 20;
+    // Tight 15px blur, but dense 0.8 alpha to bypass Skia culling
+    ctx.shadowColor = 'rgba(255, 255, 255, 0.8)';
+    ctx.shadowBlur = 15;
     ctx.shadowOffsetY = 0;
     ctx.fillStyle = '#ffffff';
     ctx.fillText(seg, 0, wy);

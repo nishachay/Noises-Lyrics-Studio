@@ -795,8 +795,8 @@ function drawLyrics(W, H, songTime) {
     const wy = top + wi * lh_act + activeSz * 0.5;
 
     // 1. Subtle white glow to bloom outward
-    ctx.shadowColor = 'rgba(255, 255, 255, 0.7)';
-    ctx.shadowBlur = 20;
+    ctx.shadowColor = 'rgba(255, 255, 255, 0.8)';
+    ctx.shadowBlur = 15;
     ctx.shadowOffsetY = 0;
     ctx.fillStyle = '#ffffff';
     ctx.fillText(seg, 0, wy);
