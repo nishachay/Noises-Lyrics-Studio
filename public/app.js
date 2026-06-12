@@ -22,7 +22,7 @@
 // 1. STATE
 // ═══════════════════════════════════════════════════════════════════
 
-const FONT = 'Montserrat, Noto Sans Devanagari';
+const FONT = 'Plus Jakarta Sans, Noto Sans Devanagari';
 
 const S = {
   // Track metadata
@@ -684,7 +684,7 @@ function drawLeftSplitLayout(W, H, songTime) {
   ctx.fillText(S.track.title || '', textX, titleY);
 
   // Artist Name
-  ctx.font = `800 ${artistSz}px ${FONT}, sans-serif`;
+  ctx.font = `500 ${artistSz}px ${FONT}, sans-serif`;
   ctx.fillStyle = 'rgba(255, 255, 255, 0.55)';
   ctx.fillText(S.track.artist || '', textX, titleY + titleSz + 8);
   ctx.restore();
@@ -994,7 +994,7 @@ function drawIntroLayout(W, H, now) {
   ctx.fillText(S.track.title || '', W / 2, titleY);
 
   // Artist Name
-  ctx.font = `800 ${artistSz}px ${FONT}, sans-serif`;
+  ctx.font = `500 ${artistSz}px ${FONT}, sans-serif`;
   ctx.fillStyle = 'rgba(255, 255, 255, 0.55)';
   ctx.fillText(S.track.artist || '', W / 2, titleY + titleSz + 10);
 

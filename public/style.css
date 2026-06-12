@@ -253,7 +253,7 @@ body {
   animation: pulse 2.4s ease-in-out infinite;
 }
 .brand-name {
-  font-family: "Montserrat", "Plus Jakarta Sans", "Inter", sans-serif;
+  font-family: "Plus Jakarta Sans", "Inter", sans-serif;
   font-size: 15px;
   font-weight: 800;
   letter-spacing: -0.015em;

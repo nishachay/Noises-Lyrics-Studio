@@ -15,11 +15,9 @@ const ffmpegInstaller = require('@ffmpeg-installer/ffmpeg');
 const fontDir = path.join(__dirname, 'bin', 'fonts');
 (function registerFonts() {
   const pairs = [
-    ['PlusJakartaSans-Medium.ttf',   'Plus Jakarta Sans Medium'],
-    ['PlusJakartaSans[wght].ttf',    'Plus Jakarta Sans'],
-    ['PlusJakartaSans-Bold.ttf',     'Plus Jakarta Sans Bold'],
-    ['Montserrat-Bold.ttf',          'Montserrat Bold'],
-    ['NotoSansDevanagari.ttf',       'Noto Sans Devanagari'],
+    ['Tokotype-PlusJakartaSans-Medium.ttf', 'Plus Jakarta Sans'],
+    ['Tokotype-PlusJakartaSans-Bold.ttf',   'Plus Jakarta Sans'],
+    ['NotoSansDevanagari.ttf',              'Noto Sans Devanagari'],
   ];
   for (const [file, family] of pairs) {
     const fp = path.join(fontDir, file);
@@ -163,7 +161,7 @@ function drawInterludeDots(ctx, x, y, time) {
   const startX = x - totalW / 2 + R;
 
   ctx.save();
-  ctx.font = `24px "Montserrat"`;
+  ctx.font = `24px "Plus Jakarta Sans"`;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   
@@ -273,7 +271,7 @@ function drawLeftSplitLayout(ctx, coverImg, title, artist, W, H, songTime, durat
 
   // Song Title
   ctx.save();
-  ctx.font = `${titleSz}px "Montserrat"`;
+  ctx.font = `bold ${titleSz}px "Plus Jakarta Sans"`;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'top';
   ctx.fillStyle = '#ffffff';
@@ -282,7 +280,7 @@ function drawLeftSplitLayout(ctx, coverImg, title, artist, W, H, songTime, durat
   ctx.fillText(title, textX, titleY);
 
   // Artist Name
-  ctx.font = `${artistSz}px "Montserrat"`;
+  ctx.font = `${artistSz}px "Plus Jakarta Sans"`;
   ctx.fillStyle = 'rgba(255, 255, 255, 0.55)';
   ctx.fillText(artist, textX, titleY + titleSz + 8);
   ctx.restore();
@@ -348,11 +346,11 @@ function drawAlbumPanel(ctx, img, title, artist, W, H, font, songTime, duration)
   ctx.textAlign = 'left';
   ctx.textBaseline = 'middle';
 
-  ctx.font = `${tSz}px "Montserrat"`;
+  ctx.font = `bold ${tSz}px "Plus Jakarta Sans"`;
   ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
   ctx.fillText(title, tx, titleY);
 
-  ctx.font = `${aSz}px "Montserrat"`;
+  ctx.font = `${aSz}px "Plus Jakarta Sans"`;
   ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
   ctx.fillText(artist, tx, artistY);
   ctx.restore();
@@ -449,7 +447,7 @@ function drawLyricsPanel(ctx, W, H, time, wrappedLyrics, font, alignment, durati
 
   ctx.textAlign = textAlign;
   ctx.textBaseline = 'middle';
-  ctx.font = `${activeSz}px "Montserrat"`;
+  ctx.font = `bold ${activeSz}px "Plus Jakarta Sans"`;
 
   const segments = line.wrapped;
   const totalH = segments.length * lh_act;
@@ -565,7 +563,7 @@ function generateThumbnail(coverImg, colors, title, artist, font, alignment, wra
   const gap2 = Math.round(H * 0.02);
 
   // Set the font to measure title
-  ctx.font = `${titleSz}px "Montserrat"`;
+  ctx.font = `bold ${titleSz}px "Plus Jakarta Sans"`;
 
   // Wrap the title if it is too wide
   const maxTitleWidth = Math.round(W * 0.68);
@@ -587,7 +585,7 @@ function generateThumbnail(coverImg, colors, title, artist, font, alignment, wra
   let finalTitleSz = titleSz;
   if (titleLines.length > 2) {
     finalTitleSz = Math.round(H * 0.061);
-    ctx.font = `${finalTitleSz}px "Montserrat"`;
+    ctx.font = `bold ${finalTitleSz}px "Plus Jakarta Sans"`;
     titleLines.length = 0;
     currentLine = '';
     for (const w of words) {
@@ -651,7 +649,7 @@ function generateThumbnail(coverImg, colors, title, artist, font, alignment, wra
   ctx.save();
   ctx.textAlign = 'center';
   ctx.textBaseline = 'top';
-  ctx.font = `${finalTitleSz}px "Montserrat"`;
+  ctx.font = `bold ${finalTitleSz}px "Plus Jakarta Sans"`;
   ctx.fillStyle = '#ffffff';
   ctx.shadowColor = 'rgba(0, 0, 0, 0.4)';
   ctx.shadowBlur = 8;
@@ -662,7 +660,7 @@ function generateThumbnail(coverImg, colors, title, artist, font, alignment, wra
   }
 
   // Draw Artist Name
-  ctx.font = `${artistSz}px "Montserrat"`;
+  ctx.font = `${artistSz}px "Plus Jakarta Sans"`;
   ctx.fillStyle = 'rgba(255, 255, 255, 0.65)';
   ctx.shadowColor = 'rgba(0, 0, 0, 0.3)';
   ctx.shadowBlur = 4;
@@ -715,7 +713,7 @@ function renderVideo({
       const W   = resolution === '1080' ? 1920 : 1280;
       const H   = resolution === '1080' ? 1080 : 720;
       const FPS = parseInt(fps, 10) || 24;
-      const FONT = 'Montserrat';
+      const FONT = 'Plus Jakarta Sans';
 
       const ACT_SZ  = Math.min(Math.round(H * 0.058), 64);  // active line
       const maxWidth = alignment === 'left' ? Math.round(W * 0.44) : Math.round(W * 0.76);
@@ -778,8 +776,8 @@ function renderVideo({
       })).sort((a, b) => a.time - b.time);
 
       // ── Pre-compute wrapped lyrics ────────────────────────────
-      ctx.font = `${ACT_SZ}px "Montserrat"`;
-      const wrappedLyrics = precomputeWrappedLyrics(ctx, adjustedLyrics, `${ACT_SZ}px "Montserrat"`, maxWidth, H);
+      ctx.font = `bold ${ACT_SZ}px "Plus Jakarta Sans"`;
+      const wrappedLyrics = precomputeWrappedLyrics(ctx, adjustedLyrics, `bold ${ACT_SZ}px "Plus Jakarta Sans"`, maxWidth, H);
       console.log(`[Renderer] Pre-wrapped ${wrappedLyrics.length} lyric lines ✓`);
 
       // ── Save thumbnail ────────────────────────────────────────
@@ -891,7 +889,7 @@ function renderVideo({
           const titleY = ay + artSz + 30;
 
           // Song Title
-          ctx.font = `${titleSz}px "Montserrat"`;
+          ctx.font = `bold ${titleSz}px "Plus Jakarta Sans"`;
           ctx.textAlign = 'center';
           ctx.textBaseline = 'top';
           ctx.fillStyle = '#ffffff';
@@ -900,7 +898,7 @@ function renderVideo({
           ctx.fillText(songTitle, W / 2, titleY);
 
           // Artist Name
-          ctx.font = `${artistSz}px "Montserrat"`;
+          ctx.font = `${artistSz}px "Plus Jakarta Sans"`;
           ctx.fillStyle = 'rgba(255, 255, 255, 0.55)';
           ctx.fillText(songArtist, W / 2, titleY + titleSz + 10);
 
@@ -938,11 +936,11 @@ function renderVideo({
           ctx.fillStyle = '#ffffff';
           ctx.shadowColor = 'rgba(0, 0, 0, 0.4)';
           ctx.shadowBlur = 4;
-          ctx.font = `${titleSz}px "Montserrat"`;
+          ctx.font = `bold ${titleSz}px "Plus Jakarta Sans"`;
           ctx.fillText('THANKS FOR WATCHING', W / 2, ay);
           
           ctx.fillStyle = 'rgba(255, 255, 255, 0.55)';
-          ctx.font = `${artistSz}px "Montserrat"`;
+          ctx.font = `${artistSz}px "Plus Jakarta Sans"`;
           ctx.fillText('SUBSCRIBE FOR DAILY VIBES', W / 2, ay + titleSz + gap);
 
           ctx.restore();
