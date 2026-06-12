@@ -794,17 +794,21 @@ function drawLyrics(W, H, songTime) {
   segments.forEach((seg, wi) => {
     const wy = top + wi * lh_act + activeSz * 0.5;
 
-    // Soft drop shadow
-    ctx.shadowColor = 'rgba(0, 0, 0, 0.7)';
-    ctx.shadowBlur = 12;
-    ctx.shadowOffsetY = 2;
+    // 1. Subtle white glow to bloom outward
+    ctx.shadowColor = 'rgba(255, 255, 255, 0.4)';
+    ctx.shadowBlur = 15;
+    ctx.shadowOffsetY = 0;
     ctx.fillStyle = '#ffffff';
     ctx.fillText(seg, 0, wy);
 
-    // Subtle glow instead of massive one
-    ctx.shadowColor = 'rgba(255, 255, 255, 0.3)';
-    ctx.shadowBlur = 15;
-    ctx.shadowOffsetY = 0;
+    // 2. Crisp black drop shadow to maintain readability
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.8)';
+    ctx.shadowBlur = 10;
+    ctx.shadowOffsetY = 2;
+    ctx.fillText(seg, 0, wy);
+
+    // 3. Solid text core
+    ctx.shadowColor = 'transparent';
     ctx.fillText(seg, 0, wy);
   });
 
