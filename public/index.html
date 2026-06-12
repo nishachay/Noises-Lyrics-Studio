@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Noises Studio — Lyrics Video Maker</title>
+  <meta name="description" content="Search any song, preview lyrics in real-time, sync timings, and export a beautiful lyrics video in minutes.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&family=Noto+Sans+Devanagari:wght@400;500;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css?v=4.0">
+  <link rel="stylesheet" href="premium.css?v=4.0">
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════
+  SEARCH MODAL (Command Palette)
+════════════════════════════════════════════════ -->
+<div id="search-modal" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-label="Search songs">
+  <div class="modal-card">
+    <div class="modal-search-row">
+      <svg class="modal-search-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <input id="modal-query" type="text" placeholder="Search song or paste YouTube / Spotify link..." autocomplete="off" spellcheck="false" aria-label="Search">
+      <button id="btn-modal-close" class="modal-esc-btn" aria-label="Close">Esc</button>
+    </div>
+    <div id="modal-results" class="modal-results">
+      <!-- Suggestions default state -->
+      <div id="modal-suggestions" class="modal-suggestions">
+        <div class="suggestions-label">Suggested</div>
+        <div class="suggestions-grid">
+          <button class="suggest-chip" data-query="KR$NA &amp; Dhanda Nyoliwala - Boom Shaka"><span>Boom Shaka</span><small>KR$NA</small></button>
+          <button class="suggest-chip" data-query="The Weeknd - Starboy"><span>Starboy</span><small>The Weeknd</small></button>
+          <button class="suggest-chip" data-query="Billie Eilish - Birds of a Feather"><span>Birds of a Feather</span><small>Billie Eilish</small></button>
+          <button class="suggest-chip" data-query="Post Malone - I Had Some Help"><span>I Had Some Help</span><small>Post Malone</small></button>
+          <button class="suggest-chip" data-query="Charlie Puth - Suffer"><span>Suffer</span><small>Charlie Puth</small></button>
+          <button class="suggest-chip" data-query="Arijit Singh - Uska Hi Banana"><span>Uska Hi Banana</span><small>Arijit Singh</small></button>
+        </div>
+      </div>
+      <!-- Search result list -->
+      <div id="modal-result-list" class="modal-result-list hidden"></div>
+      <!-- Searching state -->
+      <div id="modal-searching" class="modal-state hidden">
+        <div class="state-spinner"></div>
+        <span>Searching iTunes...</span>
+      </div>
+      <!-- Empty state -->
+      <div id="modal-empty" class="modal-state hidden">
+        <span>No results. Please try a different query.</span>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <span><kbd>↑↓</kbd> Navigate</span>
+      <span><kbd>Enter</kbd> Select</span>
+      <span><kbd>Esc</kbd> Close</span>
+      <span class="modal-powered">Powered by iTunes + LRCLIB</span>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════
+  MANUAL LRCLIB SEARCH MODAL
+════════════════════════════════════════════════ -->
+<div id="lyrics-modal" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-label="Search lyrics manually">
+  <div class="modal-card">
+    <div class="modal-search-row">
+      <svg class="modal-search-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/></svg>
+      <input id="modal-lyrics-query" type="text" placeholder="Search lyrics by Title - Artist..." autocomplete="off" spellcheck="false" aria-label="Search lyrics">
+      <button id="btn-lyrics-modal-close" class="modal-esc-btn" aria-label="Close">Esc</button>
+    </div>
+    <div id="modal-lyrics-results" class="modal-results" style="max-height: 400px; overflow-y: auto;">
+      <!-- Search result list -->
+      <div id="modal-lyrics-list" class="modal-result-list hidden"></div>
+      <!-- Searching state -->
+      <div id="modal-lyrics-searching" class="modal-state hidden">
+        <div class="state-spinner"></div>
+        <span>Searching LRCLIB...</span>
+      </div>
+      <!-- Empty state -->
+      <div id="modal-lyrics-empty" class="modal-state hidden">
+        <span>Type to search LRCLIB for synced lyrics.</span>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <span><kbd>↑↓</kbd> Navigate</span>
+      <span><kbd>Enter</kbd> Select</span>
+      <span><kbd>Esc</kbd> Close</span>
+      <span class="modal-powered">Powered by LRCLIB API</span>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════
+  MAIN STUDIO LAYOUT
+════════════════════════════════════════════════ -->
+<div id="view-studio" class="studio">
+
+  <!-- TOP HEADER -->
+  <header class="studio-header">
+    <div class="header-brand">
+      <div class="brand-dot"></div>
+      <span class="brand-name">noises studio</span>
+    </div>
+
+    <div class="header-track" id="header-track">
+      <div id="header-skeleton" class="header-skeleton header-pill">
+        <div class="shimmer header-art-shimmer"></div>
+        <div class="header-skeleton-text">
+          <div class="shimmer" style="width:120px;height:10px;border-radius:4px;"></div>
+          <div class="shimmer" style="width:80px;height:8px;border-radius:4px;margin-top:5px;"></div>
+        </div>
+      </div>
+      <div id="header-track-content" class="header-track-content header-pill hidden">
+        <img id="header-art" src="" alt="" class="header-art">
+        <div class="header-track-text">
+          <div id="header-title" class="header-title">—</div>
+          <div id="header-artist" class="header-artist">—</div>
+        </div>
+      </div>
+    </div>
+
+    <button id="btn-search" class="header-search-btn" aria-label="Search (Ctrl+K)">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <span>Search song...</span>
+      <kbd>Ctrl K</kbd>
+    </button>
+  </header>
+
+  <!-- WORKSPACE -->
+  <div class="studio-workspace">
+
+    <!-- LEFT: Canvas preview + player -->
+    <section class="preview-column">
+      <div class="canvas-wrapper">
+        <canvas id="preview-canvas" width="1280" height="720" aria-label="Video preview"></canvas>
+        <!-- Audio loading overlay -->
+        <div id="audio-loading-overlay" class="audio-loading-overlay hidden">
+          <div class="audio-loading-inner">
+            <div class="state-spinner"></div>
+            <span id="audio-loading-text">Downloading audio...</span>
+          </div>
+        </div>
+      </div>
+      <div class="canvas-label">Real-time preview · output matches exactly</div>
+
+      <!-- Media controls -->
+      <div class="player-bar">
+        <button id="btn-play" class="btn-play" aria-label="Play/Pause" disabled>
+          <svg id="icon-play" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+          <svg id="icon-pause" class="hidden" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+        </button>
+        <span id="player-time" class="player-time">0:00 / 0:00</span>
+        <div class="scrubber-track">
+          <input id="player-scrubber" type="range" min="0" max="1000" value="0" class="scrubber" aria-label="Seek">
+          <div id="scrubber-fill" class="scrubber-fill"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- RIGHT: Inspector panel -->
+    <aside class="control-column">
+      <!-- Tab bar -->
+      <div class="tab-bar">
+        <button class="tab-btn active" data-tab="tab-sync">Lyrics &amp; Sync</button>
+        <button class="tab-btn" data-tab="tab-edit">Edit Raw</button>
+        <button class="tab-btn" data-tab="tab-settings">Settings</button>
+      </div>
+
+      <!-- TAB: Lyrics & Sync -->
+      <div id="tab-sync" class="tab-pane active">
+        
+        <!-- Premium Track Info Card -->
+        <div class="glass-card track-info-card">
+          <div class="track-info-cover-wrapper">
+            <img id="edit-cover-preview" src="" alt="" class="track-info-cover hidden">
+            <div class="track-info-cover-placeholder">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+            </div>
+            <button class="btn-edit-cover" onclick="document.getElementById('edit-cover').style.display='block'; document.getElementById('edit-cover').focus()" aria-label="Edit Cover URL">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+            </button>
+          </div>
+          <div class="track-info-text">
+            <input type="text" id="edit-title" class="text-inline title-inline" placeholder="Song Title">
+            <input type="text" id="edit-artist" class="text-inline artist-inline" placeholder="Artist Name">
+            <input type="text" id="edit-cover" class="text-inline url-inline" placeholder="Paste image URL..." style="display:none;">
+          </div>
+        </div>
+
+        <div class="inspector-section glass-card" style="margin-top: 16px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 8px;">
+            <label class="field-label" style="margin:0;" for="lyrics-source">Lyrics Source</label>
+            <button id="btn-manual-lyrics" class="btn-action btn-glass" style="font-size: 11px; padding: 4px 8px;">Search LRCLIB</button>
+          </div>
+          <select id="lyrics-source" class="select-field glass-select" disabled>
+            <option>No song loaded — press Ctrl+K</option>
+          </select>
+        </div>
+
+        <div class="sync-actions">
+          <button id="btn-tap-toggle" class="btn-action">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            Tap Sync
+          </button>
+          <button id="btn-reset-timings" class="btn-action">Reset</button>
+        </div>
+
+        <div id="tap-banner" class="tap-banner hidden">
+          Press <kbd>Space</kbd> or click a line's stamp icon at the moment it is sung.
+        </div>
+
+        <div class="lyrics-list-wrapper">
+          <div id="lyrics-list" class="lyrics-list">
+            <div class="hint-state">
+              Press <kbd>Ctrl K</kbd> to search and load a song.
+            </div>
+          </div>
+        </div>
+
+        <div id="tap-footer" class="tap-footer hidden">
+          <button id="btn-tap" class="btn-tap">TAP — STAMP THIS LINE&nbsp;<kbd>Space</kbd></button>
+        </div>
+      </div>
+
+      <!-- TAB: Edit Raw -->
+      <div id="tab-edit" class="tab-pane hidden">
+        <div class="editor-header">
+          <span id="editor-format" class="editor-format">Format: LRC (Synced)</span>
+          <button id="btn-apply" class="btn-action">Apply</button>
+        </div>
+        <textarea id="lyrics-editor" class="code-editor" spellcheck="false" autocomplete="off" placeholder="Paste LRC lyrics or plain text lyrics here..."></textarea>
+      </div>
+
+      <!-- TAB: Settings -->
+      <div id="tab-settings" class="tab-pane hidden">
+        <div class="inspector-scroll">
+          <div class="inspector-section">
+            <div class="field-row">
+              <label class="field-label">Sync Offset</label>
+              <span id="offset-label" class="badge">+0.0s</span>
+            </div>
+            <p class="field-desc">Shift all lyric timestamps to align with audio.</p>
+            <input type="range" id="sync-offset" min="-30" max="30" step="0.1" value="0" class="range-field">
+          </div>
+
+          <div class="inspector-section">
+            <div class="settings-label">Export Specs</div>
+            <div class="settings-grid">
+              <div class="setting-item">
+                <label class="field-label" for="select-res">Resolution</label>
+                <select id="select-res" class="select-field">
+                  <option value="720" selected>720p (Fast)</option>
+                  <option value="1080">1080p (HQ)</option>
+                </select>
+              </div>
+              <div class="setting-item">
+                <label class="field-label" for="select-fps">Frame Rate</label>
+                <select id="select-fps" class="select-field">
+                  <option value="24" selected>24 FPS</option>
+                  <option value="30">30 FPS</option>
+                  <option value="60">60 FPS</option>
+                </select>
+              </div>
+              <div class="setting-item">
+                <label class="field-label" for="select-align">Alignment</label>
+                <select id="select-align" class="select-field">
+                  <option value="center" selected>Center</option>
+                  <option value="left">Left</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Control footer -->
+      <div class="control-footer">
+        <button id="btn-compile" class="btn-compile" disabled>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+          Generate Video
+        </button>
+      </div>
+    </aside>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════
+  RENDER PROGRESS VIEW
+════════════════════════════════════════════════ -->
+<div id="view-progress" class="view-overlay hidden">
+  <div class="overlay-card">
+    <div class="progress-track-chip">
+      <img id="prog-art" src="" alt="" class="chip-art">
+      <div>
+        <div id="prog-title" class="chip-title">Loading...</div>
+        <div id="prog-artist" class="chip-artist"></div>
+      </div>
+    </div>
+    <div id="prog-status" class="prog-status">Starting...</div>
+    <div class="prog-bar-track">
+      <div id="prog-fill" class="prog-bar-fill"></div>
+    </div>
+    <div id="prog-pct" class="prog-pct">0%</div>
+    <div id="prog-log" class="prog-log"></div>
+    <button id="btn-cancel" class="btn-action" style="margin-top:20px">Cancel</button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════
+  DONE / EXPORT VIEW
+════════════════════════════════════════════════ -->
+<div id="view-done" class="view-overlay hidden">
+  <div class="overlay-card done-card">
+    <div class="done-icon-row">
+      <div class="done-check">✓</div>
+      <div>
+        <h2 class="done-title">Video Ready</h2>
+        <p id="done-sub" class="done-sub">—</p>
+      </div>
+    </div>
+
+    <div class="done-preview-container">
+      <div id="done-preview-loader" class="done-preview-placeholder">Generating preview...</div>
+      <img id="done-preview-image" class="done-preview-img" alt="Thumbnail Preview">
+    </div>
+
+    <div class="done-grid">
+      <div class="done-downloads">
+        <a id="btn-dl-video" href="#" class="btn-dl primary">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Download MP4
+        </a>
+        <a id="btn-dl-thumb" href="#" class="btn-dl secondary">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+          Thumbnail
+        </a>
+      </div>
+      <div class="done-meta">
+        <div class="meta-field">
+          <label>YouTube Title</label>
+          <div class="copy-row"><input id="yt-title" type="text" readonly><button class="btn-copy" data-target="yt-title">Copy</button></div>
+        </div>
+        <div class="meta-field">
+          <label>Description</label>
+          <div class="copy-row"><textarea id="yt-desc" rows="4" readonly></textarea><button class="btn-copy" data-target="yt-desc">Copy</button></div>
+        </div>
+      </div>
+    </div>
+
+    <button id="btn-again" class="btn-action" style="margin-top:24px">← Make Another Video</button>
+  </div>
+</div>
+
+<script src="app.js?v=4.10"></script>
+</body>
+</html>

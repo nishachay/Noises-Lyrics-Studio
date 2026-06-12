@@ -1,0 +1,14 @@
+node_modules/
+temp/
+output/
+backup_zip/
+temp_unzip/
+beautiful-lyrics-ref/
+.agents/
+*.zip
+*.png
+*.jpg
+test_*.js
+measure*.js
+verify_font.js
+.env

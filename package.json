@@ -1,0 +1,28 @@
+{
+  "name": "noises-lyric-generator",
+  "version": "1.0.0",
+  "description": "Automatic karaoke lyrics video generator",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "keywords": [
+    "karaoke",
+    "lyrics",
+    "video",
+    "generator",
+    "ffmpeg",
+    "canvas"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@ffmpeg-installer/ffmpeg": "^1.1.0",
+    "@napi-rs/canvas": "^0.1.52",
+    "axios": "^1.7.2",
+    "express": "^4.19.2",
+    "youtube-sr": "^4.3.12",
+    "ytmusic-api": "^5.3.1"
+  }
+}
