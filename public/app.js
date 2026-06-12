@@ -522,7 +522,7 @@ function drawInterludeDots(cx, cy, t) {
   const startX = cx - totalW / 2 + R;
 
   ctx.save();
-  ctx.font = `500 24px ${FONT}, sans-serif`;
+  ctx.font = `500 24px Arial, sans-serif`;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   

@@ -161,7 +161,7 @@ function drawInterludeDots(ctx, x, y, time) {
   const startX = x - totalW / 2 + R;
 
   ctx.save();
-  ctx.font = `24px "Plus Jakarta Sans"`;
+  ctx.font = `24px Arial`;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   
@@ -462,8 +462,8 @@ function drawLyricsPanel(ctx, W, H, time, wrappedLyrics, font, alignment, durati
     ctx.fillStyle = '#ffffff';
     ctx.fillText(seg, 0, wy);
 
-    ctx.shadowColor = 'rgba(255, 255, 255, 0.3)';
-    ctx.shadowBlur = 15;
+    ctx.shadowColor = 'rgba(255, 255, 255, 0.8)';
+    ctx.shadowBlur = 20;
     ctx.shadowOffsetY = 0;
     ctx.fillText(seg, 0, wy);
   });
