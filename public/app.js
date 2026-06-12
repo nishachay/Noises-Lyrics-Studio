@@ -1028,7 +1028,7 @@ function drawOutroLayout(W, H, now) {
   
   ctx.fillStyle = 'rgba(255, 255, 255, 0.55)';
   ctx.font = `500 ${artistSz}px ${FONT}, sans-serif`;
-  ctx.fillText('SUBSCRIBE FOR DAILY VIBES', W / 2, ay + titleSz + gap);
+  ctx.fillText('LIKE, SHARE & SUBSCRIBE', W / 2, ay + titleSz + gap);
 
   ctx.restore();
 }
