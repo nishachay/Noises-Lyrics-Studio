@@ -456,15 +456,22 @@ function drawLyricsPanel(ctx, W, H, time, wrappedLyrics, font, alignment, durati
   segments.forEach((seg, wi) => {
     const wy = top + wi * lh_act + activeSz * 0.5;
 
-    ctx.shadowColor = 'rgba(0, 0, 0, 0.7)';
-    ctx.shadowBlur = 12;
-    ctx.shadowOffsetY = 2;
+    // Pass 1: Massive white bloom
+    ctx.shadowColor = 'rgba(255, 255, 255, 0.6)';
+    ctx.shadowBlur = 25;
+    ctx.shadowOffsetY = 0;
     ctx.fillStyle = '#ffffff';
     ctx.fillText(seg, 0, wy);
+    ctx.fillText(seg, 0, wy); // double glow for intensity
 
-    ctx.shadowColor = 'rgba(255, 255, 255, 0.8)';
-    ctx.shadowBlur = 20;
-    ctx.shadowOffsetY = 0;
+    // Pass 2: Black drop shadow for contrast against bright backgrounds
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.9)';
+    ctx.shadowBlur = 8;
+    ctx.shadowOffsetY = 2;
+    ctx.fillText(seg, 0, wy);
+
+    // Pass 3: The solid crisp white text body
+    ctx.shadowColor = 'transparent';
     ctx.fillText(seg, 0, wy);
   });
 
