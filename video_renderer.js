@@ -271,7 +271,7 @@ function drawLeftSplitLayout(ctx, coverImg, title, artist, W, H, songTime, durat
 
   // Song Title
   ctx.save();
-  ctx.font = `bold ${titleSz}px "Plus Jakarta Sans"`;
+  ctx.font = `bold ${titleSz}px "Plus Jakarta Sans", "Noto Sans Devanagari"`;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'top';
   ctx.fillStyle = '#ffffff';
@@ -280,7 +280,7 @@ function drawLeftSplitLayout(ctx, coverImg, title, artist, W, H, songTime, durat
   ctx.fillText(title, textX, titleY);
 
   // Artist Name
-  ctx.font = `${artistSz}px "Plus Jakarta Sans"`;
+  ctx.font = `${artistSz}px "Plus Jakarta Sans", "Noto Sans Devanagari"`;
   ctx.fillStyle = 'rgba(255, 255, 255, 0.55)';
   ctx.fillText(artist, textX, titleY + titleSz + 8);
   ctx.restore();
@@ -346,11 +346,11 @@ function drawAlbumPanel(ctx, img, title, artist, W, H, font, songTime, duration)
   ctx.textAlign = 'left';
   ctx.textBaseline = 'middle';
 
-  ctx.font = `bold ${tSz}px "Plus Jakarta Sans"`;
+  ctx.font = `bold ${tSz}px "Plus Jakarta Sans", "Noto Sans Devanagari"`;
   ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
   ctx.fillText(title, tx, titleY);
 
-  ctx.font = `${aSz}px "Plus Jakarta Sans"`;
+  ctx.font = `${aSz}px "Plus Jakarta Sans", "Noto Sans Devanagari"`;
   ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
   ctx.fillText(artist, tx, artistY);
   ctx.restore();
@@ -446,7 +446,7 @@ function drawLyricsPanel(ctx, W, H, time, wrappedLyrics, font, alignment, durati
   
   ctx.textAlign = textAlign;
   ctx.textBaseline = 'middle';
-  ctx.font = `bold ${activeSz * scale}px "Plus Jakarta Sans"`;
+  ctx.font = `bold ${activeSz * scale}px "Plus Jakarta Sans", "Noto Sans Devanagari"`;
 
   const segments = line.wrapped;
   const totalH = segments.length * lh_act;
@@ -569,7 +569,7 @@ function generateThumbnail(coverImg, colors, title, artist, font, alignment, wra
   const gap2 = Math.round(H * 0.02);
 
   // Set the font to measure title
-  ctx.font = `bold ${titleSz}px "Plus Jakarta Sans"`;
+  ctx.font = `bold ${titleSz}px "Plus Jakarta Sans", "Noto Sans Devanagari"`;
 
   // Wrap the title if it is too wide
   const maxTitleWidth = Math.round(W * 0.68);
@@ -591,7 +591,7 @@ function generateThumbnail(coverImg, colors, title, artist, font, alignment, wra
   let finalTitleSz = titleSz;
   if (titleLines.length > 2) {
     finalTitleSz = Math.round(H * 0.061);
-    ctx.font = `bold ${finalTitleSz}px "Plus Jakarta Sans"`;
+    ctx.font = `bold ${finalTitleSz}px "Plus Jakarta Sans", "Noto Sans Devanagari"`;
     titleLines.length = 0;
     currentLine = '';
     for (const w of words) {
@@ -655,7 +655,7 @@ function generateThumbnail(coverImg, colors, title, artist, font, alignment, wra
   ctx.save();
   ctx.textAlign = 'center';
   ctx.textBaseline = 'top';
-  ctx.font = `bold ${finalTitleSz}px "Plus Jakarta Sans"`;
+  ctx.font = `bold ${finalTitleSz}px "Plus Jakarta Sans", "Noto Sans Devanagari"`;
   ctx.fillStyle = '#ffffff';
   ctx.shadowColor = 'rgba(0, 0, 0, 0.4)';
   ctx.shadowBlur = 8;
@@ -666,7 +666,7 @@ function generateThumbnail(coverImg, colors, title, artist, font, alignment, wra
   }
 
   // Draw Artist Name
-  ctx.font = `${artistSz}px "Plus Jakarta Sans"`;
+  ctx.font = `${artistSz}px "Plus Jakarta Sans", "Noto Sans Devanagari"`;
   ctx.fillStyle = 'rgba(255, 255, 255, 0.65)';
   ctx.shadowColor = 'rgba(0, 0, 0, 0.3)';
   ctx.shadowBlur = 4;
@@ -719,7 +719,7 @@ function renderVideo({
       const W   = resolution === '1080' ? 1920 : 1280;
       const H   = resolution === '1080' ? 1080 : 720;
       const FPS = parseInt(fps, 10) || 24;
-      const FONT = 'Plus Jakarta Sans';
+      const FONT = 'Plus Jakarta Sans", "Noto Sans Devanagari';
 
       const ACT_SZ  = Math.min(Math.round(H * 0.058), 64);  // active line
       const maxWidth = alignment === 'left' ? Math.round(W * 0.44) : Math.round(W * 0.76);
@@ -782,8 +782,8 @@ function renderVideo({
       })).sort((a, b) => a.time - b.time);
 
       // ── Pre-compute wrapped lyrics ────────────────────────────
-      ctx.font = `bold ${ACT_SZ}px "Plus Jakarta Sans"`;
-      const wrappedLyrics = precomputeWrappedLyrics(ctx, adjustedLyrics, `bold ${ACT_SZ}px "Plus Jakarta Sans"`, maxWidth, H);
+      ctx.font = `bold ${ACT_SZ}px "Plus Jakarta Sans", "Noto Sans Devanagari"`;
+      const wrappedLyrics = precomputeWrappedLyrics(ctx, adjustedLyrics, `bold ${ACT_SZ}px "Plus Jakarta Sans", "Noto Sans Devanagari"`, maxWidth, H);
       console.log(`[Renderer] Pre-wrapped ${wrappedLyrics.length} lyric lines ✓`);
 
       // ── Save thumbnail ────────────────────────────────────────
@@ -909,7 +909,7 @@ function renderVideo({
           const titleY = ay + artSz + 30;
 
           // Song Title
-          ctx.font = `bold ${titleSz}px "Plus Jakarta Sans"`;
+          ctx.font = `bold ${titleSz}px "Plus Jakarta Sans", "Noto Sans Devanagari"`;
           ctx.textAlign = 'center';
           ctx.textBaseline = 'top';
           ctx.fillStyle = '#ffffff';
@@ -918,7 +918,7 @@ function renderVideo({
           ctx.fillText(songTitle, W / 2, titleY);
 
           // Artist Name
-          ctx.font = `${artistSz}px "Plus Jakarta Sans"`;
+          ctx.font = `${artistSz}px "Plus Jakarta Sans", "Noto Sans Devanagari"`;
           ctx.fillStyle = 'rgba(255, 255, 255, 0.55)';
           ctx.fillText(songArtist, W / 2, titleY + titleSz + 10);
 
@@ -956,11 +956,11 @@ function renderVideo({
           ctx.fillStyle = '#ffffff';
           ctx.shadowColor = 'rgba(0, 0, 0, 0.4)';
           ctx.shadowBlur = 4;
-          ctx.font = `bold ${titleSz}px "Plus Jakarta Sans"`;
+          ctx.font = `bold ${titleSz}px "Plus Jakarta Sans", "Noto Sans Devanagari"`;
           ctx.fillText('THANKS FOR WATCHING', W / 2, ay);
           
           ctx.fillStyle = 'rgba(255, 255, 255, 0.55)';
-          ctx.font = `${artistSz}px "Plus Jakarta Sans"`;
+          ctx.font = `${artistSz}px "Plus Jakarta Sans", "Noto Sans Devanagari"`;
           ctx.fillText('LIKE, SHARE & SUBSCRIBE', W / 2, ay + titleSz + gap);
 
           ctx.restore();
