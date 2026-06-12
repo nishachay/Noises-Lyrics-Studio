@@ -443,20 +443,20 @@ function drawLyricsPanel(ctx, W, H, time, wrappedLyrics, font, alignment, durati
   ctx.save();
   ctx.globalAlpha = opacity * layoutAlpha;
   ctx.translate(tx, H / 2);
-  ctx.scale(scale, scale);
-
+  
   ctx.textAlign = textAlign;
   ctx.textBaseline = 'middle';
-  ctx.font = `bold ${activeSz}px "Plus Jakarta Sans"`;
+  ctx.font = `bold ${activeSz * scale}px "Plus Jakarta Sans"`;
 
   const segments = line.wrapped;
   const totalH = segments.length * lh_act;
   const top = -totalH / 2;
 
   segments.forEach((seg, wi) => {
-    const wy = top + wi * lh_act + activeSz * 0.5;
+    const wy = (top + wi * lh_act + activeSz * 0.5) * scale;
 
     // 1. Subtle white glow to bloom outward
+    // Hardcoded to 15px so it always shows up in the video, bypassing Skia scaling bugs
     ctx.shadowColor = 'rgba(255, 255, 255, 0.4)';
     ctx.shadowBlur = 15;
     ctx.shadowOffsetY = 0;
@@ -466,7 +466,7 @@ function drawLyricsPanel(ctx, W, H, time, wrappedLyrics, font, alignment, durati
     // 2. Crisp black drop shadow to maintain readability
     ctx.shadowColor = 'rgba(0, 0, 0, 0.8)';
     ctx.shadowBlur = 10;
-    ctx.shadowOffsetY = 2;
+    ctx.shadowOffsetY = 2 * scale;
     ctx.fillText(seg, 0, wy);
 
     // 3. Solid text core
