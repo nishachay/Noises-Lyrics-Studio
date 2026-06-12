@@ -807,7 +807,6 @@ function renderVideo({
         '-r', `${FPS}`,                      // Set explicit output frame rate
         '-pix_fmt', 'yuv420p',
         '-c:a', 'aac', '-b:a', '192k',
-        '-shortest',
         outputPath,
       ];
       const ffProc = spawn(ffmpegInstaller.path, ffArgs);
@@ -816,9 +815,24 @@ function renderVideo({
       ffProc.stderr.on('data', d => { ffErr += d.toString(); });
       ffProc.on('error', reject);
 
-      const writeFrame = buf => new Promise(res => {
+      const writeFrame = buf => new Promise((resolve, reject) => {
+        if (ffProc.stdin.destroyed) return reject(new Error('FFmpeg stdin destroyed'));
+        
         const ok = ffProc.stdin.write(buf);
-        if (ok) res(); else ffProc.stdin.once('drain', res);
+        if (ok) {
+          resolve();
+        } else {
+          const onDrain = () => {
+            ffProc.stdin.removeListener('error', onError);
+            resolve();
+          };
+          const onError = (err) => {
+            ffProc.stdin.removeListener('drain', onDrain);
+            reject(err);
+          };
+          ffProc.stdin.once('drain', onDrain);
+          ffProc.stdin.once('error', onError);
+        }
       });
 
       // Initialize scroll offset
