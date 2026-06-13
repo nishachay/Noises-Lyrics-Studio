@@ -1876,15 +1876,12 @@ function showDone(msg) {
   btnDlVideo.href = `/api/download/${msg.fileId}`;
   btnDlThumb.href = `/api/download/${msg.thumbnailId}`;
   
-  const btnDlMeta = document.getElementById('btn-dl-meta');
-  if (btnDlMeta && msg.metadataId) {
-    btnDlMeta.href = `/api/download/${msg.metadataId}`;
-    btnDlMeta.style.display = 'flex';
-  } else if (btnDlMeta) {
-    btnDlMeta.style.display = 'none';
-  }
   ytTitle.value = msg.youtubeTitle || '';
   ytDesc.value  = msg.youtubeDescription || '';
+  
+  const ytTags = document.getElementById('yt-tags');
+  if (ytTags) ytTags.value = msg.youtubeTags || '';
+
   doneSub.textContent = `${S.track.artist} · ${S.track.title}`;
 
   // Load thumbnail preview
