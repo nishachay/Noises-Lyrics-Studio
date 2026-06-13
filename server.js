@@ -69,7 +69,8 @@ async function ensureFonts() {
   const fonts = [
     { name: 'Montserrat',       file: 'Montserrat-Bold.ttf',       url: 'https://raw.githubusercontent.com/JulietaUla/Montserrat/master/fonts/ttf/Montserrat-Bold.ttf' },
     { name: 'Plus Jakarta Sans', file: 'PlusJakartaSans-Medium.ttf', url: 'https://github.com/google/fonts/raw/main/ofl/plusjakartasans/PlusJakartaSans%5Bwght%5D.ttf' },
-    { name: 'Noto Sans Devanagari', file: 'NotoSansDevanagari.ttf',  url: 'https://github.com/google/fonts/raw/main/ofl/notosansdevanagari/NotoSansDevanagari%5Bwdth%2Cwght%5D.ttf' }
+    { name: 'Noto Sans Devanagari', file: 'NotoSansDevanagari.ttf',  url: 'https://github.com/google/fonts/raw/main/ofl/notosansdevanagari/NotoSansDevanagari%5Bwdth%2Cwght%5D.ttf' },
+    { name: 'Noto Sans KR',     file: 'NotoSansKR.ttf',            url: 'https://github.com/google/fonts/raw/main/ofl/notosanskr/NotoSansKR%5Bwght%5D.ttf' }
   ];
   for (const f of fonts) {
     const fp = path.join(fontDir, f.file);
