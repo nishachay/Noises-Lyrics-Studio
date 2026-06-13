@@ -125,6 +125,8 @@ const btnApply     = $('btn-apply');
 const syncOffsetEl = $('sync-offset');
 const offsetLabel  = $('offset-label');
 const btnCompile   = $('btn-compile');
+const btnShort     = $('btn-short');
+const btnSlideshow = $('btn-slideshow');
 const btnSearch    = $('btn-search');
 const btnModalClose = $('btn-modal-close');
 
@@ -1192,8 +1194,8 @@ function closeSearch() {
 function showSuggestions() {
   modalSuggestions.classList.remove('hidden');
   modalResultList.classList.add('hidden');
-  modalSearching.classList.add('hidden');
-  modalEmpty.classList.add('hidden');
+  modalSearching.classList.remove('hidden');
+  modalEmpty.classList.remove('hidden');
   S.searchResults = [];
   S.searchHighlight = -1;
 }
@@ -1296,6 +1298,8 @@ async function resolveSong(metadata) {
   resolving = true;
   matchSkeleton(true);
   btnCompile.disabled = true;
+  if (btnShort) btnShort.disabled = true;
+  if (btnSlideshow) btnSlideshow.disabled = true;
   lyricsSource.disabled = true;
   lyricsSource.innerHTML = '<option>Resolving Audio & Lyrics...</option>';
 
@@ -1350,6 +1354,8 @@ async function resolveSong(metadata) {
 
     resolving = false;
     btnCompile.disabled = false;
+    if (btnShort) btnShort.disabled = false;
+    if (btnSlideshow) btnSlideshow.disabled = false;
     lyricsSource.disabled = false;
 
   } catch (err) {
@@ -1551,23 +1557,21 @@ function renderLyricsList() {
     controls.style.cssText = 'display:flex;align-items:center;gap:4px;flex-shrink:0';
 
     if (!S.tapMode) {
-      const shortBtn = document.createElement('button');
-      shortBtn.className = 'btn-stamp';
-      shortBtn.style.color = '#ff4d4d';
-      shortBtn.title = 'Export 30s YouTube Short starting from here';
-      shortBtn.innerHTML = `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>`;
-      shortBtn.addEventListener('click', e => { 
-        e.stopPropagation(); 
-        startCompile(true, line.time); 
-      });
-      controls.appendChild(shortBtn);
-
       const stampBtn = document.createElement('button');
       stampBtn.className = 'btn-stamp';
       stampBtn.title = 'Stamp current playhead time onto this line';
       stampBtn.innerHTML = `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>`;
       stampBtn.addEventListener('click', e => { e.stopPropagation(); stampLine(idx); });
       controls.appendChild(stampBtn);
+      
+      const checkbox = document.createElement('input');
+      checkbox.type = 'checkbox';
+      checkbox.className = 'lyric-cb';
+      checkbox.title = 'Select this line for Slideshow Export';
+      checkbox.style.marginLeft = '8px';
+      checkbox.style.cursor = 'pointer';
+      checkbox.addEventListener('click', e => e.stopPropagation());
+      controls.appendChild(checkbox);
     }
 
     controls.appendChild(timeEl);
@@ -1820,7 +1824,7 @@ async function startCompile(isShort = false, shortStartTime = 0, isSlideshow = f
     isShort:        isShort,
     shortStartTime: shortStartTime,
     isSlideshow:    isSlideshow,
-    slideshowIndices: window.slideshowIndices || [],
+    slideshowIndices: JSON.stringify(window.slideshowIndices || []),
     youtubeDuration: S.track.youtubeDuration || S.track.duration,
     itunesDuration:  S.track.duration,
   });
@@ -2015,6 +2019,44 @@ btnTapToggle.addEventListener('click', () => {
 btnTap.addEventListener('click', handleTap);
 btnReset.addEventListener('click', resetTimings);
 
+// Export
+btnCompile.addEventListener('click', () => {
+  if (!S.track || !S.lyrics.length) return;
+  startCompile();
+});
+
+if (btnShort) {
+  btnShort.addEventListener('click', () => {
+    if (!S.track || !S.lyrics.length) return;
+    // Get the current audio time and find the nearest lyric time to start from
+    let startTime = 0;
+    if (audio) {
+      startTime = audio.currentTime;
+      // Optionally find nearest lyric line timestamp that has already passed or is close
+      const passedLines = S.lyrics.filter(l => l.time <= audio.currentTime);
+      if (passedLines.length) startTime = passedLines[passedLines.length - 1].time;
+    }
+    startCompile(true, startTime);
+  });
+}
+
+if (btnSlideshow) {
+  btnSlideshow.addEventListener('click', () => {
+    if (!S.track || !S.lyrics.length) return;
+    const checked = Array.from(document.querySelectorAll('.lyric-cb'))
+      .map((cb, idx) => cb.checked ? idx : -1)
+      .filter(idx => idx !== -1);
+    
+    if (checked.length === 0) {
+      alert("Please check the boxes next to the lyrics you want to include in the slideshow!");
+      return;
+    }
+    
+    window.slideshowIndices = checked;
+    startCompile(false, 0, true);
+  });
+}
+
 btnTranslate.addEventListener('click', async () => {
   if (!S.lyrics || S.lyrics.length === 0) return;
   btnTranslate.disabled = true;
@@ -2081,17 +2123,8 @@ btnCancel.addEventListener('click', () => {
 
 // Done → again
 btnAgain.addEventListener('click', () => {
-  S.track = null; S.lyrics = []; S.lyricsRecords = [];
-  artImg = null; blurCanvas = null; colorData = null;
-  if (audio) { audio.pause(); audio.src = ''; audio.dataset.videoId = ''; S.audioReady = false; }
-  btnPlay.disabled = true;
-  btnCompile.disabled = true;
-  lyricsSource.innerHTML = '<option>No song loaded</option>';
-  lyricsSource.disabled = true;
-  matchSkeleton(true);
-  renderLyricsList();
+  // Just show the studio again! Don't nuke the loaded song.
   showView('studio');
-  openSearch();
 });
 
 // Copy buttons

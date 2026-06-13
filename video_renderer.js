@@ -178,8 +178,7 @@ function drawInterludeDots(ctx, x, y, time) {
 }
 
 // ── PRE-COMPUTE text wrapping and layout before render loop ─────────────────────
-function precomputeWrappedLyrics(ctx, lyrics, fontSpec, maxWidth, H) {
-  const activeSz = Math.round(H * 0.055);
+function precomputeWrappedLyrics(ctx, lyrics, fontSpec, maxWidth, activeSz) {
   const transSz = activeSz * 0.60;
 
   const wrapLine = (txt, fontStr) => {
@@ -369,7 +368,7 @@ function drawAlbumPanel(ctx, img, title, artist, W, H, font, songTime, duration)
 }
 
 // ── Scrolling Lyrics Panel ──────────────────────────────────────────────────
-function drawLyricsPanel(ctx, W, H, time, wrappedLyrics, font, alignment, duration) {
+function drawLyricsPanel(ctx, W, H, time, wrappedLyrics, font, alignment, duration, activeSz) {
   if (!wrappedLyrics || wrappedLyrics.length === 0) {
     const interludeX = alignment === 'left' ? (W * 0.48 + W * 0.22) : (W / 2);
     drawInterludeDots(ctx, interludeX, H / 2, time);
@@ -388,7 +387,6 @@ function drawLyricsPanel(ctx, W, H, time, wrappedLyrics, font, alignment, durati
   const tx = alignment === 'left' ? (W * 0.48) : (W / 2);
   const textAlign = alignment === 'left' ? 'left' : 'center';
 
-  const activeSz = Math.min(Math.round(H * 0.065), 72);
   const lh_act = activeSz * 1.38;
 
   let showInterlude = false;
@@ -778,7 +776,8 @@ function renderVideo({
       const FPS = parseInt(fps, 10) || 24;
       const FONT = 'Plus Jakarta Sans", "Noto Sans Devanagari", "Noto Sans KR';
 
-      const ACT_SZ  = isShort ? Math.min(Math.round(W * 0.085), 90) : Math.min(Math.round(H * 0.065), 72);
+      // Shorts need larger, punchier text (around 120-130px) for mobile legibility
+      const ACT_SZ  = isShort ? Math.min(Math.round(W * 0.12), 140) : Math.min(Math.round(H * 0.065), 72);
       const maxWidth = isShort ? Math.round(W * 0.85) : (alignment === 'left' ? Math.round(W * 0.44) : Math.round(W * 0.76));
       
       const renderDuration = isShort ? 30 : duration;
@@ -841,7 +840,7 @@ function renderVideo({
 
       // ── Pre-compute wrapped lyrics ────────────────────────────
       ctx.font = `bold ${ACT_SZ}px "Plus Jakarta Sans", "Noto Sans Devanagari", "Noto Sans KR"`;
-      const wrappedLyrics = precomputeWrappedLyrics(ctx, adjustedLyrics, `bold ${ACT_SZ}px "Plus Jakarta Sans", "Noto Sans Devanagari", "Noto Sans KR"`, maxWidth, H);
+      const wrappedLyrics = precomputeWrappedLyrics(ctx, adjustedLyrics, `bold ${ACT_SZ}px "Plus Jakarta Sans", "Noto Sans Devanagari", "Noto Sans KR"`, maxWidth, ACT_SZ);
       console.log(`[Renderer] Pre-wrapped ${wrappedLyrics.length} lyric lines ✓`);
 
       // ── Save thumbnail & metadata ───────────────────────────────
@@ -1013,7 +1012,7 @@ function renderVideo({
           }
 
           // Lyrics panel static layout (auto-calculates activeIdx and fades inside)
-          drawLyricsPanel(ctx, W, H, songTime + appliedOffset, wrappedLyrics, FONT, alignment, duration);
+          drawLyricsPanel(ctx, W, H, songTime + appliedOffset, wrappedLyrics, FONT, alignment, duration, ACT_SZ);
         }
 
         // ── OUTRO ────────────────────────────────────────────────

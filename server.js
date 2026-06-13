@@ -649,7 +649,7 @@ app.get('/api/resolve', async (req, res) => {
 // GET /api/render  (SSE stream)
 // ══════════════════════════════════════════════════════════════
 app.get('/api/render', async (req, res) => {
-  const { id, videoUrl, title, artist, duration: durStr, lyrics: lyricsParam, artworkUrl: rawArtworkUrl, offset: offsetStr, resolution, fps, alignment, youtubeDuration, itunesDuration } = req.query;
+  const { id, videoUrl, title, artist, duration: durStr, lyrics: lyricsParam, artworkUrl: rawArtworkUrl, offset: offsetStr, resolution, fps, alignment, youtubeDuration, itunesDuration, isSlideshow: isSlideshowStr, slideshowIndices: slideshowIndicesStr } = req.query;
   if (!id || !videoUrl) return res.status(400).end('Missing id or videoUrl');
 
   res.writeHead(200, {
@@ -672,6 +672,10 @@ app.get('/api/render', async (req, res) => {
     const outRes      = resolution === '1080' ? '1080' : '720';
     const outFps      = parseInt(fps || '24', 10) || 24;
     const outAlign    = alignment === 'left' ? 'left' : 'center';
+    
+    const isSlideshow = isSlideshowStr === 'true';
+    let slideshowIndices = [];
+    try { if (slideshowIndicesStr) slideshowIndices = JSON.parse(decodeURIComponent(slideshowIndicesStr)); } catch(e) {}
 
     // 1. Download audio
     send({ status: 'downloading', message: 'Downloading audio…', progress: 5 });
@@ -694,7 +698,6 @@ app.get('/api/render', async (req, res) => {
 
     const safeTitle = songTitle.replace(/[\\/:*?"<>|]/g, '_').trim();
     const safeArtist = songArtist.replace(/[\\/:*?"<>|]/g, '_').trim();
-    const isSlideshow = req.query.isSlideshow === 'true';
     const outputId   = `${safeArtist} - ${safeTitle}_${Date.now()}`;
     const outputPath = path.join(OUTPUT_DIR, `${outputId}${isSlideshow ? '.zip' : '.mp4'}`);
     
@@ -711,8 +714,8 @@ app.get('/api/render', async (req, res) => {
     }
 
     if (isSlideshow) {
-      const selectedLyrics = req.body.slideshowIndices && req.body.slideshowIndices.length > 0 
-        ? req.body.slideshowIndices.map(idx => rawLyrics[idx]).filter(Boolean)
+      const selectedLyrics = slideshowIndices && slideshowIndices.length > 0 
+        ? slideshowIndices.map(idx => rawLyrics[idx]).filter(Boolean)
         : rawLyrics;
         
       await require('./video_renderer').renderSlideshow({

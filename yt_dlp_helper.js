@@ -29,12 +29,17 @@ async function ensureYtdlp() {
 // ── Spawn yt-dlp ─────────────────────────────────────────────────────────────
 function spawnYtdlp(args) {
   return new Promise((resolve, reject) => {
-    const p = spawn(YTDLP, args);
+    // Add a strict 15 second timeout to prevent hanging the server
+    const p = spawn(YTDLP, args, { timeout: 15000 });
     let out = '', err = '';
     p.stdout.on('data', d => out += d);
     p.stderr.on('data', d => err += d);
-    p.on('close', code => code === 0 ? resolve(out) : reject(new Error(err || out)));
-    p.on('error', reject);
+    
+    p.on('close', code => {
+      if (code === 0) resolve(out);
+      else reject(new Error(err || out));
+    });
+    p.on('error', (e) => reject(new Error(e.message || 'spawn error')));
   });
 }
 
