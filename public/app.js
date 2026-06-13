@@ -1790,7 +1790,7 @@ scrubber.addEventListener('input', () => {
 
 let lastPct = 0;
 
-async function startCompile(isShort = false, shortStartTime = 0) {
+async function startCompile(isShort = false, shortStartTime = 0, isSlideshow = false) {
   if (!S.track || !S.lyrics.length) return;
   if (audio && !audio.paused) audio.pause();
   stopCanvasLoop();
@@ -1819,6 +1819,8 @@ async function startCompile(isShort = false, shortStartTime = 0) {
     alignment:      selectAlign.value,
     isShort:        isShort,
     shortStartTime: shortStartTime,
+    isSlideshow:    isSlideshow,
+    slideshowIndices: window.slideshowIndices || [],
     youtubeDuration: S.track.youtubeDuration || S.track.duration,
     itunesDuration:  S.track.duration,
   });

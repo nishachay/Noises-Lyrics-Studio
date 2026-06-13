@@ -1,3 +1,4 @@
+const archiver = require('archiver');
 'use strict';
 
 // ════════════════════════════════════════════════════════════════
@@ -581,6 +582,28 @@ function detectAudioStart(pcm) {
   return 0;
 }
 
+// ── SLIDESHOW RENDERER ─────────────────────────────────────────────────────────
+
+function wrapText(ctx, text, fontSize, maxW, fontFam) {
+  ctx.font = `bold ${Math.round(fontSize)}px "${fontFam}"`;
+  const words = text.split(' ');
+  const lines = [];
+  let currentLine = words[0];
+
+  for (let i = 1; i < words.length; i++) {
+    const word = words[i];
+    const width = ctx.measureText(currentLine + " " + word).width;
+    if (width < maxW) {
+      currentLine += " " + word;
+    } else {
+      lines.push(currentLine);
+      currentLine = word;
+    }
+  }
+  lines.push(currentLine);
+  return lines;
+}
+
 // ── THUMBNAIL ────────────────────────────────────────────────────────────────
 function generateThumbnail(coverImg, colors, title, artist, font, alignment, wrappedLyrics, duration, logoImg, W = 1280, H = 720) {
   const tc  = createCanvas(W, H);
@@ -1065,4 +1088,110 @@ function renderVideo({
   });
 }
 
-module.exports = { renderVideo, getAudioAmplitude, detectAudioStart };
+// ── SLIDESHOW RENDERER ─────────────────────────────────────────────────────────
+async function renderSlideshow({
+  artworkPath,
+  lyrics = [],
+  outputPath,
+  songTitle = 'Unknown',
+  songArtist = 'Unknown',
+  resolution = '720',
+  alignment = 'center',
+  progressCallback = () => {},
+}) {
+  return new Promise((resolve, reject) => {
+    try {
+      const W   = 1080;
+      const H   = 1080; // Force 1:1 cross-platform square for IG/TikTok
+      const FONT = 'Plus Jakarta Sans", "Noto Sans Devanagari", "Noto Sans KR';
+      
+      const ACT_SZ  = Math.min(Math.round(W * 0.085), 90);
+      const maxWidth = Math.round(W * 0.85);
+
+      const canvas = createCanvas(W, H);
+      const ctx    = canvas.getContext('2d');
+
+      const AdmZip = require('adm-zip');
+      const zip = new AdmZip();
+
+      // We need to load images sync/async
+      loadImage(path.join(__dirname, 'public', 'logo_white.png')).then(logoImg => {
+        let coverImg = null, colors = null;
+        const processSlides = () => {
+          for (let i = 0; i < lyrics.length; i++) {
+            const line = lyrics[i];
+            const songTime = line.time + 0.1; // offset slightly to ensure it's active
+
+            ctx.clearRect(0, 0, W, H);
+            
+            // Draw Background
+            drawBackground(ctx, W, H, coverImg, colors, songTime, 0.0);
+            
+            // Draw Lyrics
+            let ay = Math.round(H * 0.45);
+            ctx.textAlign = 'center';
+            
+            const lines = wrapText(ctx, line.text, ACT_SZ * 0.8, maxWidth, FONT);
+            let blockH = lines.length * ACT_SZ;
+            
+            if (line.translation) {
+              const transLines = wrapText(ctx, line.translation, ACT_SZ * 0.5, maxWidth, FONT);
+              blockH += (ACT_SZ * 0.5) + (transLines.length * (ACT_SZ * 0.5));
+            }
+            
+            ay -= blockH / 2;
+
+            for (const l of lines) {
+              ctx.font = `bold ${Math.round(ACT_SZ * 0.8)}px "${FONT}"`;
+              ctx.fillStyle = '#ffffff';
+              ctx.shadowColor = 'rgba(255,255,255,0.5)';
+              ctx.shadowBlur = 15;
+              ctx.fillText(l, W / 2, ay);
+              ctx.shadowBlur = 0;
+              ay += ACT_SZ;
+            }
+            if (line.translation) {
+              ay += (ACT_SZ * 0.5);
+              const transLines = wrapText(ctx, line.translation, ACT_SZ * 0.5, maxWidth, FONT);
+              for (const l of transLines) {
+                ctx.font = `bold ${Math.round(ACT_SZ * 0.5)}px "${FONT}"`;
+                ctx.fillStyle = '#ffffff';
+                ctx.shadowColor = 'rgba(255,255,255,0.4)';
+                ctx.shadowBlur = 10;
+                ctx.fillText(l, W / 2, ay);
+                ctx.shadowBlur = 0;
+                ay += (ACT_SZ * 0.5);
+              }
+            }
+
+            // Watermark
+            drawWatermark(ctx, W, H, songTime, logoImg);
+
+            const buf = canvas.toBuffer('image/png');
+            zip.addFile(`slide_${(i+1).toString().padStart(3, '0')}.png`, buf);
+
+            progressCallback(Math.floor((i / lyrics.length) * 100));
+          }
+          
+          zip.writeZip(outputPath);
+          console.log(`[Slideshow] Done → ${outputPath}`);
+          resolve(outputPath);
+        };
+
+        if (artworkPath && fs.existsSync(artworkPath)) {
+          loadImage(artworkPath).then(img => {
+            coverImg = img;
+            getProminentColors(artworkPath).then(c => { colors = c; processSlides(); });
+          });
+        } else {
+          processSlides();
+        }
+      });
+
+    } catch (e) {
+      reject(e);
+    }
+  });
+}
+
+module.exports = { renderVideo, getAudioAmplitude, detectAudioStart, renderSlideshow };

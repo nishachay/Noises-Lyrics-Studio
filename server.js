@@ -694,8 +694,9 @@ app.get('/api/render', async (req, res) => {
 
     const safeTitle = songTitle.replace(/[\\/:*?"<>|]/g, '_').trim();
     const safeArtist = songArtist.replace(/[\\/:*?"<>|]/g, '_').trim();
+    const isSlideshow = req.query.isSlideshow === 'true';
     const outputId   = `${safeArtist} - ${safeTitle}_${Date.now()}`;
-    const outputPath = path.join(OUTPUT_DIR, `${outputId}.mp4`);
+    const outputPath = path.join(OUTPUT_DIR, `${outputId}${isSlideshow ? '.zip' : '.mp4'}`);
     
     // Auto-generate free SEO Tags using YouTube's internal autocomplete API
     let seoKeywords = [];
@@ -709,9 +710,28 @@ app.get('/api/render', async (req, res) => {
       console.log('[SEO] Could not fetch autocomplete tags:', e.message);
     }
 
-    await renderVideo({
-      audioPath,
-      artworkPath,          // Square album art (or null → generated background)
+    if (isSlideshow) {
+      const selectedLyrics = req.body.slideshowIndices && req.body.slideshowIndices.length > 0 
+        ? req.body.slideshowIndices.map(idx => rawLyrics[idx]).filter(Boolean)
+        : rawLyrics;
+        
+      await require('./video_renderer').renderSlideshow({
+        artworkPath,
+        lyrics: selectedLyrics,
+        outputPath,
+        songTitle,
+        songArtist,
+        resolution: outRes,
+        alignment: outAlign,
+        progressCallback: pct => {
+          const mapped = 18 + Math.round(pct * 0.79);
+          send({ status: 'progress', progress: mapped, message: `Generating Slideshow ${pct}%` });
+        },
+      });
+    } else {
+      await renderVideo({
+        audioPath,
+        artworkPath,          // Square album art (or null → generated background)
       lyrics: rawLyrics,
       outputPath,
       duration,
@@ -732,6 +752,7 @@ app.get('/api/render', async (req, res) => {
         send({ status: 'progress', progress: mapped, message: `Rendering ${pct}%` });
       },
     });
+    }
 
     // 4. Cleanup
     try {
@@ -754,7 +775,7 @@ app.get('/api/render', async (req, res) => {
     const fallbackTags = `${songArtist}, ${songTitle}, Lyrics, Pop, Music`;
     const youtubeTags = seoKeywords.length > 0 ? seoKeywords.join(', ') + `, ${fallbackTags}` : fallbackTags;
 
-    send({ status: 'completed', progress: 100, fileId: `${outputId}.mp4`, thumbnailId: `${outputId}_thumbnail.jpg`, youtubeTitle, youtubeDescription, youtubeTags });
+    send({ status: 'completed', progress: 100, fileId: `${outputId}${isSlideshow ? '.zip' : '.mp4'}`, thumbnailId: `${outputId}_thumbnail.jpg`, youtubeTitle, youtubeDescription, youtubeTags });
     res.end();
 
   } catch (err) {
