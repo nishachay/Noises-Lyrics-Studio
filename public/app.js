@@ -2000,7 +2000,7 @@ btnTranslate.addEventListener('click', async () => {
       data.translations.forEach((t, i) => {
         S.lyrics[i].translation = t;
       });
-      renderSyncList();
+      renderLyricsList();
     } else if (data.error) {
       alert('Translation failed: ' + data.error);
     }
