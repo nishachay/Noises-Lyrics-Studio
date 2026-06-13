@@ -127,6 +127,13 @@ const btnCompile   = $('btn-compile');
 const btnSearch    = $('btn-search');
 const btnModalClose = $('btn-modal-close');
 
+// Trending
+const btnTrending      = $('btn-trending');
+const trendingPanel    = $('trending-panel');
+const btnTrendingClose = $('btn-trending-close');
+const trendingLoading  = $('trending-loading');
+const trendingList     = $('trending-list');
+
 // Progress view
 const progArt    = $('prog-art');
 const progTitle  = $('prog-title');
@@ -1815,6 +1822,54 @@ function showView(name) {
 btnSearch.addEventListener('click', openSearch);
 btnModalClose.addEventListener('click', closeSearch);
 searchModal.addEventListener('click', e => { if (e.target === searchModal) closeSearch(); });
+
+// Trending panel
+btnTrending.addEventListener('click', toggleTrendingPanel);
+btnTrendingClose.addEventListener('click', () => trendingPanel.classList.add('hidden'));
+
+async function toggleTrendingPanel() {
+  if (!trendingPanel.classList.contains('hidden')) {
+    trendingPanel.classList.add('hidden');
+    return;
+  }
+  
+  trendingPanel.classList.remove('hidden');
+  trendingList.innerHTML = '';
+  trendingList.classList.add('hidden');
+  trendingLoading.classList.remove('hidden');
+  
+  try {
+    const res = await fetch('/api/trending');
+    const tracks = await res.json();
+    
+    trendingList.innerHTML = '';
+    tracks.forEach((t, i) => {
+      const item = document.createElement('div');
+      item.className = 'trending-item';
+      item.innerHTML = `
+        <div class="trending-rank">${i + 1}</div>
+        <img class="trending-art" src="${t.artworkUrl || 'logo.png'}" alt="Art">
+        <div class="trending-meta">
+          <div class="trending-title">${t.title}</div>
+          <div class="trending-artist">${t.artist}</div>
+        </div>
+      `;
+      item.addEventListener('click', () => {
+        trendingPanel.classList.add('hidden');
+        openSearch();
+        fetchMetadataResults(`${t.title} ${t.artist}`);
+      });
+      trendingList.appendChild(item);
+    });
+    
+    trendingLoading.classList.add('hidden');
+    trendingList.classList.remove('hidden');
+  } catch (e) {
+    console.error('Trending fetch error:', e);
+    trendingLoading.innerHTML = '<span>Failed to load charts.</span>';
+  }
+}
+
 
 modalQuery.addEventListener('keydown', e => {
   if (e.key === 'Enter') {

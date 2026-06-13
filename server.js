@@ -282,6 +282,30 @@ function cleanYoutubeMeta(rawTitle, rawChannel) {
 }
 
 // ══════════════════════════════════════════════════════════════
+// GET /api/trending
+// Fetches the global Top 50 from iTunes public RSS
+// ══════════════════════════════════════════════════════════════
+app.get('/api/trending', async (req, res) => {
+  try {
+    const itunesRes = await axios.get('https://itunes.apple.com/us/rss/topsongs/limit=50/json', { timeout: 10000 });
+    const tracks = itunesRes.data.feed.entry.map(e => {
+      let artworkUrl = e['im:image'] && e['im:image'].length > 0 ? e['im:image'][e['im:image'].length - 1].label : '';
+      if (artworkUrl) artworkUrl = artworkUrl.replace(/\d+x\d+bb\./, '3000x3000bb.');
+      
+      return {
+        title: e['im:name'].label,
+        artist: e['im:artist'].label,
+        artworkUrl: artworkUrl
+      };
+    });
+    res.json(tracks);
+  } catch (err) {
+    console.error('[Trending] Failed to fetch iTunes RSS:', err.message);
+    res.status(500).json({ error: 'Failed to fetch trending songs' });
+  }
+});
+
+// ══════════════════════════════════════════════════════════════
 // GET /api/search
 // YouTube is the ground truth anchor (it has the audio).
 // iTunes enriches with artwork + clean metadata only when its
