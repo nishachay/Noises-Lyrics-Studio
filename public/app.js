@@ -1139,8 +1139,20 @@ function drawFrame() {
   drawBackground(W, H, now);
 
   const alignment = selectAlign.value;
-  if (now < 3) {
-    drawIntroLayout(W, H, now);
+  let introEnd = 3.0;
+  if (precomputedLyrics && precomputedLyrics.length > 0) {
+    introEnd = Math.min(3.0, Math.max(0, precomputedLyrics[0].time - 0.5));
+  }
+
+  if (now < introEnd) {
+    // scale opacity so it still fades out
+    const fadeOutStart = Math.max(0, introEnd - 1.0);
+    let introNow = now;
+    if (introEnd < 3.0 && now > fadeOutStart) {
+      // Fake 'now' so drawIntroLayout fades out
+      introNow = 3.0 - (introEnd - now);
+    }
+    drawIntroLayout(W, H, introNow);
   } else {
     if (alignment === 'left') {
       drawLeftSplitLayout(W, H, songTime);

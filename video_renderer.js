@@ -857,10 +857,18 @@ function renderVideo({
         // ── Background every frame ──
         drawBackground(ctx, W, H, coverImg, colors, now, amp * 0.3);
 
-        // ── INTRO (0–3s) ────────────────────────────────────────
-        if (now < 3) {
+        // ── INTRO ────────────────────────────────────────
+        let introEnd = 3.0;
+        if (wrappedLyrics && wrappedLyrics.length > 0) {
+          introEnd = Math.min(3.0, Math.max(0, wrappedLyrics[0].time - 0.5));
+        }
+
+        if (now < introEnd) {
           const t = now;
-          const a = t < 1 ? t : t < 2 ? 1 : 3 - t;
+          const fadeOutStart = Math.max(0, introEnd - 1.0);
+          let a = 1.0;
+          if (t < 1.0) a = t; 
+          if (t > fadeOutStart) a = Math.min(a, introEnd - t);
           ctx.save();
           ctx.globalAlpha = Math.max(0, Math.min(1, a));
 
