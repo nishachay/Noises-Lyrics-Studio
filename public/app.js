@@ -584,7 +584,7 @@ function precomputeLyricsLayout(W, H, alignment) {
   }
 
   // Active line font size: ~42px
-  const activeSz = Math.min(Math.round(H * 0.058), 64);
+  const activeSz = Math.min(Math.round(H * 0.065), 72);
   const fontSpec = `700 ${activeSz}px ${FONT}, sans-serif`;
 
   const maxWidth = alignment === 'left' ? Math.round(W * 0.44) : Math.round(W * 0.76);
@@ -613,7 +613,7 @@ function precomputeLyricsLayout(W, H, alignment) {
 
   const wrapped = lyrics.map(line => {
     const wText = wrapLine(line.text, fontSpec);
-    const transSz = activeSz * 0.75;
+    const transSz = activeSz * 0.60;
     const wTrans = line.translation ? wrapLine('(' + line.translation + ')', `600 ${transSz}px ${FONT}, sans-serif`) : [];
     return {
       time: line.time,
@@ -744,7 +744,7 @@ function drawLyrics(W, H, songTime) {
   const textAlign = alignment === 'left' ? 'left' : 'center';
 
   // Make font size responsive but contained
-  const activeSz = Math.min(Math.round(H * 0.058), 64);
+  const activeSz = Math.min(Math.round(H * 0.065), 72);
   const lh_act = activeSz * 1.38;
 
   let showInterlude = false;
@@ -819,7 +819,7 @@ function drawLyrics(W, H, songTime) {
   const segments = line.wrapped;
   const transSegments = line.wrappedTrans || [];
   
-  const transSz = activeSz * 0.75;
+  const transSz = activeSz * 0.60;
   const lhTrans = transSz * 1.38;
   const transGap = activeSz * 0.3;
   
@@ -861,7 +861,7 @@ function drawLyrics(W, H, songTime) {
     transSegments.forEach((seg) => {
       curY += lhTrans;
       const wy = curY - lhTrans + transSz * 0.5;
-      drawTextWithShadows(seg, wy, `600 ${transSz}px ${FONT}, sans-serif`, '#e2e8f0', 'rgba(255, 255, 255, 0.4)', 0.85);
+      drawTextWithShadows(seg, wy, `600 ${transSz}px ${FONT}, sans-serif`, '#ffffff', 'rgba(255, 255, 255, 0.6)', 0.90);
     });
   }
   ctx.globalAlpha = opacity * layoutAlpha; // reset

@@ -179,7 +179,7 @@ function drawInterludeDots(ctx, x, y, time) {
 // ── PRE-COMPUTE text wrapping and layout before render loop ─────────────────────
 function precomputeWrappedLyrics(ctx, lyrics, fontSpec, maxWidth, H) {
   const activeSz = Math.round(H * 0.055);
-  const transSz = activeSz * 0.75;
+  const transSz = activeSz * 0.60;
 
   const wrapLine = (txt, fontStr) => {
     if (!txt) return [];
@@ -387,7 +387,7 @@ function drawLyricsPanel(ctx, W, H, time, wrappedLyrics, font, alignment, durati
   const tx = alignment === 'left' ? (W * 0.48) : (W / 2);
   const textAlign = alignment === 'left' ? 'left' : 'center';
 
-  const activeSz = Math.min(Math.round(H * 0.058), 64);
+  const activeSz = Math.min(Math.round(H * 0.065), 72);
   const lh_act = activeSz * 1.38;
 
   let showInterlude = false;
@@ -460,7 +460,7 @@ function drawLyricsPanel(ctx, W, H, time, wrappedLyrics, font, alignment, durati
   const segments = line.wrapped;
   const transSegments = line.wrappedTrans || [];
 
-  const transSz = activeSz * 0.75;
+  const transSz = activeSz * 0.60;
   const lhTrans = transSz * 1.38;
   const transGap = activeSz * 0.3;
 
@@ -501,7 +501,7 @@ function drawLyricsPanel(ctx, W, H, time, wrappedLyrics, font, alignment, durati
     transSegments.forEach((seg) => {
       curY += lhTrans;
       const wy = (curY - lhTrans + transSz * 0.5) * scale;
-      drawTextWithShadows(seg, wy, `600 ${transSz * scale}px "Plus Jakarta Sans", "Noto Sans Devanagari", "Noto Sans KR"`, '#e2e8f0', 'rgba(255, 255, 255, 0.4)', 0.85);
+      drawTextWithShadows(seg, wy, `600 ${transSz * scale}px "Plus Jakarta Sans", "Noto Sans Devanagari", "Noto Sans KR"`, '#ffffff', 'rgba(255, 255, 255, 0.6)', 0.90);
     });
   }
 
@@ -752,7 +752,7 @@ function renderVideo({
       const FPS = parseInt(fps, 10) || 24;
       const FONT = 'Plus Jakarta Sans", "Noto Sans Devanagari", "Noto Sans KR';
 
-      const ACT_SZ  = Math.min(Math.round(H * 0.058), 64);  // active line
+      const ACT_SZ  = Math.min(Math.round(H * 0.065), 72);  // active line
       const maxWidth = alignment === 'left' ? Math.round(W * 0.44) : Math.round(W * 0.76);
 
       // Total frames matching song duration
