@@ -818,10 +818,22 @@ function renderVideo({
       const wrappedLyrics = precomputeWrappedLyrics(ctx, adjustedLyrics, `bold ${ACT_SZ}px "Plus Jakarta Sans", "Noto Sans Devanagari", "Noto Sans KR"`, maxWidth, H);
       console.log(`[Renderer] Pre-wrapped ${wrappedLyrics.length} lyric lines ✓`);
 
-      // ── Save thumbnail ────────────────────────────────────────
+      // ── Save thumbnail & metadata ───────────────────────────────
       const thumbPath = outputPath.replace('.mp4', '_thumbnail.jpg');
       fs.writeFileSync(thumbPath, generateThumbnail(coverImg, colors, songTitle, songArtist, FONT, alignment, wrappedLyrics, duration, logoImg, W, H));
       console.log(`[Renderer] Thumbnail saved ✓`);
+
+      const txtPath = outputPath.replace('.mp4', '_metadata.txt');
+      const hasTranslation = lyrics.some(l => l.translation);
+      const suffix = hasTranslation ? "(Lyrics & English Translation)" : "(Lyrics)";
+      
+      const seoTitle = `${songArtist} - ${songTitle} ${suffix}`;
+      const seoDesc = `Enjoy the beautifully styled lyrics and English translation for "${songTitle}" by ${songArtist}.\\n\\nRendered dynamically via Noises Music Studio.`;
+      const seoTags = `${songArtist}, ${songTitle}, Lyrics, ${hasTranslation ? 'English Translation, ' : ''}Pop, Music, Audio`;
+      
+      const metadataContent = `== YOUTUBE SEO METADATA ==\\n\\nTITLE:\\n${seoTitle}\\n\\nDESCRIPTION:\\n${seoDesc}\\n\\nTAGS:\\n${seoTags}\\n`;
+      fs.writeFileSync(txtPath, metadataContent);
+      console.log(`[Renderer] SEO Metadata saved ✓`);
 
       // ── FFmpeg process ────────────────────────────────────────
       const ffArgs = [

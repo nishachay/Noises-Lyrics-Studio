@@ -743,7 +743,7 @@ app.get('/api/render', async (req, res) => {
     const seoBlock           = seoKeywords.length > 0 ? `\n\nSearch terms:\n${seoKeywords.join(', ')}` : '';
     const youtubeDescription = `🎵 ${songArtist} - ${songTitle} (Lyrics Video)\n\n${decodeURIComponent(videoUrl)}\n\n${lyricLines}\n\n${tags}${seoBlock}`;
 
-    send({ status: 'completed', progress: 100, fileId: `${outputId}.mp4`, thumbnailId: `${outputId}_thumbnail.jpg`, youtubeTitle, youtubeDescription });
+    send({ status: 'completed', progress: 100, fileId: `${outputId}.mp4`, thumbnailId: `${outputId}_thumbnail.jpg`, metadataId: `${outputId}_metadata.txt`, youtubeTitle, youtubeDescription });
     res.end();
 
   } catch (err) {
