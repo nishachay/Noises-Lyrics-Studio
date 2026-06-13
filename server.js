@@ -348,7 +348,6 @@ app.get('/api/search-metadata', async (req, res) => {
         });
       }
     });
-
     ytmResult.forEach(item => {
       const key = `${item.title}|${item.artist}`.toLowerCase();
       if (!seen.has(key)) {
@@ -363,6 +362,23 @@ app.get('/api/search-metadata', async (req, res) => {
         });
       }
     });
+
+    // FALLBACK: If both failed or returned 0 results, use standard YouTube search
+    if (results.length === 0) {
+      console.log(`[Search Metadata] Falling back to standard YouTube search...`);
+      const fallback = await searchYoutube(q).catch(() => []);
+      fallback.forEach(item => {
+        const meta = cleanYoutubeMeta(item.title, item.uploader || item.channel?.name);
+        results.push({
+          source: 'youtube',
+          title: meta.title,
+          artist: meta.artist,
+          album: '',
+          duration: item.duration,
+          artworkUrl: item.thumbnail || (item.thumbnails && item.thumbnails.length > 0 ? item.thumbnails[0].url : null)
+        });
+      });
+    }
 
     const payload = { results };
     searchCache.set(cacheKey, payload);
