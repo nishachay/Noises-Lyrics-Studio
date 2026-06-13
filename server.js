@@ -723,7 +723,8 @@ app.get('/api/render', async (req, res) => {
       // if (artworkPath && fs.existsSync(artworkPath)) fs.unlinkSync(artworkPath);
     } catch (_) {}
 
-    const youtubeTitle       = `${songArtist} - ${songTitle} (Lyrics)`;
+    const hasTranslation     = rawLyrics.some(l => l.translation && l.translation.trim() !== '');
+    const youtubeTitle       = `${songArtist} - ${songTitle} (Lyrics${hasTranslation ? ' & English Translation' : ''})`;
     const lyricLines         = rawLyrics.map(l => l.text).join('\n');
     const tags               = `#${songArtist.replace(/\s+/g,'')} #${songTitle.replace(/\s+/g,'')} #Lyrics #NoisesMusic`;
     const youtubeDescription = `🎵 ${songArtist} - ${songTitle} (Lyrics Video)\n\n${decodeURIComponent(videoUrl)}\n\n${lyricLines}\n\n${tags}`;
@@ -742,13 +743,23 @@ app.get('/api/render', async (req, res) => {
 // GET /api/stream/:videoId
 // Redirects to direct YouTube audio stream URL.
 // ══════════════════════════════════════════════════════════════
+const directUrlCache = new Map();
+
 app.get('/api/stream/:videoId', async (req, res) => {
   const videoId = req.params.videoId.replace(/[^a-zA-Z0-9_-]/g, '');
   if (!videoId) return res.status(400).send('Bad videoId');
 
-  console.log(`[Stream] Proxying direct audio URL for: ${videoId}`);
   try {
-    const directUrl = await getDirectAudioUrl(`https://www.youtube.com/watch?v=${videoId}`);
+    let directUrl = directUrlCache.get(videoId);
+    if (!directUrl) {
+      console.log(`[Stream] Fetching fresh direct audio URL for: ${videoId}`);
+      directUrl = await getDirectAudioUrl(`https://www.youtube.com/watch?v=${videoId}`);
+      if (directUrl) directUrlCache.set(videoId, directUrl);
+    }
+
+    if (req.headers.range) {
+      // console.log(`[Stream] Proxying range ${req.headers.range} for ${videoId}`);
+    }
     if (!directUrl) {
       return res.status(500).send('Could not fetch direct audio URL');
     }
