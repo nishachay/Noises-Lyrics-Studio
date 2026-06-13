@@ -737,6 +737,9 @@ function renderVideo({
   offset = 0,
   youtubeDuration = 0,
   itunesDuration = 0,
+  isShort = false,
+  shortStartTime = 0,
+  seoKeywords = [],
   progressCallback = () => {},
 }) {
   return new Promise(async (resolve, reject) => {
@@ -747,16 +750,16 @@ function renderVideo({
       _blurCanvas = null;
 
       // ── Geometry ──────────────────────────────────────────────
-      const W   = resolution === '1080' ? 1920 : 1280;
-      const H   = resolution === '1080' ? 1080 : 720;
+      const W   = isShort ? (resolution === '1080' ? 1080 : 720) : (resolution === '1080' ? 1920 : 1280);
+      const H   = isShort ? (resolution === '1080' ? 1920 : 1280) : (resolution === '1080' ? 1080 : 720);
       const FPS = parseInt(fps, 10) || 24;
       const FONT = 'Plus Jakarta Sans", "Noto Sans Devanagari", "Noto Sans KR';
 
-      const ACT_SZ  = Math.min(Math.round(H * 0.065), 72);  // active line
-      const maxWidth = alignment === 'left' ? Math.round(W * 0.44) : Math.round(W * 0.76);
-
-      // Total frames matching song duration
-      const TOTAL_FRAMES = Math.ceil(duration * FPS);
+      const ACT_SZ  = isShort ? Math.min(Math.round(W * 0.085), 90) : Math.min(Math.round(H * 0.065), 72);
+      const maxWidth = isShort ? Math.round(W * 0.85) : (alignment === 'left' ? Math.round(W * 0.44) : Math.round(W * 0.76));
+      
+      const renderDuration = isShort ? 30 : duration;
+      const TOTAL_FRAMES = Math.ceil(renderDuration * FPS);
       console.log(`[Renderer] ${W}×${H} @${FPS}fps | ${TOTAL_FRAMES} frames | lyrics: ${lyrics.length}`);
 
       // ── Canvas ────────────────────────────────────────────────
@@ -829,7 +832,8 @@ function renderVideo({
       
       const seoTitle = `${songArtist} - ${songTitle} ${suffix}`;
       const seoDesc = `Enjoy the beautifully styled lyrics and English translation for "${songTitle}" by ${songArtist}.\\n\\nRendered dynamically via Noises Music Studio.`;
-      const seoTags = `${songArtist}, ${songTitle}, Lyrics, ${hasTranslation ? 'English Translation, ' : ''}Pop, Music, Audio`;
+      const autoTags = seoKeywords && seoKeywords.length > 0 ? seoKeywords.join(', ') + ', ' : '';
+      const seoTags = `${autoTags}${songArtist}, ${songTitle}, Lyrics, ${hasTranslation ? 'English Translation, ' : ''}Pop, Music, Audio`;
       
       const metadataContent = `== YOUTUBE SEO METADATA ==\\n\\nTITLE:\\n${seoTitle}\\n\\nDESCRIPTION:\\n${seoDesc}\\n\\nTAGS:\\n${seoTags}\\n`;
       fs.writeFileSync(txtPath, metadataContent);
@@ -842,9 +846,10 @@ function renderVideo({
         '-video_size', `${W}x${H}`,
         '-framerate', `${FPS}`,
         '-i', '-',                          // canvas frames via stdin
+        ...(isShort ? ['-ss', `${shortStartTime}`, '-t', '30'] : []),
         '-i', audioPath,
         '-filter_complex',
-          `[1:a]afade=t=in:ss=0:d=1,afade=t=out:st=${duration - 2}:d=2[a]`,
+          `[1:a]afade=t=in:ss=0:d=1,afade=t=out:st=${renderDuration - 2}:d=2[a]`,
         '-map', '0:v', '-map', '[a]',
         '-c:v', 'libx264', '-preset', 'ultrafast', '-crf', '20',
         '-vsync', 'cfr',                     // Force Constant Frame Rate to avoid audio drift
@@ -885,7 +890,7 @@ function renderVideo({
       // ── Main render loop ──────────────────────────────────────
       for (let fi = 0; fi < TOTAL_FRAMES; fi++) {
         const now      = fi / FPS;           // time from video start
-        const songTime = now;                // time from song start (1:1 timeline alignment)
+        const songTime = isShort ? shortStartTime + now : now;
 
         // Amplitude sample
         let amp = 0;

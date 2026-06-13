@@ -1551,6 +1551,17 @@ function renderLyricsList() {
     controls.style.cssText = 'display:flex;align-items:center;gap:4px;flex-shrink:0';
 
     if (!S.tapMode) {
+      const shortBtn = document.createElement('button');
+      shortBtn.className = 'btn-stamp';
+      shortBtn.style.color = '#ff4d4d';
+      shortBtn.title = 'Export 30s YouTube Short starting from here';
+      shortBtn.innerHTML = `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>`;
+      shortBtn.addEventListener('click', e => { 
+        e.stopPropagation(); 
+        startCompile(true, line.time); 
+      });
+      controls.appendChild(shortBtn);
+
       const stampBtn = document.createElement('button');
       stampBtn.className = 'btn-stamp';
       stampBtn.title = 'Stamp current playhead time onto this line';
@@ -1779,7 +1790,7 @@ scrubber.addEventListener('input', () => {
 
 let lastPct = 0;
 
-async function startCompile() {
+async function startCompile(isShort = false, shortStartTime = 0) {
   if (!S.track || !S.lyrics.length) return;
   if (audio && !audio.paused) audio.pause();
   stopCanvasLoop();
@@ -1787,7 +1798,7 @@ async function startCompile() {
   lastPct = 0;
   progLog.innerHTML = '';
   setProgress(0, 'Initializing...');
-  progTitle.textContent  = S.track.title;
+  progTitle.textContent  = S.track.title + (isShort ? ' (Short)' : '');
   progArtist.textContent = S.track.artist;
   if (S.track.artworkUrl) { progArt.src = S.track.artworkUrl; progArt.style.display = 'block'; }
   else progArt.style.display = 'none';
@@ -1806,6 +1817,8 @@ async function startCompile() {
     resolution:     selectRes.value,
     fps:            selectFps.value,
     alignment:      selectAlign.value,
+    isShort:        isShort,
+    shortStartTime: shortStartTime,
     youtubeDuration: S.track.youtubeDuration || S.track.duration,
     itunesDuration:  S.track.duration,
   });

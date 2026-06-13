@@ -687,6 +687,8 @@ app.get('/api/render', async (req, res) => {
       console.log('[Render] No artwork — will use generated background.');
     }
 
+
+
     // 3. Render
     send({ status: 'rendering', message: 'Starting video render…', progress: 18 });
 
@@ -694,6 +696,18 @@ app.get('/api/render', async (req, res) => {
     const safeArtist = songArtist.replace(/[\\/:*?"<>|]/g, '_').trim();
     const outputId   = `${safeArtist} - ${safeTitle}_${Date.now()}`;
     const outputPath = path.join(OUTPUT_DIR, `${outputId}.mp4`);
+    
+    // Auto-generate free SEO Tags using YouTube's internal autocomplete API
+    let seoKeywords = [];
+    try {
+      const q = encodeURIComponent(`${songArtist} ${songTitle}`);
+      const { data } = await axios.get(`http://suggestqueries.google.com/complete/search?client=firefox&ds=yt&q=${q}`);
+      if (data && data[1] && data[1].length > 0) {
+        seoKeywords = data[1];
+      }
+    } catch (e) {
+      console.log('[SEO] Could not fetch autocomplete tags:', e.message);
+    }
 
     await renderVideo({
       audioPath,
@@ -707,6 +721,9 @@ app.get('/api/render', async (req, res) => {
       fps: outFps,
       alignment: outAlign,
       offset,
+      isShort: req.query.isShort === 'true',
+      shortStartTime: parseFloat(req.query.shortStartTime) || 0,
+      seoKeywords,
       youtubeDuration: parseFloat(youtubeDuration) || duration,
       itunesDuration: parseFloat(itunesDuration) || duration,
       progressCallback: pct => {
