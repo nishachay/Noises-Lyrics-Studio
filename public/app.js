@@ -614,7 +614,7 @@ function precomputeLyricsLayout(W, H, alignment) {
   const wrapped = lyrics.map(line => {
     const wText = wrapLine(line.text, fontSpec);
     const transSz = activeSz * 0.75;
-    const wTrans = line.translation ? wrapLine(line.translation, `600 ${transSz}px ${FONT}, sans-serif`) : [];
+    const wTrans = line.translation ? wrapLine('(' + line.translation + ')', `600 ${transSz}px ${FONT}, sans-serif`) : [];
     return {
       time: line.time,
       text: line.text,
@@ -1525,8 +1525,7 @@ function renderLyricsList() {
       transInput.style.cssText = 'background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: #aaa; padding: 4px 8px; border-radius: 4px; font-size: 11px; width: 100%; box-sizing: border-box;';
       transInput.addEventListener('change', (e) => {
         S.lyrics[idx].translation = e.target.value.trim();
-        // Do not update the raw LRC editor because LRC does not natively support translations this way,
-        // we just keep it in memory (S.lyrics) and it will be sent to the backend on render.
+        precomputeLyricsLayout(canvas.width, canvas.height, selectAlign.value);
       });
       transInput.addEventListener('click', e => e.stopPropagation());
       textWrap.appendChild(transInput);
@@ -2001,6 +2000,7 @@ btnTranslate.addEventListener('click', async () => {
         S.lyrics[i].translation = t;
       });
       renderLyricsList();
+      precomputeLyricsLayout(canvas.width, canvas.height, selectAlign.value);
     } else if (data.error) {
       alert('Translation failed: ' + data.error);
     }
