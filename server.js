@@ -711,16 +711,36 @@ app.get('/api/stream/:videoId', async (req, res) => {
   const videoId = req.params.videoId.replace(/[^a-zA-Z0-9_-]/g, '');
   if (!videoId) return res.status(400).send('Bad videoId');
 
-  console.log(`[Stream] Getting direct audio URL for: ${videoId}`);
+  console.log(`[Stream] Proxying direct audio URL for: ${videoId}`);
   try {
     const directUrl = await getDirectAudioUrl(`https://www.youtube.com/watch?v=${videoId}`);
     if (!directUrl) {
       return res.status(500).send('Could not fetch direct audio URL');
     }
-    console.log(`[Stream] Redirecting to direct stream`);
-    res.redirect(directUrl);
+    
+    const headers = {
+      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36'
+    };
+    if (req.headers.range) {
+      headers['Range'] = req.headers.range;
+    }
+
+    const response = await axios({
+      method: 'get',
+      url: directUrl,
+      headers,
+      responseType: 'stream',
+      validateStatus: () => true
+    });
+
+    res.status(response.status);
+    ['content-type', 'content-length', 'content-range', 'accept-ranges'].forEach(h => {
+      if (response.headers[h]) res.set(h, response.headers[h]);
+    });
+
+    response.data.pipe(res);
   } catch (err) {
-    console.error('[Stream] Error:', err.message);
+    console.error('[Stream] Proxy Error:', err.message);
     if (!res.headersSent) res.status(500).send('Stream error: ' + err.message);
   }
 });

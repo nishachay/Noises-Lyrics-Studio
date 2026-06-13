@@ -212,6 +212,14 @@ function initAudio(videoId) {
       iconPause.classList.add('hidden');
       updatePlayerUIElements();
     });
+    
+    audio.addEventListener('error', (e) => {
+      console.error('Audio playback error', e);
+      audioLoadTxt.textContent = 'Error loading audio stream.';
+      setTimeout(() => {
+        audioOverlay.classList.add('hidden');
+      }, 3000);
+    });
   }
 
   if (audio.dataset.videoId === videoId) return;
