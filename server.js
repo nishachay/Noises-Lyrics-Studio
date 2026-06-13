@@ -307,7 +307,41 @@ app.get('/api/trending', async (req, res) => {
 });
 
 // ══════════════════════════════════════════════════════════════
-// GET /api/search
+// POST /api/translate
+// Auto-translates an array of texts to English
+// ══════════════════════════════════════════════════════════════
+app.post('/api/translate', async (req, res) => {
+  const { lines } = req.body;
+  if (!Array.isArray(lines)) return res.status(400).json({ error: 'Expected an array of lines' });
+
+  try {
+    const translations = [];
+    // We process sequentially or in chunks to avoid rate limits on the free API
+    for (const text of lines) {
+      if (!text.trim()) {
+        translations.push('');
+        continue;
+      }
+      const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=en&dt=t&q=${encodeURIComponent(text)}`;
+      const response = await axios.get(url);
+      
+      let translatedText = '';
+      if (response.data && response.data[0]) {
+        response.data[0].forEach(part => {
+          if (part[0]) translatedText += part[0];
+        });
+      }
+      translations.push(translatedText.trim());
+    }
+    res.json({ translations });
+  } catch (err) {
+    console.error('[Translate] Error:', err.message);
+    res.status(500).json({ error: 'Translation failed' });
+  }
+});
+
+// ══════════════════════════════════════════════════════════════
+// GET /api/search-metadata
 // YouTube is the ground truth anchor (it has the audio).
 // iTunes enriches with artwork + clean metadata only when its
 // duration matches the YouTube result (within 5s).

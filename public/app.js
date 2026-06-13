@@ -114,6 +114,7 @@ const editTitle    = $('edit-title');
 const editArtist   = $('edit-artist');
 const btnTapToggle = $('btn-tap-toggle');
 const btnReset     = $('btn-reset-timings');
+const btnTranslate = $('btn-translate');
 const tapBanner    = $('tap-banner');
 const lyricsList   = $('lyrics-list');
 const tapFooter    = $('tap-footer');
@@ -591,24 +592,35 @@ function precomputeLyricsLayout(W, H, alignment) {
   ctx.save();
   ctx.font = fontSpec;
 
-  const wrapped = lyrics.map(line => {
-    const words = line.text.split(' ');
-    const lines = [];
+  const wrapLine = (txt, fontStr) => {
+    if (!txt) return [];
+    ctx.font = fontStr;
+    const words = txt.split(' ');
+    const res = [];
     let cur = '';
     for (const w of words) {
       const t = cur ? `${cur} ${w}` : w;
       if (ctx.measureText(t).width <= maxWidth) {
         cur = t;
       } else {
-        if (cur) lines.push(cur);
+        if (cur) res.push(cur);
         cur = w;
       }
     }
-    if (cur) lines.push(cur);
+    if (cur) res.push(cur);
+    return res.length ? res : [txt];
+  };
+
+  const wrapped = lyrics.map(line => {
+    const wText = wrapLine(line.text, fontSpec);
+    const transSz = activeSz * 0.75;
+    const wTrans = line.translation ? wrapLine(line.translation, `600 ${transSz}px ${FONT}, sans-serif`) : [];
     return {
       time: line.time,
       text: line.text,
-      wrapped: lines.length ? lines : [line.text]
+      translation: line.translation,
+      wrapped: wText,
+      wrappedTrans: wTrans
     };
   });
   ctx.restore();
@@ -618,7 +630,10 @@ function precomputeLyricsLayout(W, H, alignment) {
 
   let currentTop = 0;
   precomputedLyrics = wrapped.map(line => {
-    const h = line.wrapped.length * lh;
+    let h = line.wrapped.length * lh;
+    if (line.wrappedTrans && line.wrappedTrans.length) {
+      h += line.wrappedTrans.length * (activeSz * 0.75 * 1.38) + (activeSz * 0.3); // add translation height + small gap
+    }
     const yTop = currentTop;
     const yCenter = currentTop + h / 2;
     currentTop += h + paraGap;
@@ -800,32 +815,56 @@ function drawLyrics(W, H, songTime) {
 
   ctx.textAlign = textAlign;
   ctx.textBaseline = 'middle';
-  ctx.font = `800 ${activeSz}px ${FONT}, sans-serif`;
 
   const segments = line.wrapped;
-  const totalH = segments.length * lh_act;
+  const transSegments = line.wrappedTrans || [];
+  
+  const transSz = activeSz * 0.75;
+  const lhTrans = transSz * 1.38;
+  const transGap = activeSz * 0.3;
+  
+  let totalH = segments.length * lh_act;
+  if (transSegments.length > 0) {
+    totalH += transGap + (transSegments.length * lhTrans);
+  }
+  
   const top = -totalH / 2;
 
-  segments.forEach((seg, wi) => {
-    const wy = top + wi * lh_act + activeSz * 0.5;
-
-    // 1. Subtle white glow to bloom outward
-    ctx.shadowColor = 'rgba(255, 255, 255, 0.8)';
+  const drawTextWithShadows = (text, y, fontStr, primaryColor, glowColor, opacityMult) => {
+    ctx.font = fontStr;
+    ctx.globalAlpha = opacity * layoutAlpha * opacityMult;
+    
+    ctx.shadowColor = glowColor;
     ctx.shadowBlur = 15;
     ctx.shadowOffsetY = 0;
-    ctx.fillStyle = '#ffffff';
-    ctx.fillText(seg, 0, wy);
+    ctx.fillStyle = primaryColor;
+    ctx.fillText(text, 0, y);
 
-    // 2. Crisp black drop shadow to maintain readability
     ctx.shadowColor = 'rgba(0, 0, 0, 0.8)';
     ctx.shadowBlur = 10;
     ctx.shadowOffsetY = 2;
-    ctx.fillText(seg, 0, wy);
+    ctx.fillText(text, 0, y);
 
-    // 3. Solid text core
     ctx.shadowColor = 'transparent';
-    ctx.fillText(seg, 0, wy);
+    ctx.fillText(text, 0, y);
+  };
+
+  let curY = top;
+  segments.forEach((seg) => {
+    curY += lh_act;
+    const wy = curY - lh_act + activeSz * 0.5;
+    drawTextWithShadows(seg, wy, `800 ${activeSz}px ${FONT}, sans-serif`, '#ffffff', 'rgba(255, 255, 255, 0.8)', 1.0);
   });
+
+  if (transSegments.length > 0) {
+    curY += transGap;
+    transSegments.forEach((seg) => {
+      curY += lhTrans;
+      const wy = curY - lhTrans + transSz * 0.5;
+      drawTextWithShadows(seg, wy, `600 ${transSz}px ${FONT}, sans-serif`, '#e2e8f0', 'rgba(255, 255, 255, 0.4)', 0.85);
+    });
+  }
+  ctx.globalAlpha = opacity * layoutAlpha; // reset
 
   ctx.restore();
 }
@@ -1469,9 +1508,29 @@ function renderLyricsList() {
     div.className = `sync-line ${isCurrent ? 'active' : ''} ${isPassed ? 'passed' : ''} ${isSynced ? 'synced' : ''}`;
     div.dataset.idx = idx;
 
+    const textWrap = document.createElement('div');
+    textWrap.style.cssText = 'display:flex;flex-direction:column;flex:1;gap:4px;';
+    
     const textEl = document.createElement('span');
     textEl.className = 'line-text';
     textEl.textContent = line.text;
+    textWrap.appendChild(textEl);
+
+    if (!S.tapMode) {
+      const transInput = document.createElement('input');
+      transInput.type = 'text';
+      transInput.className = 'line-translation-input';
+      transInput.placeholder = 'Add translation (optional)...';
+      transInput.value = line.translation || '';
+      transInput.style.cssText = 'background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: #aaa; padding: 4px 8px; border-radius: 4px; font-size: 11px; width: 100%; box-sizing: border-box;';
+      transInput.addEventListener('change', (e) => {
+        S.lyrics[idx].translation = e.target.value.trim();
+        // Do not update the raw LRC editor because LRC does not natively support translations this way,
+        // we just keep it in memory (S.lyrics) and it will be sent to the backend on render.
+      });
+      transInput.addEventListener('click', e => e.stopPropagation());
+      textWrap.appendChild(transInput);
+    }
 
     const timeEl = document.createElement('span');
     timeEl.className = 'line-time-badge';
@@ -1490,7 +1549,7 @@ function renderLyricsList() {
     }
 
     controls.appendChild(timeEl);
-    div.appendChild(textEl);
+    div.appendChild(textWrap);
     div.appendChild(controls);
 
     // Click to seek
@@ -1924,6 +1983,34 @@ btnTapToggle.addEventListener('click', () => {
 });
 btnTap.addEventListener('click', handleTap);
 btnReset.addEventListener('click', resetTimings);
+
+btnTranslate.addEventListener('click', async () => {
+  if (!S.lyrics || S.lyrics.length === 0) return;
+  btnTranslate.disabled = true;
+  btnTranslate.textContent = 'Translating...';
+  try {
+    const lines = S.lyrics.map(l => l.text);
+    const res = await fetch('/api/translate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ lines })
+    });
+    const data = await res.json();
+    if (data.translations) {
+      data.translations.forEach((t, i) => {
+        S.lyrics[i].translation = t;
+      });
+      renderSyncList();
+    } else if (data.error) {
+      alert('Translation failed: ' + data.error);
+    }
+  } catch (err) {
+    alert('Translation error: ' + err.message);
+  } finally {
+    btnTranslate.disabled = false;
+    btnTranslate.textContent = 'Auto-Translate';
+  }
+});
 
 // Editor apply
 btnApply.addEventListener('click', () => {
