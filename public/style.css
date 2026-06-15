@@ -39,7 +39,8 @@ html { font-size: 14px; -webkit-font-smoothing: antialiased; text-rendering: opt
 
 /* ── Base ────────────────────────────────────────────────────── */
 body {
-  background: var(--bg);
+  background: radial-gradient(circle at 50% 0%, var(--art-color, transparent) 0%, var(--art-color-dark, transparent) 40%, var(--bg) 100%), var(--bg);
+  background-attachment: fixed;
   color: var(--text-1);
   font-family: var(--sans);
   font-size: 13px;
@@ -759,13 +760,19 @@ body {
 .sync-line {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 7px 8px;
-  border-radius: 6px;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: 8px;
   cursor: pointer;
   border: 1px solid transparent;
-  transition: background 0.1s, border-color 0.1s;
+  border-left: 3px solid transparent;
+  transition: background 0.1s, border-color 0.1s, border-left 0.1s;
 }
+.sync-line.short-region {
+  background: rgba(255, 60, 60, 0.08) !important;
+  border-left: 3px solid var(--accent);
+}
+.sync-line:nth-child(even) { background: rgba(255,255,255,0.015); }
 .sync-line:hover { background: var(--surface-2); }
 .sync-line.active {
   background: rgba(16,185,129,0.06);
@@ -776,12 +783,30 @@ body {
 
 .line-text {
   flex: 1;
-  font-size: 12.5px;
+  font-size: 14px;
   color: var(--text-1);
-  line-height: 1.45;
+  line-height: 1.5;
   min-width: 0;
 }
 .sync-line.active .line-text { font-weight: 600; }
+
+.line-translation-input {
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.08);
+  color: var(--text-2);
+  padding: 6px 10px;
+  border-radius: 6px;
+  font-size: 13px;
+  width: 100%;
+  box-sizing: border-box;
+  transition: background 0.2s, border-color 0.2s;
+}
+.line-translation-input:focus {
+  background: rgba(255,255,255,0.08);
+  border-color: rgba(255,255,255,0.15);
+  outline: none;
+  color: var(--text-1);
+}
 
 .line-time-badge {
   font-family: var(--mono);
@@ -1252,4 +1277,14 @@ body {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+@keyframes pulseBorder {
+  0% { box-shadow: 0 0 0 0 rgba(255, 60, 60, 0.7); border-color: rgba(255, 60, 60, 0.8); }
+  70% { box-shadow: 0 0 0 10px rgba(255, 60, 60, 0); border-color: var(--border-2); }
+  100% { box-shadow: 0 0 0 0 rgba(255, 60, 60, 0); border-color: var(--border-2); }
+}
+
+.pulse-attention {
+  animation: pulseBorder 1.5s infinite;
 }

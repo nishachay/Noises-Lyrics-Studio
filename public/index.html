@@ -26,7 +26,13 @@
     <div id="modal-results" class="modal-results">
       <!-- Suggestions default state -->
       <div id="modal-suggestions" class="modal-suggestions">
-        <div class="suggestions-label">Suggested</div>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+          <div class="suggestions-label" style="margin-bottom:0;">Suggested</div>
+          <a href="https://charts.youtube.com/us" target="_blank" style="color:rgba(255,255,255,0.5); font-size:11px; text-decoration:none; display:flex; align-items:center; gap:4px; padding:4px 8px; border-radius:4px; background:rgba(255,255,255,0.05); transition:all 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.1)'; this.style.color='rgba(255,255,255,0.8)';" onmouseout="this.style.background='rgba(255,255,255,0.05)'; this.style.color='rgba(255,255,255,0.5)';">
+            Trending Charts 
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+          </a>
+        </div>
         <div class="suggestions-grid">
           <button class="suggest-chip" data-query="KR$NA &amp; Dhanda Nyoliwala - Boom Shaka"><span>Boom Shaka</span><small>KR$NA</small></button>
           <button class="suggest-chip" data-query="The Weeknd - Starboy"><span>Starboy</span><small>The Weeknd</small></button>
@@ -220,7 +226,16 @@
             Tap Sync
           </button>
           <button id="btn-translate" class="btn-action">Auto-Translate</button>
+          <button id="btn-clear-translations" class="btn-action" style="display:none;">Clear Trans</button>
           <button id="btn-reset-timings" class="btn-action">Reset</button>
+        </div>
+
+        <div class="inspector-section glass-card" style="margin-top: 8px; margin-bottom: 8px; padding: 10px;">
+          <div class="field-row">
+            <label class="field-label" style="margin:0;">Sync Offset</label>
+            <span id="offset-label" class="badge">+0.0s</span>
+          </div>
+          <input type="range" id="sync-offset" min="-30" max="30" step="0.1" value="0" class="range-field" style="margin-top: 8px;">
         </div>
 
         <div id="tap-banner" class="tap-banner hidden">
@@ -229,8 +244,10 @@
 
         <div class="lyrics-list-wrapper">
           <div id="lyrics-list" class="lyrics-list">
-            <div class="hint-state">
-              Press <kbd>Ctrl K</kbd> to search and load a song.
+            <div class="hint-state" style="display:flex; flex-direction:column; gap:16px; align-items:center; cursor:pointer;" onclick="document.getElementById('search-modal').classList.remove('hidden'); document.getElementById('modal-query').focus();">
+              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.2)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+              <div style="font-size:16px; font-weight:600; color:rgba(255,255,255,0.7);">Start a new project</div>
+              <div style="color:rgba(255,255,255,0.4);">Press <kbd>Ctrl K</kbd> or click here to search a song, or paste a YouTube link.</div>
             </div>
           </div>
         </div>
@@ -252,15 +269,6 @@
       <!-- TAB: Settings -->
       <div id="tab-settings" class="tab-pane hidden">
         <div class="inspector-scroll">
-          <div class="inspector-section">
-            <div class="field-row">
-              <label class="field-label">Sync Offset</label>
-              <span id="offset-label" class="badge">+0.0s</span>
-            </div>
-            <p class="field-desc">Shift all lyric timestamps to align with audio.</p>
-            <input type="range" id="sync-offset" min="-30" max="30" step="0.1" value="0" class="range-field">
-          </div>
-
           <div class="inspector-section">
             <div class="settings-label">Export Specs</div>
             <div class="settings-grid">

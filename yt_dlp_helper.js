@@ -52,8 +52,7 @@ function spawnYtdlpSingle(args) {
     '--extractor-args', 'youtube:player_client=ios,web', // Bypasses slow downloads
     '--concurrent-fragments', '4' // Speeds up segmented downloads
   ];
-  return spawnYtdlp([...extras, ...args])
-    .catch(() => spawnYtdlp(['--cookies-from-browser', 'edge', ...extras, ...args]));
+  return spawnYtdlp([...extras, ...args]);
 }
 
 // ── YOUTUBE SEARCH ───────────────────────────────────────────────────────────

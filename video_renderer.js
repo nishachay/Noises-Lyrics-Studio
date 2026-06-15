@@ -178,9 +178,7 @@ function drawInterludeDots(ctx, x, y, time) {
 }
 
 // ── PRE-COMPUTE text wrapping and layout before render loop ─────────────────────
-function precomputeWrappedLyrics(ctx, lyrics, fontSpec, maxWidth, activeSz) {
-  const transSz = activeSz * 0.60;
-
+function precomputeWrappedLyrics(ctx, lyrics, fontSpec, maxWidth, defaultActiveSz) {
   const wrapLine = (txt, fontStr) => {
     if (!txt) return [];
     ctx.font = fontStr;
@@ -197,18 +195,26 @@ function precomputeWrappedLyrics(ctx, lyrics, fontSpec, maxWidth, activeSz) {
   };
 
   const wrapped = lyrics.map(line => {
-    const wText = wrapLine(line.text, fontSpec);
-    const wTrans = line.translation ? wrapLine('(' + line.translation + ')', `600 ${transSz}px "Plus Jakarta Sans", "Noto Sans Devanagari", "Noto Sans KR"`) : [];
-    return { ...line, wrapped: wText, wrappedTrans: wTrans };
-  });
+    let activeSz = defaultActiveSz;
+    const isHindi = /[\u0900-\u097F]/.test(line.text);
+    if (isHindi) activeSz *= 1.25;
 
-  const lh = activeSz * 1.38;
-  const lhTrans = transSz * 1.38;
-  const transGap = activeSz * 0.3;
-  const paraGap = activeSz * 0.8;
+    const lineFontSpec = fontSpec.replace(defaultActiveSz.toString(), activeSz.toString());
+    const wText = wrapLine(line.text, lineFontSpec);
+
+    const transSz = activeSz * 0.60;
+    const wTrans = line.translation ? wrapLine('(' + line.translation + ')', `600 ${transSz}px "Plus Jakarta Sans", "Noto Sans Devanagari", "Noto Sans KR"`) : [];
+    
+    return { ...line, wrapped: wText, wrappedTrans: wTrans, activeSz, transSz };
+  });
 
   let currentTop = 0;
   const precomputed = wrapped.map(line => {
+    const lh = line.activeSz * 1.38;
+    const lhTrans = line.transSz * 1.38;
+    const transGap = line.activeSz * 0.3;
+    const paraGap = line.activeSz * 0.8;
+
     let h = line.wrapped.length * lh;
     if (line.wrappedTrans.length > 0) {
       h += transGap + (line.wrappedTrans.length * lhTrans);
@@ -368,9 +374,15 @@ function drawAlbumPanel(ctx, img, title, artist, W, H, font, songTime, duration)
 }
 
 // ── Scrolling Lyrics Panel ──────────────────────────────────────────────────
-function drawLyricsPanel(ctx, W, H, time, wrappedLyrics, font, alignment, duration, activeSz) {
+function drawLyricsPanel(ctx, W, H, time, wrappedLyrics, font, alignment, duration, defaultActiveSz) {
+  // We use the activeSz embedded in the active line.
+  
+  const curYOffset = H * 0.15;
+  const isVertical = H > W;
+  const actualAlignment = isVertical ? 'center' : alignment;
+
   if (!wrappedLyrics || wrappedLyrics.length === 0) {
-    const interludeX = alignment === 'left' ? (W * 0.48 + W * 0.22) : (W / 2);
+    const interludeX = actualAlignment === 'left' ? (W * 0.48 + W * 0.22) : (W / 2);
     drawInterludeDots(ctx, interludeX, H / 2, time);
     return;
   }
@@ -384,10 +396,8 @@ function drawLyricsPanel(ctx, W, H, time, wrappedLyrics, font, alignment, durati
     else break;
   }
 
-  const tx = alignment === 'left' ? (W * 0.48) : (W / 2);
-  const textAlign = alignment === 'left' ? 'left' : 'center';
-
-  const lh_act = activeSz * 1.38;
+  const tx = actualAlignment === 'left' ? (W * 0.48) : (W / 2);
+  const textAlign = actualAlignment === 'left' ? 'left' : 'center';
 
   let showInterlude = false;
   let showDuration = 5.0;
@@ -429,12 +439,14 @@ function drawLyricsPanel(ctx, W, H, time, wrappedLyrics, font, alignment, durati
   if (isBlank) return;
 
   if (showInterlude) {
-    const interludeX = alignment === 'left' ? (W * 0.48 + W * 0.22) : (W / 2);
+    const interludeX = actualAlignment === 'left' ? (W * 0.48 + W * 0.22) : (W / 2);
     drawInterludeDots(ctx, interludeX, H / 2, time);
     return;
   }
 
   const line = wrappedLyrics[activeIdx];
+  const activeSz = line.activeSz;
+
   const elapsed = adjTime - line.time;
   const timeLeft = showDuration - elapsed;
 
@@ -450,7 +462,10 @@ function drawLyricsPanel(ctx, W, H, time, wrappedLyrics, font, alignment, durati
 
   ctx.save();
   ctx.globalAlpha = opacity * layoutAlpha;
-  ctx.translate(tx, H / 2);
+  
+  // Shift slightly up for vertical videos to avoid TikTok/IG bottom UI
+  const targetY = isVertical ? H * 0.45 : H / 2;
+  ctx.translate(tx, targetY);
   
   ctx.textAlign = textAlign;
   ctx.textBaseline = 'middle';
@@ -459,7 +474,8 @@ function drawLyricsPanel(ctx, W, H, time, wrappedLyrics, font, alignment, durati
   const segments = line.wrapped;
   const transSegments = line.wrappedTrans || [];
 
-  const transSz = activeSz * 0.60;
+  const transSz = line.transSz;
+  const lh_act = activeSz * 1.38;
   const lhTrans = transSz * 1.38;
   const transGap = activeSz * 0.3;
 
@@ -776,8 +792,8 @@ function renderVideo({
       const FPS = parseInt(fps, 10) || 24;
       const FONT = 'Plus Jakarta Sans", "Noto Sans Devanagari", "Noto Sans KR';
 
-      // Shorts need larger, punchier text (around 120-130px) for mobile legibility
-      const ACT_SZ  = isShort ? Math.min(Math.round(W * 0.12), 140) : Math.min(Math.round(H * 0.065), 72);
+      // Shorts need slightly smaller text (around 80-90px) to prevent excessive wrapping
+      const ACT_SZ  = isShort ? Math.min(Math.round(W * 0.085), 95) : Math.min(Math.round(H * 0.065), 72);
       const maxWidth = isShort ? Math.round(W * 0.85) : (alignment === 'left' ? Math.round(W * 0.44) : Math.round(W * 0.76));
       
       const renderDuration = isShort ? 30 : duration;
@@ -1123,43 +1139,62 @@ async function renderSlideshow({
 
             ctx.clearRect(0, 0, W, H);
             
-            // Draw Background
-            drawBackground(ctx, W, H, coverImg, colors, songTime, 0.0);
+            // Draw Background (Static 10.0s matches Thumbnail mesh gradient)
+            drawBackground(ctx, W, H, coverImg, colors, 10.0, 0.0);
+
+            // Calculate active lyric size
+            let activeSz = ACT_SZ;
+            const isHindi = /[\u0900-\u097F]/.test(line.text);
+            if (isHindi) activeSz *= 1.25;
+
+            // Dimensions and layout calculations
+            const artSz = Math.round(H * 0.20); // Small art
+            const radius = Math.round(artSz * 0.08);
+            const ax = Math.round((W - artSz) / 2);
+            const titleSz = Math.round(H * 0.040);
+            const artistSz = Math.round(H * 0.024);
+            const gap1 = Math.round(H * 0.03); // Art to title
+            const gap2 = Math.round(H * 0.01);  // Title to artist
             
-            // Draw Lyrics
-            let ay = Math.round(H * 0.45);
+            // Measure Lyrics block
             ctx.textAlign = 'center';
+            const lines = wrapText(ctx, line.text, activeSz * 0.8, maxWidth, FONT);
+            let lyricsBlockH = lines.length * activeSz;
             
-            const lines = wrapText(ctx, line.text, ACT_SZ * 0.8, maxWidth, FONT);
-            let blockH = lines.length * ACT_SZ;
-            
+            let transLines = [];
             if (line.translation) {
-              const transLines = wrapText(ctx, line.translation, ACT_SZ * 0.5, maxWidth, FONT);
-              blockH += (ACT_SZ * 0.5) + (transLines.length * (ACT_SZ * 0.5));
+              transLines = wrapText(ctx, line.translation, activeSz * 0.5, maxWidth, FONT);
+              lyricsBlockH += (activeSz * 0.5) + (transLines.length * (activeSz * 0.5));
             }
-            
-            ay -= blockH / 2;
+
+            // Draw Header (exactly like the video mini-player)
+            drawAlbumPanel(ctx, coverImg, songTitle, songArtist, W, H, FONT, 10.0, 20.0);
+
+            // 4. Draw Lyrics (Centered perfectly in the canvas)
+            let ay = Math.round(H * 0.50) - (lyricsBlockH / 2);
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
 
             for (const l of lines) {
-              ctx.font = `bold ${Math.round(ACT_SZ * 0.8)}px "${FONT}"`;
+              ctx.font = `bold ${Math.round(activeSz * 0.8)}px "${FONT}"`;
               ctx.fillStyle = '#ffffff';
               ctx.shadowColor = 'rgba(255,255,255,0.5)';
               ctx.shadowBlur = 15;
               ctx.fillText(l, W / 2, ay);
               ctx.shadowBlur = 0;
-              ay += ACT_SZ;
+              ay += activeSz;
             }
+            
             if (line.translation) {
-              ay += (ACT_SZ * 0.5);
-              const transLines = wrapText(ctx, line.translation, ACT_SZ * 0.5, maxWidth, FONT);
+              ay += (activeSz * 0.5);
               for (const l of transLines) {
-                ctx.font = `bold ${Math.round(ACT_SZ * 0.5)}px "${FONT}"`;
+                ctx.font = `bold ${Math.round(activeSz * 0.5)}px "${FONT}"`;
                 ctx.fillStyle = '#ffffff';
                 ctx.shadowColor = 'rgba(255,255,255,0.4)';
                 ctx.shadowBlur = 10;
                 ctx.fillText(l, W / 2, ay);
                 ctx.shadowBlur = 0;
-                ay += (ACT_SZ * 0.5);
+                ay += (activeSz * 0.5);
               }
             }
 
@@ -1180,7 +1215,21 @@ async function renderSlideshow({
         if (artworkPath && fs.existsSync(artworkPath)) {
           loadImage(artworkPath).then(img => {
             coverImg = img;
-            getProminentColors(artworkPath).then(c => { colors = c; processSlides(); });
+            colors = extractColors(coverImg);
+            
+            // Generate _blurCanvas for slideshow background
+            _blurCanvas = createCanvas(32, 18);
+            const bx = _blurCanvas.getContext('2d');
+            const iW = coverImg.width || 1000;
+            const iH = coverImg.height || 1000;
+            const target = 32 / 18;
+            const ratio = iW / iH;
+            let sx, sy, sw, sh;
+            if (ratio > target) { sh = iH; sw = iH * target; sx = (iW - sw) / 2; sy = 0; }
+            else                { sw = iW; sh = iW / target; sx = 0; sy = (iH - sh) / 2; }
+            bx.drawImage(coverImg, sx, sy, sw, sh, 0, 0, 32, 18);
+
+            processSlides();
           });
         } else {
           processSlides();

@@ -306,39 +306,7 @@ app.get('/api/trending', async (req, res) => {
   }
 });
 
-// ══════════════════════════════════════════════════════════════
-// POST /api/translate
-// Auto-translates an array of texts to English
-// ══════════════════════════════════════════════════════════════
-app.post('/api/translate', async (req, res) => {
-  const { lines } = req.body;
-  if (!Array.isArray(lines)) return res.status(400).json({ error: 'Expected an array of lines' });
 
-  try {
-    const translations = [];
-    // We process sequentially or in chunks to avoid rate limits on the free API
-    for (const text of lines) {
-      if (!text.trim()) {
-        translations.push('');
-        continue;
-      }
-      const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=en&dt=t&q=${encodeURIComponent(text)}`;
-      const response = await axios.get(url);
-      
-      let translatedText = '';
-      if (response.data && response.data[0]) {
-        response.data[0].forEach(part => {
-          if (part[0]) translatedText += part[0];
-        });
-      }
-      translations.push(translatedText.trim());
-    }
-    res.json({ translations });
-  } catch (err) {
-    console.error('[Translate] Error:', err.message);
-    res.status(500).json({ error: 'Translation failed' });
-  }
-});
 
 // ══════════════════════════════════════════════════════════════
 // GET /api/search-metadata
@@ -678,9 +646,12 @@ app.get('/api/render', async (req, res) => {
     try { if (slideshowIndicesStr) slideshowIndices = JSON.parse(decodeURIComponent(slideshowIndicesStr)); } catch(e) {}
 
     // 1. Download audio
-    send({ status: 'downloading', message: 'Downloading audio…', progress: 5 });
-    const audioPath = await downloadAudio(id, decodeURIComponent(videoUrl));
-    if (!audioPath) { send({ error: 'Audio download failed' }); return res.end(); }
+    let audioPath = null;
+    if (!isSlideshow) {
+      send({ status: 'downloading', message: 'Downloading audio…', progress: 5 });
+      audioPath = await downloadAudio(id, decodeURIComponent(videoUrl));
+      if (!audioPath) { send({ error: 'Audio download failed' }); return res.end(); }
+    }
 
     // 2. Download square artwork from iTunes CDN
     send({ status: 'downloading', message: 'Downloading album artwork…', progress: 14 });
@@ -698,7 +669,9 @@ app.get('/api/render', async (req, res) => {
 
     const safeTitle = songTitle.replace(/[\\/:*?"<>|]/g, '_').trim();
     const safeArtist = songArtist.replace(/[\\/:*?"<>|]/g, '_').trim();
-    const outputId   = `${safeArtist} - ${safeTitle}_${Date.now()}`;
+    const isShort = req.query.isShort === 'true';
+    const suffix = isSlideshow ? '_slideshow' : (isShort ? '_short' : '');
+    const outputId   = `${safeArtist} - ${safeTitle}_${Date.now()}${suffix}`;
     const outputPath = path.join(OUTPUT_DIR, `${outputId}${isSlideshow ? '.zip' : '.mp4'}`);
     
     // Auto-generate free SEO Tags using YouTube's internal autocomplete API
@@ -744,7 +717,7 @@ app.get('/api/render', async (req, res) => {
       fps: outFps,
       alignment: outAlign,
       offset,
-      isShort: req.query.isShort === 'true',
+      isShort,
       shortStartTime: parseFloat(req.query.shortStartTime) || 0,
       seoKeywords,
       youtubeDuration: parseFloat(youtubeDuration) || duration,
@@ -772,7 +745,8 @@ app.get('/api/render', async (req, res) => {
     
     const tags               = `#${songArtist.replace(/\s+/g,'')} #${songTitle.replace(/\s+/g,'')} #Lyrics #NoisesMusic`;
     const seoBlock           = seoKeywords.length > 0 ? `\n\nSearch terms:\n${seoKeywords.join(', ')}` : '';
-    const youtubeDescription = `🎵 ${songArtist} - ${songTitle} (Lyrics Video)\n\n${decodeURIComponent(videoUrl)}\n\n${lyricLines}\n\n${tags}${seoBlock}`;
+    const disclaimer         = `\n\n────────────────────────────────────────────────────────────\n⚠️ COPYRIGHT DISCLAIMER:\nWe do not own the rights to this song. All credits go to the original artists and their respective record labels. This video is created for entertainment purposes only.\n────────────────────────────────────────────────────────────`;
+    const youtubeDescription = `🎵 ${songArtist} - ${songTitle} (Lyrics Video)\n\n${decodeURIComponent(videoUrl)}\n\n${lyricLines}\n\n${tags}${seoBlock}${disclaimer}`;
     
     // Create a pure comma-separated tags string for the YouTube Tags box
     const fallbackTags = `${songArtist}, ${songTitle}, Lyrics, Pop, Music`;
@@ -799,43 +773,16 @@ app.get('/api/stream/:videoId', async (req, res) => {
   if (!videoId) return res.status(400).send('Bad videoId');
 
   try {
-    let directUrl = directUrlCache.get(videoId);
-    if (!directUrl) {
-      console.log(`[Stream] Fetching fresh direct audio URL for: ${videoId}`);
-      directUrl = await getDirectAudioUrl(`https://www.youtube.com/watch?v=${videoId}`);
-      if (directUrl) directUrlCache.set(videoId, directUrl);
-    }
-
-    if (req.headers.range) {
-      // console.log(`[Stream] Proxying range ${req.headers.range} for ${videoId}`);
-    }
-    if (!directUrl) {
-      return res.status(500).send('Could not fetch direct audio URL');
+    console.log(`[Stream] Ensuring local audio cache for: ${videoId}`);
+    const audioPath = await downloadAudio(videoId, `https://www.youtube.com/watch?v=${videoId}`);
+    if (!audioPath || !fs.existsSync(audioPath)) {
+      return res.status(500).send('Could not download audio stream');
     }
     
-    const headers = {
-      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36'
-    };
-    if (req.headers.range) {
-      headers['Range'] = req.headers.range;
-    }
-
-    const response = await axios({
-      method: 'get',
-      url: directUrl,
-      headers,
-      responseType: 'stream',
-      validateStatus: () => true
-    });
-
-    res.status(response.status);
-    ['content-type', 'content-length', 'content-range', 'accept-ranges'].forEach(h => {
-      if (response.headers[h]) res.set(h, response.headers[h]);
-    });
-
-    response.data.pipe(res);
+    // Express res.sendFile automatically handles Range headers for scrubbing!
+    res.sendFile(path.resolve(audioPath));
   } catch (err) {
-    console.error('[Stream] Proxy Error:', err.message);
+    console.error('[Stream] Error:', err.message);
     if (!res.headersSent) res.status(500).send('Stream error: ' + err.message);
   }
 });
@@ -844,6 +791,31 @@ app.get('/api/stream/:videoId', async (req, res) => {
 // GET /api/proxy
 // Proxies external images with CORS headers
 // ══════════════════════════════════════════════════════════════
+app.post('/api/translate', async (req, res) => {
+  try {
+    const { text } = req.body;
+    if (!text) return res.status(400).json({ error: 'No text provided' });
+    
+    // We use POST with form data to bypass URL length limits for long songs
+    const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=en&dt=t`;
+    const response = await axios.post(url, 'q=' + encodeURIComponent(text), {
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+    });
+    
+    const data = response.data;
+    let translatedText = '';
+    if (data && data[0]) {
+      data[0].forEach(part => {
+        if (part[0]) translatedText += part[0];
+      });
+    }
+    res.json({ translatedText });
+  } catch (err) {
+    console.error('[Translate] error:', err.message);
+    res.status(500).json({ error: 'Translation failed' });
+  }
+});
+
 app.get('/api/proxy', async (req, res) => {
   const url = req.query.url;
   if (!url) return res.status(400).send('No URL');
@@ -877,6 +849,33 @@ app.get('/api/download/:fileId', (req, res) => {
 
   res.download(fp, downloadName);
 });
+
+// ══════════════════════════════════════════════════════════════
+// Smart Garbage Collection (Runs every hour)
+// Cleans up any leftover temp/output files older than 24 hours
+// ══════════════════════════════════════════════════════════════
+function cleanupOldFiles() {
+  const dirs = [path.join(__dirname, 'temp'), path.join(__dirname, 'output')];
+  const MAX_AGE = 24 * 60 * 60 * 1000; // 24 hours
+  
+  dirs.forEach(dir => {
+    if (!fs.existsSync(dir)) return;
+    fs.readdir(dir, (err, files) => {
+      if (err) return;
+      files.forEach(file => {
+        const fp = path.join(dir, file);
+        fs.stat(fp, (err, stats) => {
+          if (err || !stats.isFile()) return;
+          if (Date.now() - stats.mtimeMs > MAX_AGE) {
+            fs.unlink(fp, () => console.log(`[Cleanup] Deleted old file: ${file}`));
+          }
+        });
+      });
+    });
+  });
+}
+cleanupOldFiles();
+setInterval(cleanupOldFiles, 60 * 60 * 1000);
 
 // ══════════════════════════════════════════════════════════════
 // GET /api/preview/:fileId
