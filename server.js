@@ -770,13 +770,43 @@ const directUrlCache = new Map();
 
 app.get('/api/stream/:videoId', async (req, res) => {
   const videoId = req.params.videoId.replace(/[^a-zA-Z0-9_-]/g, '');
+  const title = req.query.title;
+  const artist = req.query.artist;
   if (!videoId) return res.status(400).send('Bad videoId');
 
   try {
     console.log(`[Stream] Ensuring local audio cache for: ${videoId}`);
-    const audioPath = await downloadAudio(videoId, `https://www.youtube.com/watch?v=${videoId}`);
+    let audioPath = await downloadAudio(videoId, `https://www.youtube.com/watch?v=${videoId}`);
+    
     if (!audioPath || !fs.existsSync(audioPath)) {
-      return res.status(500).send('Could not download audio stream');
+      console.log(`[Stream] Primary download failed for ${videoId}.`);
+      
+      if (title && artist) {
+        console.log(`[Stream] Auto-fallback: Searching standard YouTube for "${title} ${artist}"...`);
+        const results = await searchYoutube(`${title} ${artist} audio`);
+        let fallbackSuccess = false;
+        
+        // Try top 2 alternative results
+        for (let i = 0; i < Math.min(results.length, 2); i++) {
+          const altId = results[i].id;
+          if (altId === videoId) continue;
+          
+          console.log(`[Stream] Fallback trying: ${altId} (${results[i].title})`);
+          audioPath = await downloadAudio(altId, `https://www.youtube.com/watch?v=${altId}`);
+          
+          if (audioPath && fs.existsSync(audioPath)) {
+            console.log(`[Stream] Fallback SUCCESS with ${altId}!`);
+            fallbackSuccess = true;
+            break;
+          }
+        }
+        
+        if (!fallbackSuccess) {
+          return res.status(500).send('Could not download audio stream and all fallbacks failed.');
+        }
+      } else {
+        return res.status(500).send('Could not download audio stream');
+      }
     }
     
     // Express res.sendFile automatically handles Range headers for scrubbing!

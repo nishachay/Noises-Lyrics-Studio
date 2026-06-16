@@ -254,7 +254,10 @@ function initAudio(videoId) {
   audioLoadTxt.textContent = 'Loading audio stream...';
 
   // Try to connect
-  audio.src = `/api/stream/${videoId}`;
+  const params = new URLSearchParams();
+  if (S.track && S.track.title) params.append('title', S.track.title);
+  if (S.track && S.track.artist) params.append('artist', S.track.artist);
+  audio.src = `/api/stream/${videoId}?${params.toString()}`;
   audio.load();
   updatePlayerUIElements();
 }
