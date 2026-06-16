@@ -229,7 +229,16 @@ function initAudio(videoId) {
     audio.addEventListener('error', (e) => {
       console.error('Audio playback error', e);
       audioLoadTxt.textContent = 'Error loading audio stream.';
-      alert("Audio stream blocked or unavailable! This usually happens with unofficial or leaked tracks on YouTube Music. Please try a different version of the song.");
+      
+      const modal = document.getElementById('audio-error-modal');
+      const ytLink = document.getElementById('error-yt-link');
+      if (modal && ytLink && S.track && S.track.id) {
+        ytLink.value = `https://www.youtube.com/watch?v=${S.track.id}`;
+        modal.classList.remove('hidden');
+      } else {
+        alert("Audio stream blocked or unavailable! Please try a different version of the song.");
+      }
+      
       setTimeout(() => {
         audioOverlay.classList.add('hidden');
       }, 3000);
@@ -2000,8 +2009,8 @@ async function startCompile(isShort = false, shortStartTime = 0, isSlideshow = f
   showView('progress');
 
   const params = new URLSearchParams({
-    id:             S.track.youtubeId || 'song',
-    videoUrl:       `https://www.youtube.com/watch?v=${S.track.youtubeId}`,
+    id:             S.track.youtubeId || S.track.id || 'song',
+    videoUrl:       `https://www.youtube.com/watch?v=${S.track.youtubeId || S.track.id || ''}`,
     title:          S.track.title,
     artist:         S.track.artist,
     duration:       S.track.duration,
@@ -2018,6 +2027,7 @@ async function startCompile(isShort = false, shortStartTime = 0, isSlideshow = f
     youtubeDuration: S.track.youtubeDuration || S.track.duration,
     itunesDuration:  S.track.duration,
   });
+  if (S.track.customAudioPath) params.append('customAudioPath', S.track.customAudioPath);
 
   if (activeSSE) activeSSE.close();
   activeSSE = new EventSource(`/api/render?${params}`);
@@ -2557,8 +2567,71 @@ modalLyricsQuery.addEventListener('keydown', e => {
 });
 
 // ═══════════════════════════════════════════════════════════════════
-// 11. INIT
+// 11. INIT & Local Audio
 // ═══════════════════════════════════════════════════════════════════
+const btnLocalAudio = document.getElementById('btn-local-audio');
+const btnErrorUploadAudio = document.getElementById('btn-error-upload-audio');
+const localAudioUpload = document.getElementById('local-audio-upload');
+const audioErrorModal = document.getElementById('audio-error-modal');
+const btnCopyErrorLink = document.getElementById('btn-copy-error-link');
+const btnErrorClose = document.getElementById('btn-error-close');
+
+if (btnLocalAudio && localAudioUpload) btnLocalAudio.addEventListener('click', () => localAudioUpload.click());
+if (btnErrorUploadAudio && localAudioUpload) btnErrorUploadAudio.addEventListener('click', () => localAudioUpload.click());
+
+if (btnErrorClose && audioErrorModal) btnErrorClose.addEventListener('click', () => audioErrorModal.classList.add('hidden'));
+
+if (btnCopyErrorLink) {
+  btnCopyErrorLink.addEventListener('click', () => {
+    const input = document.getElementById('error-yt-link');
+    input.select();
+    document.execCommand('copy');
+    btnCopyErrorLink.textContent = 'Copied!';
+    setTimeout(() => btnCopyErrorLink.textContent = 'Copy', 2000);
+  });
+}
+
+if (localAudioUpload) {
+  localAudioUpload.addEventListener('change', async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    
+    if (audioErrorModal) audioErrorModal.classList.add('hidden');
+    
+    // Upload to server for rendering
+    const formData = new FormData();
+    formData.append('audio', file);
+    
+    try {
+      const prevText = btnCompile.innerHTML;
+      btnCompile.disabled = true;
+      btnCompile.textContent = 'Uploading Audio...';
+      const res = await fetch('/api/upload-audio', { method: 'POST', body: formData });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      
+      if (!S.track) S.track = { title: file.name.replace(/\.[^/.]+$/, ""), artist: 'Local', duration: 0, id: 'local' };
+      S.track.customAudioPath = data.path;
+      console.log('Uploaded custom audio:', data.path);
+
+      // Play locally immediately
+      const localUrl = URL.createObjectURL(file);
+      audio.pause();
+      audio.src = localUrl;
+      audio.load();
+      audioOverlay.classList.remove('hidden');
+      audioLoadTxt.textContent = 'Loading custom audio...';
+      audio.addEventListener('canplay', () => { audioOverlay.classList.add('hidden'); }, { once: true });
+
+      btnCompile.disabled = false;
+      btnCompile.innerHTML = prevText;
+    } catch (err) {
+      alert('Failed to upload custom audio: ' + err.message);
+      btnCompile.disabled = false;
+      btnCompile.innerHTML = 'Compile Video';
+    }
+  });
+}
 
 showView('studio');
 startCanvasLoop();

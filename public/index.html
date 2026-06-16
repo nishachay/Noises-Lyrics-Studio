@@ -125,6 +125,12 @@
     </div>
 
     <div class="header-actions">
+      <button id="btn-local-audio" class="header-trending-btn" aria-label="Use Local Audio">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right:6px;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        Upload Audio
+      </button>
+      <input type="file" id="local-audio-upload" accept="audio/*" style="display:none">
+
       <button id="btn-trending" class="header-trending-btn" aria-label="Trending Music">
         🔥 Trending
       </button>
@@ -386,6 +392,37 @@
     </div>
 
     <button id="btn-again" class="btn-action" style="margin-top:24px">← Make Another Video</button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════
+  AUDIO ERROR MODAL
+════════════════════════════════════════════════ -->
+<div id="audio-error-modal" class="modal-overlay hidden" role="dialog" aria-modal="true">
+  <div class="modal-card" style="max-width: 500px; text-align: center; padding: 32px;">
+    <div style="width:48px; height:48px; background:rgba(255,60,60,0.1); color:#ff4444; border-radius:50%; display:flex; align-items:center; justify-content:center; margin:0 auto 16px;">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+    </div>
+    <h2 style="margin:0 0 8px; font-size:20px; color:white;">Audio Stream Blocked</h2>
+    <p style="color:var(--text-secondary); margin:0 0 24px; font-size:14px; line-height:1.5;">
+      YouTube blocked this track. You can download it manually using an external downloader and upload it here.
+    </p>
+    
+    <div style="background:var(--bg-b); padding:16px; border-radius:8px; margin-bottom:24px; text-align:left;">
+      <label style="display:block; font-size:11px; color:var(--text-secondary); margin-bottom:8px; text-transform:uppercase; letter-spacing:0.5px; font-weight:600;">1. Copy YouTube Link</label>
+      <div class="copy-row" style="margin-bottom:12px;">
+        <input id="error-yt-link" type="text" readonly style="background:var(--bg-c); border:1px solid var(--border);">
+        <button class="btn-copy" id="btn-copy-error-link">Copy</button>
+      </div>
+      <label style="display:block; font-size:11px; color:var(--text-secondary); margin-bottom:8px; text-transform:uppercase; letter-spacing:0.5px; font-weight:600;">2. Download MP3</label>
+      <a href="https://under250art.ca/" target="_blank" style="display:block; color:var(--accent); text-decoration:none; font-size:14px; padding:8px 0; border:1px solid var(--border); border-radius:6px; text-align:center; background:var(--bg-c); transition:background 0.2s;">↗ Open under250art.ca</a>
+    </div>
+
+    <button id="btn-error-upload-audio" class="btn-action primary" style="width:100%; margin-bottom:12px; justify-content:center;">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right:8px;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+      Upload Local Audio
+    </button>
+    <button id="btn-error-close" class="modal-esc-btn" style="position:static; margin:0 auto;">Close</button>
   </div>
 </div>
 

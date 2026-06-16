@@ -4,7 +4,13 @@ const express = require('express');
 const path    = require('path');
 const fs      = require('fs');
 const axios   = require('axios');
+const multer  = require('multer');
 const { GlobalFonts } = require('@napi-rs/canvas');
+
+const upload = multer({
+  dest: path.join(__dirname, 'temp'),
+  limits: { fileSize: 50 * 1024 * 1024 }
+});
 
 const { searchYoutube, searchItunes, searchDeezer, downloadArtwork, downloadAudio, getDirectAudioUrl, getVideoInfo, fetchYouTubeCaptions } = require('./yt_dlp_helper');
 const { renderVideo, getAudioAmplitude, detectAudioStart } = require('./video_renderer');
@@ -617,7 +623,7 @@ app.get('/api/resolve', async (req, res) => {
 // GET /api/render  (SSE stream)
 // ══════════════════════════════════════════════════════════════
 app.get('/api/render', async (req, res) => {
-  const { id, videoUrl, title, artist, duration: durStr, lyrics: lyricsParam, artworkUrl: rawArtworkUrl, offset: offsetStr, resolution, fps, alignment, youtubeDuration, itunesDuration, isSlideshow: isSlideshowStr, slideshowIndices: slideshowIndicesStr } = req.query;
+  const { id, videoUrl, title, artist, duration: durStr, lyrics: lyricsParam, artworkUrl: rawArtworkUrl, offset: offsetStr, resolution, fps, alignment, youtubeDuration, itunesDuration, isSlideshow: isSlideshowStr, slideshowIndices: slideshowIndicesStr, customAudioPath } = req.query;
   if (!id || !videoUrl) return res.status(400).end('Missing id or videoUrl');
 
   res.writeHead(200, {
@@ -648,9 +654,14 @@ app.get('/api/render', async (req, res) => {
     // 1. Download audio
     let audioPath = null;
     if (!isSlideshow) {
-      send({ status: 'downloading', message: 'Downloading audio…', progress: 5 });
-      audioPath = await downloadAudio(id, decodeURIComponent(videoUrl));
-      if (!audioPath) { send({ error: 'Audio download failed' }); return res.end(); }
+      if (customAudioPath && customAudioPath.includes('temp') && fs.existsSync(path.resolve(customAudioPath))) {
+        console.log('[Render] Using manually uploaded custom audio:', customAudioPath);
+        audioPath = path.resolve(customAudioPath);
+      } else {
+        send({ status: 'downloading', message: 'Downloading audio…', progress: 5 });
+        audioPath = await downloadAudio(id, decodeURIComponent(videoUrl));
+        if (!audioPath) { send({ error: 'Audio download failed' }); return res.end(); }
+      }
     }
 
     // 2. Download square artwork from iTunes CDN
@@ -820,6 +831,27 @@ app.get('/api/stream/:videoId', async (req, res) => {
 // ══════════════════════════════════════════════════════════════
 // GET /api/proxy
 // Proxies external images with CORS headers
+// ══════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════
+// POST /api/upload-audio
+// Manually upload a local audio file to bypass YouTube blocks
+// ══════════════════════════════════════════════════════════════
+app.post('/api/upload-audio', upload.single('audio'), (req, res) => {
+  try {
+    if (!req.file) return res.status(400).json({ error: 'No audio file uploaded' });
+    const ext = path.extname(req.file.originalname) || '.mp3';
+    const newPath = path.join(__dirname, 'temp', req.file.filename + ext);
+    fs.renameSync(req.file.path, newPath);
+    res.json({ path: newPath, originalName: req.file.originalname });
+  } catch (err) {
+    console.error('[Upload]', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ══════════════════════════════════════════════════════════════
+// POST /api/translate
+// Proxies Google Translate to avoid CORS
 // ══════════════════════════════════════════════════════════════
 app.post('/api/translate', async (req, res) => {
   try {
