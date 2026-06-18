@@ -413,11 +413,11 @@
             <a href="/api/youtube-auth?channel=pop" target="_blank" style="color:var(--accent); text-decoration:none; background:rgba(16,185,129,0.1); padding:4px 8px; border-radius:4px;" title="Authenticate a channel">+ Auth</a>
           </h3>
           <div style="display:flex; flex-direction:column; gap:8px;">
-            <button class="btn-dl primary" onclick="publishToYouTube('pop')" style="background:#18181c; border:1px solid var(--border); color:var(--text-1); font-size:12px; justify-content:center;">▶ Global Pop</button>
-            <button class="btn-dl primary" onclick="publishToYouTube('hiphop')" style="background:#18181c; border:1px solid var(--border); color:var(--text-1); font-size:12px; justify-content:center;">▶ Hip-Hop</button>
-            <button class="btn-dl primary" onclick="publishToYouTube('hindi')" style="background:#18181c; border:1px solid var(--border); color:var(--text-1); font-size:12px; justify-content:center;">▶ Hindi</button>
-            <button class="btn-dl primary" onclick="publishToYouTube('dhh')" style="background:#18181c; border:1px solid var(--border); color:var(--text-1); font-size:12px; justify-content:center;">▶ Desi Hip-Hop</button>
-            <button class="btn-dl primary" onclick="publishToYouTube('kpop')" style="background:#18181c; border:1px solid var(--border); color:var(--text-1); font-size:12px; justify-content:center;">▶ K-Pop</button>
+            <button id="btn-yt-pop" class="btn-dl primary" onclick="publishToYouTube('pop')" style="background:#0F026B; border:none; color:#FFFFFF; font-size:12px; justify-content:center; font-weight:bold;">▶ Noises Music</button>
+            <button id="btn-yt-hiphop" class="btn-dl primary" onclick="publishToYouTube('hiphop')" style="background:#ff0800; border:none; color:#FFFFFF; font-size:12px; justify-content:center; font-weight:bold;">▶ Noises HipHop</button>
+            <button id="btn-yt-hindi" class="btn-dl primary" onclick="publishToYouTube('hindi')" style="background:#ff3d00; border:none; color:#FFFFFF; font-size:12px; justify-content:center; font-weight:bold;">▶ Noises Geet</button>
+            <button id="btn-yt-dhh" class="btn-dl primary" onclick="publishToYouTube('dhh')" style="background:#590000; border:none; color:#FFFFFF; font-size:12px; justify-content:center; font-weight:bold;">▶ Noises DHH</button>
+            <button id="btn-yt-kpop" class="btn-dl primary" onclick="publishToYouTube('kpop')" style="background:#002e1f; border:none; color:#FFFFFF; font-size:12px; justify-content:center; font-weight:bold;">▶ Noises Kpop</button>
           </div>
           <div id="yt-publish-status" style="margin-top: 12px; font-size: 12px; color: var(--accent); font-weight:600; display:none; padding:8px; background:rgba(16,185,129,0.1); border-radius:4px; text-align:center;"></div>
         </div>

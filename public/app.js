@@ -2665,13 +2665,13 @@ async function publishToYouTube(channel) {
     return;
   }
 
-  // Extract absolute paths instead of the blob/download URL if possible
-  const videoUrl = new URL(videoBtn.href, window.location.origin).pathname; 
-  const thumbUrl = new URL(thumbBtn.href, window.location.origin).pathname; 
+  // Extract filenames from the download links
+  const videoFilename = decodeURIComponent(new URL(videoBtn.href, window.location.origin).pathname.split('/').pop()); 
+  const thumbFilename = decodeURIComponent(new URL(thumbBtn.href, window.location.origin).pathname.split('/').pop()); 
 
-  // Format paths to be relative to the server root for the backend
-  const videoPath = videoUrl.substring(1).replace(/%20/g, ' '); 
-  const thumbnailPath = thumbUrl.substring(1).replace(/%20/g, ' ');
+  // Format paths to point exactly to the output folder for the backend
+  const videoPath = 'output/' + videoFilename; 
+  const thumbnailPath = 'output/' + thumbFilename;
 
   const title = titleEl.value;
   const description = descEl.value;
@@ -2712,3 +2712,20 @@ async function publishToYouTube(channel) {
 showView('studio');
 startCanvasLoop();
 openSearch();
+
+async function updateYouTubeChannelNames() {
+  try {
+    const res = await fetch('/api/youtube-status');
+    const status = await res.json();
+    for (const [ch, info] of Object.entries(status)) {
+      const btn = document.getElementById(`btn-yt-${ch}`);
+      if (btn && info.authenticated && info.name) {
+        btn.innerHTML = `▶ ${info.name}`;
+        btn.title = `Authenticated as: ${info.name}`;
+      }
+    }
+  } catch (e) {
+    console.error('Failed to load YouTube channel names', e);
+  }
+}
+updateYouTubeChannelNames();

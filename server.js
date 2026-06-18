@@ -281,7 +281,7 @@ async function fetchLyricsList(title, artist) {
   const fetchAndMerge = async (url, label) => {
     try {
       console.log(`[LRCLIB] ${label}: ${url}`);
-      const { data } = await axios.get(url, { timeout: 5000, headers: LRCLIB_UA });
+      const { data } = await axios.get(url, { timeout: 15000, headers: LRCLIB_UA });
       if (Array.isArray(data)) {
         for (const record of data) {
           if (record.id) map.set(record.id, record);

@@ -53,6 +53,18 @@ async function handleCallback(code, channelIdLabel) {
   const { tokens } = await oauth2Client.getToken(code);
   
   if (tokens.refresh_token) {
+    // Attempt to fetch the real channel name
+    oauth2Client.setCredentials(tokens);
+    const youtube = google.youtube({ version: 'v3', auth: oauth2Client });
+    try {
+      const res = await youtube.channels.list({ part: 'snippet', mine: true });
+      if (res.data.items && res.data.items.length > 0) {
+        tokens.channel_name = res.data.items[0].snippet.title;
+      }
+    } catch (e) {
+      console.log('Error fetching channel name:', e.message);
+    }
+
     fs.writeFileSync(
       path.join(TOKENS_DIR, `${channelIdLabel}.json`), 
       JSON.stringify(tokens)
@@ -66,7 +78,14 @@ async function handleCallback(code, channelIdLabel) {
  * Checks if a specific channel is already authenticated (has a token file).
  */
 function isChannelAuthenticated(channelIdLabel) {
-  return fs.existsSync(path.join(TOKENS_DIR, `${channelIdLabel}.json`));
+  const tokenPath = path.join(TOKENS_DIR, `${channelIdLabel}.json`);
+  if (fs.existsSync(tokenPath)) {
+    try {
+      const t = JSON.parse(fs.readFileSync(tokenPath));
+      return { authenticated: true, name: t.channel_name || null };
+    } catch(e) {}
+  }
+  return { authenticated: false, name: null };
 }
 
 /**
