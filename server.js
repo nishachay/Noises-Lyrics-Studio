@@ -281,7 +281,7 @@ async function fetchLyricsList(title, artist) {
   const fetchAndMerge = async (url, label) => {
     try {
       console.log(`[LRCLIB] ${label}: ${url}`);
-      const { data } = await axios.get(url, { timeout: 15000, headers: LRCLIB_UA });
+      const { data } = await axios.get(url, { timeout: 4000, headers: LRCLIB_UA });
       if (Array.isArray(data)) {
         for (const record of data) {
           if (record.id) map.set(record.id, record);
@@ -581,30 +581,6 @@ app.post('/api/resolve-song', async (req, res) => {
     // Step 2: Fetch LRCLIB lyrics using the guaranteed clean iTunes title and artist
     let lyricsRecords = await fetchLyricsList(title, artist);
     console.log(`[Resolve Lyrics] LRCLIB found ${lyricsRecords.length} record(s)`);
-
-    if (lyricsRecords.length === 0 && bestYt?.id) {
-      console.log('[Resolve Lyrics] LRCLIB empty — trying YouTube auto-captions...');
-      try {
-        const ytCaptions = await fetchYouTubeCaptions(bestYt.id);
-        if (ytCaptions && ytCaptions.length > 0) {
-          console.log(`[Resolve Lyrics] YouTube captions found: ${ytCaptions.length} lines ✓`);
-          lyricsRecords = [{
-            id: `yt_${bestYt.id}`,
-            trackName: title,
-            artistName: artist,
-            albumName: album || '',
-            duration,
-            syncedLyrics: ytCaptions.map(l =>
-              `[${String(Math.floor(l.time / 60)).padStart(2,'0')}:${(l.time % 60).toFixed(2).padStart(5,'0')}]${l.text}`
-            ).join('\n'),
-            plainLyrics: ytCaptions.map(l => l.text).join('\n'),
-            source: 'youtube-captions',
-          }];
-        }
-      } catch (e) {
-        console.warn('[Resolve Lyrics] YT captions fallback failed:', e.message);
-      }
-    }
 
     const payload = { bestMatch, lyricsRecords };
     resolveCache.set(cacheKey, payload);
