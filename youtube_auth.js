@@ -14,8 +14,8 @@ const path = require('path');
 // 8. Copy Client ID and Client Secret into the variables below.
 // ============================================================================
 
-const CLIENT_ID = 'YOUR_CLIENT_ID_HERE';
-const CLIENT_SECRET = 'YOUR_CLIENT_SECRET_HERE';
+const CLIENT_ID = 'REMOVED_CLIENT_ID';
+const CLIENT_SECRET = 'REMOVED';
 const REDIRECT_URI = 'http://localhost:3000/api/youtube-callback';
 
 const SCOPES = [
