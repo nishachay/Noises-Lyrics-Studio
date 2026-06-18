@@ -131,13 +131,17 @@ async function uploadToYouTube({ channelIdLabel, videoPath, thumbnailPath, title
   // 2. Upload Thumbnail (if provided)
   if (thumbnailPath && fs.existsSync(thumbnailPath)) {
     console.log(`[YouTube] Uploading thumbnail...`);
-    await youtube.thumbnails.set({
-      videoId: videoId,
-      media: {
-        body: fs.createReadStream(thumbnailPath)
-      }
-    });
-    console.log(`[YouTube] Thumbnail set successfully.`);
+    try {
+      await youtube.thumbnails.set({
+        videoId: videoId,
+        media: {
+          body: fs.createReadStream(thumbnailPath)
+        }
+      });
+      console.log(`[YouTube] Thumbnail set successfully.`);
+    } catch (thumbErr) {
+      console.log(`[YouTube] WARNING: Could not set thumbnail (Channel might not be phone-verified). Error:`, thumbErr.message);
+    }
   }
 
   return `https://studio.youtube.com/video/${videoId}/edit`;
