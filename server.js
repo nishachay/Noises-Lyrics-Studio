@@ -910,6 +910,18 @@ app.get('/api/stream/:videoId', async (req, res) => {
   if (!videoId) return res.status(400).send('Bad videoId');
 
   try {
+    if (directUrlCache.has(videoId)) {
+      return res.redirect(directUrlCache.get(videoId));
+    }
+    
+    // Attempt instant streaming URL first!
+    const directUrl = await getDirectAudioUrl(`https://www.youtube.com/watch?v=${videoId}`);
+    if (directUrl && directUrl.startsWith('http')) {
+      directUrlCache.set(videoId, directUrl);
+      setTimeout(() => directUrlCache.delete(videoId), 1000 * 60 * 50); // 50 mins
+      return res.redirect(directUrl);
+    }
+    
     console.log(`[Stream] Ensuring local audio cache for: ${videoId}`);
     let audioPath = await downloadAudio(videoId, `https://www.youtube.com/watch?v=${videoId}`);
     

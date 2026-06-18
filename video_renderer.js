@@ -539,7 +539,8 @@ function drawWatermark(ctx, w, h, time, logoImg) {
   // 100% visible
   ctx.globalAlpha = 1.0;
   
-  ctx.drawImage(logoImg, lx, ly + floatY, lgSz, lgSz);
+  const aspect = logoImg.width / logoImg.height;
+  ctx.drawImage(logoImg, lx, ly + floatY, lgSz * aspect, lgSz);
   ctx.restore();
 }
 
@@ -627,13 +628,13 @@ function generateThumbnail(coverImg, colors, title, artist, font, alignment, wra
   drawBackground(ctx, W, H, coverImg, colors, 10.0, 0.0);
 
   // 2. Draw centered Album Cover Art
-  const artSz = Math.round(H * 0.39); // scales perfectly (e.g. 280 for 720p, 420 for 1080p)
+  const artSz = Math.round(H * 0.55); // Increased for high quality!
   const radius = Math.round(artSz * 0.06);
 
   const ax = Math.round((W - artSz) / 2);
-  const titleSz = Math.round(H * 0.072);
-  const artistSz = Math.round(H * 0.033);
-  const gap1 = Math.round(H * 0.06);
+  const titleSz = Math.round(H * 0.090); // Much bigger title
+  const artistSz = Math.round(H * 0.040); // Bigger artist
+  const gap1 = Math.round(H * 0.05);
   const gap2 = Math.round(H * 0.02);
 
   // Set the font to measure title
@@ -959,11 +960,13 @@ function renderVideo({
           ctx.save();
           ctx.globalAlpha = Math.max(0, Math.min(1, a));
 
-          // Draw centered Cover Art
-          const artSz = Math.round(H * 0.40);
-          const titleSz = Math.round(H * 0.045);
-          const artistSz = Math.round(titleSz * 0.68);
-          const totalH = artSz + 30 + titleSz + 10 + artistSz;
+          // Fade in Intro Text
+          const titleSz = Math.round(H * 0.08);
+          const artistSz = Math.round(H * 0.038);
+          const artSz = Math.round(H * 0.55);
+
+          ctx.save();
+          const totalH = artSz + 40 + titleSz + 15 + artistSz;
 
           const ax = Math.round((W - artSz) / 2);
           const ay = Math.round((H - totalH) / 2);
