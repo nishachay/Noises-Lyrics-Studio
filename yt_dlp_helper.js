@@ -86,7 +86,11 @@ async function searchYoutube(query) {
     const yt = await getYoutubeSR();
     if (yt) {
       console.log('[YouTube] youtube-sr search...');
-      const list = await yt.search(query, { limit: 5, type: 'video' });
+      const list = await Promise.race([
+        yt.search(query, { limit: 5, type: 'video' }),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('youtube-sr timeout')), 5000))
+      ]);
+      
       if (list && list.length > 0) {
         return list.map(result => ({
           id:          result.id,

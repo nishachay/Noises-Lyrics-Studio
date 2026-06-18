@@ -1533,15 +1533,29 @@ async function resolveSong(metadata) {
       try {
         let ldata = null;
         
+        // Helper with timeout
+        const fetchWithTimeout = async (url) => {
+          const controller = new AbortController();
+          const id = setTimeout(() => controller.abort(), 5000);
+          try {
+            const response = await fetch(url, { signal: controller.signal });
+            clearTimeout(id);
+            return response;
+          } catch (e) {
+            clearTimeout(id);
+            throw e;
+          }
+        };
+
         // 1. Try exact match
         const getUrl = `https://lrclib.net/api/get?track_name=${encodeURIComponent(S.track.title)}&artist_name=${encodeURIComponent(S.track.artist)}`;
-        const getRes = await fetch(getUrl);
+        const getRes = await fetchWithTimeout(getUrl);
         if (getRes.ok) {
            ldata = await getRes.json();
         } else {
            // 2. Try fuzzy search fallback
            const searchUrl = `https://lrclib.net/api/search?q=${encodeURIComponent(S.track.title + ' ' + S.track.artist)}`;
-           const searchRes = await fetch(searchUrl);
+           const searchRes = await fetchWithTimeout(searchUrl);
            if (searchRes.ok) {
              const items = await searchRes.json();
              if (items && items.length > 0) {
