@@ -131,9 +131,18 @@
       </button>
       <input type="file" id="local-audio-upload" accept="audio/*" style="display:none">
 
-      <button id="btn-trending" class="header-trending-btn" aria-label="Trending Music">
-        🔥 Trending
-      </button>
+      <div class="trending-dropdown-container">
+        <button id="btn-trending" class="header-trending-btn" aria-label="Trending Music">
+          🔥 Trending
+        </button>
+        <div id="trending-dropdown" class="trending-dropdown-menu hidden">
+          <div class="trending-option" data-category="pop">🇺🇸 English Pop</div>
+          <div class="trending-option" data-category="hiphop">🎤 Western Hip-Hop</div>
+          <div class="trending-option" data-category="hindi">🇮🇳 Hindi Pop</div>
+          <div class="trending-option" data-category="dhh">🔥 Desi Hip-Hop</div>
+          <div class="trending-option" data-category="kpop">🇰🇷 K-Pop</div>
+        </div>
+      </div>
       <button id="btn-search" class="header-search-btn" aria-label="Search (Ctrl+K)">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
         <span>Search song...</span>
@@ -145,7 +154,7 @@
   <!-- TRENDING PANEL -->
   <div id="trending-panel" class="trending-panel hidden">
     <div class="trending-header">
-      <h2>Global Top 50</h2>
+      <h2 id="trending-title">Global Top 50</h2>
       <button id="btn-trending-close" class="modal-esc-btn">Esc</button>
     </div>
     <div id="trending-loading" class="trending-loading">

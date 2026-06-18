@@ -294,18 +294,23 @@ function cleanYoutubeMeta(rawTitle, rawChannel) {
 // ══════════════════════════════════════════════════════════════
 app.get('/api/trending', async (req, res) => {
   try {
-    const itunesRes = await axios.get('https://itunes.apple.com/us/rss/topsongs/limit=50/json', { timeout: 10000 });
-    const tracks = itunesRes.data.feed.entry.map(e => {
-      let artworkUrl = e['im:image'] && e['im:image'].length > 0 ? e['im:image'][e['im:image'].length - 1].label : '';
-      if (artworkUrl) artworkUrl = artworkUrl.replace(/\d+x\d+bb\./, '3000x3000bb.');
-      
-      return {
-        title: e['im:name'].label,
-        artist: e['im:artist'].label,
-        artworkUrl: artworkUrl
-      };
-    });
-    res.json(tracks);
+    const category = req.query.category || 'pop';
+    let country = 'us';
+    if (category === 'hindi' || category === 'dhh') country = 'in';
+    if (category === 'kpop') country = 'kr';
+    if (category === 'hiphop') country = 'us';
+
+    const url = `https://rss.applemarketingtools.com/api/v2/${country}/music/most-played/50/songs.json`;
+    const response = await axios.get(url, { timeout: 10000 });
+    const data = response.data;
+    
+    const songs = data.feed.results.map(item => ({
+      title: item.name,
+      artist: item.artistName,
+      artworkUrl: item.artworkUrl100 ? item.artworkUrl100.replace('100x100bb', '300x300bb') : null
+    }));
+    
+    res.json(songs);
   } catch (err) {
     console.error('[Trending] Failed to fetch iTunes RSS:', err.message);
     res.status(500).json({ error: 'Failed to fetch trending songs' });

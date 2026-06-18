@@ -2125,23 +2125,41 @@ btnSearch.addEventListener('click', openSearch);
 btnModalClose.addEventListener('click', closeSearch);
 searchModal.addEventListener('click', e => { if (e.target === searchModal) closeSearch(); });
 
-// Trending panel
-btnTrending.addEventListener('click', toggleTrendingPanel);
+// Trending dropdown & panel
+const trendingDropdown = document.getElementById('trending-dropdown');
+const trendingOptions = document.querySelectorAll('.trending-option');
+const trendingTitle = document.getElementById('trending-title');
+
+btnTrending.addEventListener('click', () => {
+  trendingDropdown.classList.toggle('hidden');
+});
+
+document.addEventListener('click', (e) => {
+  if (!e.target.closest('.trending-dropdown-container')) {
+    trendingDropdown.classList.add('hidden');
+  }
+});
+
 btnTrendingClose.addEventListener('click', () => trendingPanel.classList.add('hidden'));
 
-async function toggleTrendingPanel() {
-  if (!trendingPanel.classList.contains('hidden')) {
-    trendingPanel.classList.add('hidden');
-    return;
-  }
-  
+trendingOptions.forEach(opt => {
+  opt.addEventListener('click', (e) => {
+    const category = e.target.getAttribute('data-category');
+    const titleText = e.target.textContent;
+    trendingDropdown.classList.add('hidden');
+    openTrendingPanel(category, titleText);
+  });
+});
+
+async function openTrendingPanel(category, titleText) {
   trendingPanel.classList.remove('hidden');
+  trendingTitle.textContent = titleText;
   trendingList.innerHTML = '';
   trendingList.classList.add('hidden');
   trendingLoading.classList.remove('hidden');
   
   try {
-    const res = await fetch('/api/trending');
+    const res = await fetch(`/api/trending?category=${category}`);
     const tracks = await res.json();
     
     trendingList.innerHTML = '';
