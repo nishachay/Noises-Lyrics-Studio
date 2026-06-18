@@ -2125,28 +2125,30 @@ btnSearch.addEventListener('click', openSearch);
 btnModalClose.addEventListener('click', closeSearch);
 searchModal.addEventListener('click', e => { if (e.target === searchModal) closeSearch(); });
 
-// Trending dropdown & panel
-const trendingDropdown = document.getElementById('trending-dropdown');
-const trendingOptions = document.querySelectorAll('.trending-option');
+// Trending tabs & panel
+const trendingTabs = document.querySelectorAll('.trending-tab');
 const trendingTitle = document.getElementById('trending-title');
 
 btnTrending.addEventListener('click', () => {
-  trendingDropdown.classList.toggle('hidden');
-});
-
-document.addEventListener('click', (e) => {
-  if (!e.target.closest('.trending-dropdown-container')) {
-    trendingDropdown.classList.add('hidden');
+  if (trendingPanel.classList.contains('hidden')) {
+    openTrendingPanel('pop', 'Global Pop'); // Default
+    // Reset active tab
+    trendingTabs.forEach(t => t.classList.remove('active'));
+    document.querySelector('.trending-tab[data-category="pop"]').classList.add('active');
+  } else {
+    trendingPanel.classList.add('hidden');
   }
 });
 
 btnTrendingClose.addEventListener('click', () => trendingPanel.classList.add('hidden'));
 
-trendingOptions.forEach(opt => {
-  opt.addEventListener('click', (e) => {
-    const category = e.target.getAttribute('data-category');
-    const titleText = e.target.textContent;
-    trendingDropdown.classList.add('hidden');
+trendingTabs.forEach(tab => {
+  tab.addEventListener('click', (e) => {
+    trendingTabs.forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+    
+    const category = tab.getAttribute('data-category');
+    const titleText = tab.getAttribute('data-title');
     openTrendingPanel(category, titleText);
   });
 });

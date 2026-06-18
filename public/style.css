@@ -1289,38 +1289,36 @@ body {
   animation: pulseBorder 1.5s infinite;
 }
 
-/* TRENDING DROPDOWN */
-.trending-dropdown-container {
-  position: relative;
-  display: inline-block;
-}
-.trending-dropdown-menu {
-  position: absolute;
-  top: 100%;
-  left: 0;
-  margin-top: 8px;
-  background: var(--surface-1);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  min-width: 180px;
-  box-shadow: 0 8px 24px rgba(0,0,0,0.6);
-  z-index: 100;
+/* TRENDING TABS */
+.trending-tabs {
   display: flex;
-  flex-direction: column;
-  padding: 6px;
+  gap: 8px;
+  padding: 0 20px 14px 20px;
+  overflow-x: auto;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 12px;
 }
-.trending-dropdown-menu.hidden {
+.trending-tabs::-webkit-scrollbar {
   display: none;
 }
-.trending-option {
-  padding: 10px 14px;
-  font-size: 13.5px;
-  color: var(--text-1);
-  border-radius: 6px;
+.trending-tab {
+  background: var(--surface-1);
+  border: 1px solid var(--border);
+  color: var(--text-2);
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 600;
   cursor: pointer;
-  transition: background 0.15s;
-  font-weight: 500;
+  white-space: nowrap;
+  transition: all 0.2s;
 }
-.trending-option:hover {
+.trending-tab:hover {
   background: var(--surface-2);
+  color: var(--text-1);
+}
+.trending-tab.active {
+  background: var(--text-1);
+  color: var(--bg-color);
+  border-color: var(--text-1);
 }
