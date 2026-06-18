@@ -1,0 +1,132 @@
+const { google } = require('googleapis');
+const fs = require('fs');
+const path = require('path');
+
+// ============================================================================
+// SETUP INSTRUCTIONS FOR USER:
+// 1. Go to https://console.cloud.google.com/
+// 2. Create a new Project.
+// 3. Go to "APIs & Services" -> "Library" -> Enable "YouTube Data API v3".
+// 4. Go to "OAuth consent screen", set it to External, add your email as a Test user.
+// 5. Go to "Credentials" -> "Create Credentials" -> "OAuth client ID".
+// 6. Choose "Web application". 
+// 7. Add Authorized redirect URI: "http://localhost:3000/api/youtube-callback"
+// 8. Copy Client ID and Client Secret into the variables below.
+// ============================================================================
+
+const CLIENT_ID = 'YOUR_CLIENT_ID_HERE';
+const CLIENT_SECRET = 'YOUR_CLIENT_SECRET_HERE';
+const REDIRECT_URI = 'http://localhost:3000/api/youtube-callback';
+
+const SCOPES = [
+  'https://www.googleapis.com/auth/youtube.upload',
+  'https://www.googleapis.com/auth/youtube.readonly' // Useful for getting channel name
+];
+
+const TOKENS_DIR = path.join(__dirname, 'tokens');
+if (!fs.existsSync(TOKENS_DIR)) {
+  fs.mkdirSync(TOKENS_DIR);
+}
+
+function getOAuth2Client() {
+  return new google.auth.OAuth2(CLIENT_ID, CLIENT_SECRET, REDIRECT_URI);
+}
+
+/**
+ * Generates an Auth URL. The user clicks this, selects their Brand Channel, and approves.
+ */
+function getAuthUrl(channelIdLabel) {
+  const oauth2Client = getOAuth2Client();
+  return oauth2Client.generateAuthUrl({
+    access_type: 'offline',
+    prompt: 'consent',
+    scope: SCOPES,
+    state: channelIdLabel // e.g. "pop", "hiphop" so the callback knows which token file to save
+  });
+}
+
+/**
+ * Handles the OAuth callback, gets the refresh token, and saves it to tokens/<channel>.json
+ */
+async function handleCallback(code, channelIdLabel) {
+  const oauth2Client = getOAuth2Client();
+  const { tokens } = await oauth2Client.getToken(code);
+  
+  if (tokens.refresh_token) {
+    fs.writeFileSync(
+      path.join(TOKENS_DIR, `${channelIdLabel}.json`), 
+      JSON.stringify(tokens)
+    );
+    return true;
+  }
+  return false;
+}
+
+/**
+ * Checks if a specific channel is already authenticated (has a token file).
+ */
+function isChannelAuthenticated(channelIdLabel) {
+  return fs.existsSync(path.join(TOKENS_DIR, `${channelIdLabel}.json`));
+}
+
+/**
+ * Uploads a video to the specified channel.
+ */
+async function uploadToYouTube({ channelIdLabel, videoPath, thumbnailPath, title, description, tags }) {
+  const tokenPath = path.join(TOKENS_DIR, `${channelIdLabel}.json`);
+  if (!fs.existsSync(tokenPath)) {
+    throw new Error(`Channel '${channelIdLabel}' is not authenticated. Please authenticate first.`);
+  }
+
+  const tokens = JSON.parse(fs.readFileSync(tokenPath, 'utf8'));
+  const oauth2Client = getOAuth2Client();
+  oauth2Client.setCredentials(tokens);
+
+  const youtube = google.youtube({ version: 'v3', auth: oauth2Client });
+
+  console.log(`[YouTube] Starting upload to channel: ${channelIdLabel}...`);
+
+  // 1. Upload Video
+  const res = await youtube.videos.insert({
+    part: 'snippet,status',
+    requestBody: {
+      snippet: {
+        title,
+        description,
+        tags: tags || [],
+        categoryId: '10' // Music
+      },
+      status: {
+        privacyStatus: 'private', // Upload as private first so you can review it!
+        selfDeclaredMadeForKids: false
+      }
+    },
+    media: {
+      body: fs.createReadStream(videoPath)
+    }
+  });
+
+  const videoId = res.data.id;
+  console.log(`[YouTube] Video uploaded successfully. Video ID: ${videoId}`);
+
+  // 2. Upload Thumbnail (if provided)
+  if (thumbnailPath && fs.existsSync(thumbnailPath)) {
+    console.log(`[YouTube] Uploading thumbnail...`);
+    await youtube.thumbnails.set({
+      videoId: videoId,
+      media: {
+        body: fs.createReadStream(thumbnailPath)
+      }
+    });
+    console.log(`[YouTube] Thumbnail set successfully.`);
+  }
+
+  return `https://studio.youtube.com/video/${videoId}/edit`;
+}
+
+module.exports = {
+  getAuthUrl,
+  handleCallback,
+  isChannelAuthenticated,
+  uploadToYouTube
+};

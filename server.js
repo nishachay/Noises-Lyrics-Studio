@@ -36,14 +36,23 @@ async function searchYTMusic(query) {
   if (!ytmusicInitialized) return [];
   try {
     const list = await ytmusic.searchSongs(query);
-    return list.map(r => ({
-      id:          r.videoId,
-      title:       r.name,
-      artist:      r.artist?.name || '',
-      albumName:   r.album?.name || '',
-      duration:    r.duration || 0,
-      artworkUrl:  r.thumbnails?.pop()?.url || null
-    }));
+    return list.map(r => {
+      let artwork = r.thumbnails?.pop()?.url || null;
+      // YT Music thumbnails usually look like: https://lh3.googleusercontent.com/...=w120-h120-l90-rj
+      // We can force high-res by modifying the query parameter.
+      if (artwork && artwork.includes('=')) {
+        artwork = artwork.replace(/=[wsdh\-ljr0-9]+$/, '=w3000-h3000-l90-rj');
+      }
+      
+      return {
+        id:          r.videoId,
+        title:       r.name,
+        artist:      r.artist?.name || '',
+        albumName:   r.album?.name || '',
+        duration:    r.duration || 0,
+        artworkUrl:  artwork
+      };
+    });
   } catch (e) {
     console.error('[YTMusic] search failed:', e.message);
     return [];
@@ -60,6 +69,64 @@ const lyricsCache = new Map();
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 app.use('/temp', express.static(path.join(__dirname, 'temp')));
+
+const ytAuth = require('./youtube_auth');
+
+// ══════════════════════════════════════════════════════════════
+// YOUTUBE OAUTH ENDPOINTS
+// ══════════════════════════════════════════════════════════════
+
+app.get('/api/youtube-auth', (req, res) => {
+  const channel = req.query.channel;
+  if (!channel) return res.status(400).send('Missing channel parameter');
+  const url = ytAuth.getAuthUrl(channel);
+  res.redirect(url);
+});
+
+app.get('/api/youtube-callback', async (req, res) => {
+  const { code, state, error } = req.query;
+  if (error) return res.send(`Auth failed: ${error}`);
+  if (!code || !state) return res.send('Missing code or state');
+  
+  const success = await ytAuth.handleCallback(code, state);
+  if (success) {
+    res.send(`<h1>Successfully authenticated ${state} channel!</h1><p>You can close this window and return to Noises Studio.</p>`);
+  } else {
+    res.send('<h1>Failed to get refresh token.</h1>');
+  }
+});
+
+app.get('/api/youtube-status', (req, res) => {
+  const channels = ['pop', 'hiphop', 'hindi', 'dhh', 'kpop'];
+  const status = {};
+  channels.forEach(ch => {
+    status[ch] = ytAuth.isChannelAuthenticated(ch);
+  });
+  res.json(status);
+});
+
+app.post('/api/youtube-upload', async (req, res) => {
+  const { channel, videoPath, thumbnailPath, title, description, tags } = req.body;
+  if (!channel || !videoPath || !title) {
+    return res.status(400).json({ error: 'Missing required parameters' });
+  }
+
+  try {
+    const editUrl = await ytAuth.uploadToYouTube({
+      channelIdLabel: channel,
+      videoPath: path.resolve(videoPath),
+      thumbnailPath: thumbnailPath ? path.resolve(thumbnailPath) : null,
+      title,
+      description,
+      tags
+    });
+    res.json({ success: true, editUrl });
+  } catch (err) {
+    console.error('[YouTube Upload Error]', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 
 
 const OUTPUT_DIR = path.join(__dirname, 'output');

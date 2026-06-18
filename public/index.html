@@ -390,14 +390,28 @@
 
     <div class="done-grid">
       <div class="done-downloads">
-        <a id="btn-dl-video" href="#" class="btn-dl primary">
+        <h3 style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-3); margin-bottom: 8px;">Local Download</h3>
+        <a id="btn-dl-video" href="#" class="btn-dl primary" style="margin-bottom: 8px;">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-          Download File
+          Download MP4
         </a>
-        <a id="btn-dl-thumb" href="#" class="btn-dl secondary">
+        <a id="btn-dl-thumb" href="#" class="btn-dl secondary" style="margin-bottom: 24px;">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
-          Thumbnail
+          Thumbnail JPG
         </a>
+
+        <h3 style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-3); margin-bottom: 8px; display:flex; justify-content:space-between;">
+          Auto-Publish 
+          <a href="/api/youtube-auth?channel=pop" target="_blank" style="color:var(--accent); text-decoration:none;" title="Authenticate a channel">+ Auth</a>
+        </h3>
+        <div style="display:flex; flex-direction:column; gap:6px;">
+          <button class="btn-dl primary" onclick="publishToYouTube('pop')" style="background:#18181c; border:1px solid var(--border); color:var(--text-1); font-size:12px;">▶ Global Pop</button>
+          <button class="btn-dl primary" onclick="publishToYouTube('hiphop')" style="background:#18181c; border:1px solid var(--border); color:var(--text-1); font-size:12px;">▶ Hip-Hop</button>
+          <button class="btn-dl primary" onclick="publishToYouTube('hindi')" style="background:#18181c; border:1px solid var(--border); color:var(--text-1); font-size:12px;">▶ Hindi</button>
+          <button class="btn-dl primary" onclick="publishToYouTube('dhh')" style="background:#18181c; border:1px solid var(--border); color:var(--text-1); font-size:12px;">▶ Desi Hip-Hop</button>
+          <button class="btn-dl primary" onclick="publishToYouTube('kpop')" style="background:#18181c; border:1px solid var(--border); color:var(--text-1); font-size:12px;">▶ K-Pop</button>
+        </div>
+        <div id="yt-publish-status" style="margin-top: 12px; font-size: 12px; color: var(--accent); font-weight:600; display:none; padding:8px; background:rgba(16,185,129,0.1); border-radius:4px; text-align:center;"></div>
       </div>
       <div class="done-meta">
         <div class="meta-field">

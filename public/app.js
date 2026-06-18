@@ -2647,6 +2647,68 @@ if (localAudioUpload) {
   });
 }
 
+// ════════════════════════════════════════════════════════════════════════════
+// YOUTUBE AUTO-PUBLISH
+// ════════════════════════════════════════════════════════════════════════════
+async function publishToYouTube(channel) {
+  const statusEl = document.getElementById('yt-publish-status');
+  const videoBtn = document.getElementById('btn-dl-video');
+  const thumbBtn = document.getElementById('btn-dl-thumb');
+  const titleEl = document.getElementById('yt-title');
+  const descEl = document.getElementById('yt-desc');
+  const tagsEl = document.getElementById('yt-tags');
+
+  if (!videoBtn.href || videoBtn.href === '#') {
+    statusEl.style.display = 'block';
+    statusEl.style.color = '#ef4444';
+    statusEl.innerText = 'Error: Video not ready.';
+    return;
+  }
+
+  // Extract absolute paths instead of the blob/download URL if possible
+  const videoUrl = new URL(videoBtn.href, window.location.origin).pathname; 
+  const thumbUrl = new URL(thumbBtn.href, window.location.origin).pathname; 
+
+  // Format paths to be relative to the server root for the backend
+  const videoPath = videoUrl.substring(1).replace(/%20/g, ' '); 
+  const thumbnailPath = thumbUrl.substring(1).replace(/%20/g, ' ');
+
+  const title = titleEl.value;
+  const description = descEl.value;
+  const tags = tagsEl.value.split(',').map(t => t.trim());
+
+  statusEl.style.display = 'block';
+  statusEl.style.color = 'var(--text-1)';
+  statusEl.innerText = 'Uploading to YouTube...';
+
+  try {
+    const res = await fetch('/api/youtube-upload', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        channel,
+        videoPath,
+        thumbnailPath,
+        title,
+        description,
+        tags
+      })
+    });
+    
+    const data = await res.json();
+    if (data.error) {
+      statusEl.style.color = '#ef4444';
+      statusEl.innerText = `Error: ${data.error}`;
+    } else {
+      statusEl.style.color = 'var(--accent)';
+      statusEl.innerHTML = `Success! <a href="${data.editUrl}" target="_blank" style="color:var(--accent); text-decoration:underline;">Review & Publish Video ↗</a>`;
+    }
+  } catch (err) {
+    statusEl.style.color = '#ef4444';
+    statusEl.innerText = `Error: ${err.message}`;
+  }
+}
+
 showView('studio');
 startCanvasLoop();
 openSearch();
