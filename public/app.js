@@ -88,7 +88,6 @@ const btnLyricsModalClose = $('btn-lyrics-modal-close');
 const btnManualLyrics     = $('btn-manual-lyrics');
 
 // Header
-const headerSkeleton  = $('header-skeleton');
 const headerTrackContent = $('header-track-content');
 const headerArt       = $('header-art');
 const headerTitle     = $('header-title');
@@ -1229,27 +1228,99 @@ function showSuggestions() {
   modalEmpty.classList.add('hidden');
   S.searchResults = [];
   S.searchHighlight = -1;
-  
-  if (!viralDataFetched) {
-    fetchTrendingInsights('pop');
-  }
 }
 
-// Attach event listeners to the tabs
+// ═══════════════════════════════════════════════════════════════════
+// TRENDING MODAL & AUTO-LOAD LOGIC
+// ═══════════════════════════════════════════════════════════════════
+const trendingModal = document.getElementById('trending-modal');
+const btnTrending = document.getElementById('btn-trending');
+const btnTrendingClose = document.getElementById('btn-trending-close');
+
+if (btnTrending && trendingModal) {
+  btnTrending.addEventListener('click', () => {
+    trendingModal.classList.remove('hidden');
+    if (!viralDataFetched) {
+      fetchTrendingInsights('pop');
+    }
+  });
+}
+
+if (btnTrendingClose && trendingModal) {
+  btnTrendingClose.addEventListener('click', () => {
+    trendingModal.classList.add('hidden');
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// PUBLISH MODAL LOGIC
+// ═══════════════════════════════════════════════════════════════════
+const publishModal = document.getElementById('publish-modal');
+const btnPublishModal = document.getElementById('btn-publish-modal');
+const btnPublishClose = document.getElementById('btn-publish-close');
+
+if (btnPublishModal && publishModal) {
+  btnPublishModal.addEventListener('click', () => {
+    publishModal.classList.remove('hidden');
+  });
+}
+
+if (btnPublishClose && publishModal) {
+  btnPublishClose.addEventListener('click', () => {
+    publishModal.classList.add('hidden');
+  });
+}
+
 document.querySelectorAll('.trending-tab').forEach(tab => {
   tab.addEventListener('click', (e) => {
     document.querySelectorAll('.trending-tab').forEach(t => t.classList.remove('active'));
     e.target.classList.add('active');
-    
-    // Update the Visit Source link
-    const sourceLink = document.getElementById('source-link');
-    if (sourceLink && e.target.dataset.url && e.target.dataset.source) {
-      sourceLink.href = e.target.dataset.url;
-      sourceLink.innerHTML = `${e.target.dataset.source} ↗`;
-    }
-    
     fetchTrendingInsights(e.target.dataset.cat);
   });
+});
+
+async function autoLoadAndPlay(query) {
+  if (trendingModal) trendingModal.classList.add('hidden');
+  closeSearch();
+  
+  const overlay = document.getElementById('audio-loading-overlay');
+  const text = document.getElementById('audio-loading-text');
+  if (overlay && text) {
+    overlay.classList.remove('hidden');
+    text.textContent = 'Auto-loading track...';
+  }
+  
+  try {
+    const res = await fetch(`/api/search-metadata?q=${encodeURIComponent(query)}`);
+    const data = await res.json();
+    if (!data.results || data.results.length === 0) throw new Error('No results found');
+    
+    const item = data.results[0];
+    
+    // 1. Resolve Song (fetches lyrics)
+    if (text) text.textContent = 'Fetching lyrics & metadata...';
+    await resolveSong(item);
+    
+    // 2. Load Audio
+    if (text) text.textContent = 'Connecting to audio stream...';
+    loadAudio(item.id || item.youtubeId);
+    
+    // 3. Play automatically
+    audio.play().catch(() => {});
+    
+    if (overlay) overlay.classList.add('hidden');
+  } catch (err) {
+    console.error('Auto-load failed', err);
+    if (overlay) overlay.classList.add('hidden');
+    alert('Auto-load failed: ' + err.message);
+  }
+}
+
+// Close trending modal on Esc
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape' && trendingModal && !trendingModal.classList.contains('hidden')) {
+    trendingModal.classList.add('hidden');
+  }
 });
 
 async function fetchTrendingInsights(category) {
@@ -1279,8 +1350,7 @@ async function fetchTrendingInsights(category) {
         </div>
       `;
       el.onclick = () => {
-        modalQuery.value = `${t.title} ${t.artist}`;
-        fetchMetadataResults(modalQuery.value);
+        autoLoadAndPlay(`${t.title} ${t.artist}`);
       };
       hotList.appendChild(el);
     });
@@ -1380,9 +1450,23 @@ function renderMetadataResults(results) {
       <div class="result-dur">${formatDur(item.duration)}</div>
     `;
     
-    btn.addEventListener('click', () => {
+    btn.addEventListener('click', async () => {
       closeSearch();
-      resolveSong(item);
+      
+      const overlay = document.getElementById('audio-loading-overlay');
+      const text = document.getElementById('audio-loading-text');
+      if (overlay && text) {
+        overlay.classList.remove('hidden');
+        text.textContent = 'Fetching lyrics & metadata...';
+      }
+      
+      await resolveSong(item);
+      
+      if (text) text.textContent = 'Connecting to audio stream...';
+      loadAudio(item.id || item.youtubeId);
+      audio.play().catch(() => {});
+      
+      if (overlay) overlay.classList.add('hidden');
     });
     
     modalResultList.appendChild(btn);
@@ -1774,7 +1858,11 @@ function renderLyricsList() {
       checkbox.style.marginLeft = '8px';
       checkbox.style.cursor = 'pointer';
       checkbox.addEventListener('click', e => e.stopPropagation());
-      checkbox.addEventListener('change', () => updateSlideshowBtnState());
+      checkbox.addEventListener('change', (e) => {
+        updateSlideshowBtnState();
+        if (e.target.checked) div.classList.add('selected');
+        else div.classList.remove('selected');
+      });
       controls.appendChild(checkbox);
     }
 
@@ -2725,4 +2813,125 @@ async function updateYouTubeChannelNames() {
     console.error('Failed to load YouTube channel names', e);
   }
 }
+
+// --- Quota & Pipeline Dashboard ---
+async function fetchQuota() {
+  try {
+    const res = await fetch('/api/quota');
+    const { quota } = await res.json();
+    const pct = Math.min(100, Math.round((quota / 10000) * 100));
+    document.getElementById('quota-text').innerText = `${quota} / 10000`;
+    document.getElementById('quota-bar-fill').style.width = `${pct}%`;
+    if (pct > 90) document.getElementById('quota-bar-fill').style.background = '#ef4444';
+  } catch (e) {}
+}
+
+async function fetchDailyStatus() {
+  try {
+    const res = await fetch('/api/daily-status');
+    const status = await res.json();
+    const channels = ['pop', 'hiphop', 'hindi', 'dhh', 'kpop'];
+    channels.forEach(ch => {
+      const el = document.getElementById(`pipe-${ch}`);
+      if (el) {
+        const dot = el.querySelector('.dot');
+        if (status[ch]) {
+          dot.style.background = '#10b981'; // Green
+        } else {
+          dot.style.background = '#ef4444'; // Red
+        }
+      }
+    });
+  } catch (e) {}
+}
+
+// --- Schedule Indicator ---
+async function updateSchedulePreview(channel) {
+  const ind = document.getElementById('schedule-indicator');
+  if (!ind) return;
+  try {
+    const res = await fetch(`/api/schedule-preview?channel=${channel}`);
+    const { preview } = await res.json();
+    if (preview) {
+      const d = new Date(preview);
+      const formatted = d.toLocaleString(undefined, { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+      ind.innerText = `Scheduled for: ${formatted}`;
+    }
+  } catch (e) {}
+}
+
+// --- Thumbnail Preview Modal ---
+const btnPreviewThumb = document.getElementById('btn-preview-thumb');
+const thumbModal = document.getElementById('thumb-modal');
+const thumbImage = document.getElementById('thumb-image');
+const thumbLoading = document.getElementById('thumb-loading');
+document.getElementById('btn-thumb-modal-close')?.addEventListener('click', () => {
+  thumbModal.classList.add('hidden');
+});
+
+if (btnPreviewThumb) {
+  btnPreviewThumb.addEventListener('click', async () => {
+    if (!S.track) return;
+    thumbModal.classList.remove('hidden');
+    thumbImage.style.opacity = '0';
+    thumbLoading.style.display = 'block';
+
+    try {
+      const req = await fetch('/api/thumbnail-preview', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: S.track.title,
+          artist: S.track.artist,
+          artworkUrl: S.track.artworkUrl,
+          theme: selectAlign ? selectAlign.value : 'center'
+        })
+      });
+      if (!req.ok) throw new Error('Failed to generate thumbnail');
+      const blob = await req.blob();
+      const url = URL.createObjectURL(blob);
+      thumbImage.src = url;
+      thumbImage.onload = () => {
+        thumbLoading.style.display = 'none';
+        thumbImage.style.opacity = '1';
+      };
+    } catch (e) {
+      alert('Error previewing thumbnail: ' + e.message);
+      thumbModal.classList.add('hidden');
+    }
+  });
+}
+
+// --- Enable Buttons when Track is Ready ---
+const originalSyncStateChange = window.syncStateChange || function(){};
+window.syncStateChange = function() {
+  if (S.track && btnPreviewThumb) {
+    btnPreviewThumb.disabled = false;
+  }
+};
+
+// --- Keyboard Shortcuts ---
+document.addEventListener('keydown', (e) => {
+  // Ignore if typing in an input or textarea
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+
+  if (e.code === 'Space') {
+    e.preventDefault();
+    if (S.isPlaying) pauseAudio();
+    else playAudio();
+  } else if (e.code === 'ArrowRight') {
+    e.preventDefault();
+    seekAudio(S.videoTime + 5);
+  } else if (e.code === 'ArrowLeft') {
+    e.preventDefault();
+    seekAudio(S.videoTime - 5);
+  } else if (e.ctrlKey && e.code === 'Enter') {
+    e.preventDefault();
+    const btnCompile = document.getElementById('btn-compile');
+    if (btnCompile && !btnCompile.disabled) btnCompile.click();
+  }
+});
+
 updateYouTubeChannelNames();
+fetchQuota();
+fetchDailyStatus();

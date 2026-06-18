@@ -1254,9 +1254,23 @@ async function renderSlideshow({
   });
 }
 
+async function generateThumbnailBuffer({ title, artist, artworkUrl, theme, logoPath }) {
+  const coverImg = await loadImage(artworkUrl);
+  let logoImg = null;
+  if (logoPath && fs.existsSync(logoPath)) {
+    logoImg = await loadImage(logoPath);
+  }
+  const colors = extractColors(coverImg);
+  const alignment = theme === 'center' ? 'center' : 'left';
+  const FONT = 'Plus Jakarta Sans';
+  
+  return generateThumbnail(coverImg, colors, title, artist, FONT, alignment, null, 200, logoImg, 1920, 1080);
+}
+
 module.exports = {
   renderVideo,
   generateThumbnail,
+  generateThumbnailBuffer,
   getAudioAmplitude,
   detectAudioStart,
   renderSlideshow

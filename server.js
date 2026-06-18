@@ -105,6 +105,46 @@ app.get('/api/youtube-status', (req, res) => {
   res.json(status);
 });
 
+app.get('/api/quota', (req, res) => {
+  res.json({ quota: ytAuth.getQuota() });
+});
+
+app.get('/api/daily-status', (req, res) => {
+  res.json(ytAuth.getDailyStatus());
+});
+
+app.get('/api/schedule-preview', (req, res) => {
+  const channel = req.query.channel;
+  if (!channel) return res.status(400).send('Missing channel');
+  res.json({ preview: ytAuth.getSchedulePreview(channel) });
+});
+
+app.post('/api/thumbnail-preview', async (req, res) => {
+  try {
+    const { title, artist, artworkUrl, theme, logoPath } = req.body;
+    if (!title || !artworkUrl) return res.status(400).send('Missing fields');
+    
+    // We need to generate just the thumbnail buffer
+    const videoRenderer = require('./video_renderer');
+    const thumbBuffer = await videoRenderer.generateThumbnailBuffer({
+      title,
+      artist,
+      artworkUrl,
+      theme,
+      logoPath: logoPath || path.join(__dirname, 'public', 'logo.png')
+    });
+    
+    res.set('Content-Type', 'image/jpeg');
+    res.send(thumbBuffer);
+  } catch(e) {
+    console.error('Thumbnail preview error:', e);
+    res.status(500).send(e.message);
+  }
+});
+
+// ----------------------------------------------------
+// YT UPLOAD ENDPOINT
+// ----------------------------------------------------
 app.post('/api/youtube-upload', async (req, res) => {
   const { channel, videoPath, thumbnailPath, title, description, tags } = req.body;
   if (!channel || !videoPath || !title) {
@@ -886,12 +926,16 @@ app.get('/api/stream/:videoId', async (req, res) => {
   if (!videoId) return res.status(400).send('Bad videoId');
 
   try {
-    // Use local download for scrubbing support
-    console.log(`[Stream] Ensuring local audio cache for: ${videoId}`);
-    let audioPath = await downloadAudio(videoId, `https://www.youtube.com/watch?v=${videoId}`);
+    if (directUrlCache.has(videoId)) {
+      console.log(`[Stream] Cache hit for direct URL: ${videoId}`);
+      return res.redirect(directUrlCache.get(videoId));
+    }
+
+    console.log(`[Stream] Fetching direct stream URL for: ${videoId}`);
+    let directUrl = await getDirectAudioUrl(`https://www.youtube.com/watch?v=${videoId}`);
     
-    if (!audioPath || !fs.existsSync(audioPath)) {
-      console.log(`[Stream] Primary download failed for ${videoId}.`);
+    if (!directUrl) {
+      console.log(`[Stream] Primary URL extraction failed for ${videoId}.`);
       
       if (title && artist) {
         console.log(`[Stream] Auto-fallback: Searching standard YouTube for "${title} ${artist}"...`);
@@ -904,25 +948,25 @@ app.get('/api/stream/:videoId', async (req, res) => {
           if (altId === videoId) continue;
           
           console.log(`[Stream] Fallback trying: ${altId} (${results[i].title})`);
-          audioPath = await downloadAudio(altId, `https://www.youtube.com/watch?v=${altId}`);
+          directUrl = await getDirectAudioUrl(`https://www.youtube.com/watch?v=${altId}`);
           
-          if (audioPath && fs.existsSync(audioPath)) {
+          if (directUrl) {
             console.log(`[Stream] Fallback SUCCESS with ${altId}!`);
-            fallbackSuccess = true;
-            break;
+            directUrlCache.set(videoId, directUrl); // Cache under original requested ID
+            setTimeout(() => directUrlCache.delete(videoId), 4 * 60 * 60 * 1000);
+            return res.redirect(directUrl);
           }
         }
         
-        if (!fallbackSuccess) {
-          return res.status(500).send('Could not download audio stream and all fallbacks failed.');
-        }
+        return res.status(500).send('Could not extract direct stream URL and all fallbacks failed.');
       } else {
-        return res.status(500).send('Could not download audio stream');
+        return res.status(500).send('Could not extract direct stream URL');
       }
     }
     
-    // Express res.sendFile automatically handles Range headers for scrubbing!
-    res.sendFile(path.resolve(audioPath));
+    directUrlCache.set(videoId, directUrl);
+    setTimeout(() => directUrlCache.delete(videoId), 4 * 60 * 60 * 1000);
+    res.redirect(directUrl);
   } catch (err) {
     console.error('[Stream] Error:', err.message);
     if (!res.headersSent) res.status(500).send('Stream error: ' + err.message);

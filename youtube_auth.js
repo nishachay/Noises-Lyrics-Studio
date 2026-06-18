@@ -90,49 +90,94 @@ function isChannelAuthenticated(channelIdLabel) {
 
 // --- Auto-Scheduler State ---
 const SCHEDULE_FILE = path.join(__dirname, 'scheduled_dates.json');
+const QUOTA_FILE = path.join(__dirname, 'quota.json');
+const DAILY_STATUS_FILE = path.join(__dirname, 'daily_status.json');
 
-function getNextPublishTime(channelLabel) {
+function getTodayString() {
+  // Use PT for YouTube quota (which resets at midnight PT)
+  const d = new Date().toLocaleString("en-US", {timeZone: "America/Los_Angeles"});
+  const ptDate = new Date(d);
+  return `${ptDate.getFullYear()}-${ptDate.getMonth()+1}-${ptDate.getDate()}`;
+}
+
+function getQuota() {
+  if (fs.existsSync(QUOTA_FILE)) {
+    const q = JSON.parse(fs.readFileSync(QUOTA_FILE, 'utf8'));
+    if (q.date === getTodayString()) {
+      return q.usage;
+    }
+  }
+  return 0; // Fresh quota
+}
+
+function addQuota(amount) {
+  const usage = getQuota() + amount;
+  fs.writeFileSync(QUOTA_FILE, JSON.stringify({ date: getTodayString(), usage }));
+  return usage;
+}
+
+function getDailyStatus() {
+  if (fs.existsSync(DAILY_STATUS_FILE)) {
+    const s = JSON.parse(fs.readFileSync(DAILY_STATUS_FILE, 'utf8'));
+    // Local date for daily pipeline
+    const today = new Date().toISOString().split('T')[0];
+    if (s.date === today) {
+      return s.channels || {};
+    }
+  }
+  return {};
+}
+
+function markDailyStatus(channelLabel) {
+  const today = new Date().toISOString().split('T')[0];
+  const s = { date: today, channels: getDailyStatus() };
+  s.channels[channelLabel] = true;
+  fs.writeFileSync(DAILY_STATUS_FILE, JSON.stringify(s, null, 2));
+}
+
+function getNextPublishTime(channelLabel, dryRun = false) {
   let scheduleState = {};
   if (fs.existsSync(SCHEDULE_FILE)) {
     scheduleState = JSON.parse(fs.readFileSync(SCHEDULE_FILE, 'utf8'));
   }
 
   const now = new Date();
-  
-  // Target times in local server time (IST)
   let targetHour = 0; let targetMin = 0;
   switch(channelLabel.toLowerCase()) {
-    case 'kpop': targetHour = 14; targetMin = 30; break; // 6 PM KST
+    case 'kpop': targetHour = 14; targetMin = 30; break;
     case 'hindi': targetHour = 18; targetMin = 0; break;
     case 'dhh': targetHour = 20; targetMin = 0; break;
-    case 'pop': targetHour = 21; targetMin = 30; break; // 12 PM EST
-    case 'hiphop': targetHour = 1; targetMin = 30; break; // 4 PM EST
+    case 'pop': targetHour = 21; targetMin = 30; break;
+    case 'hiphop': targetHour = 1; targetMin = 30; break;
     default: return null;
   }
 
-  // Calculate base target for today
   let targetDate = new Date(now);
   targetDate.setHours(targetHour, targetMin, 0, 0);
 
-  // Must be at least 30 mins in future
   if (targetDate.getTime() - now.getTime() < 30 * 60 * 1000) {
     targetDate.setDate(targetDate.getDate() + 1);
   }
 
-  // Check if we already scheduled something in the future for this channel
   if (scheduleState[channelLabel]) {
     const lastScheduled = new Date(scheduleState[channelLabel]);
-    // If the last scheduled date is later than or equal to our base target, push it to the next day
     if (lastScheduled >= targetDate) {
       targetDate = new Date(lastScheduled);
       targetDate.setDate(targetDate.getDate() + 1);
     }
   }
 
-  scheduleState[channelLabel] = targetDate.toISOString();
-  fs.writeFileSync(SCHEDULE_FILE, JSON.stringify(scheduleState, null, 2));
+  const iso = targetDate.toISOString();
+  if (!dryRun) {
+    scheduleState[channelLabel] = iso;
+    fs.writeFileSync(SCHEDULE_FILE, JSON.stringify(scheduleState, null, 2));
+  }
 
-  return targetDate.toISOString();
+  return iso;
+}
+
+function getSchedulePreview(channelLabel) {
+  return getNextPublishTime(channelLabel, true);
 }
 
 /**
@@ -198,6 +243,10 @@ async function uploadToYouTube({ channelIdLabel, videoPath, thumbnailPath, title
     }
   }
 
+  // Track quota and daily status after successful upload
+  addQuota(1650);
+  markDailyStatus(channelIdLabel);
+
   return `https://studio.youtube.com/video/${videoId}/edit`;
 }
 
@@ -205,5 +254,8 @@ module.exports = {
   getAuthUrl,
   handleCallback,
   isChannelAuthenticated,
-  uploadToYouTube
+  uploadToYouTube,
+  getSchedulePreview,
+  getQuota,
+  getDailyStatus
 };
