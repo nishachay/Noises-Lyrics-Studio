@@ -529,9 +529,19 @@ function drawWatermark(ctx, w, h, time, logoImg) {
   ctx.save();
   
   const margin = Math.round(Math.min(w, h) * 0.05);
-  const lgSz   = Math.round(Math.min(w, h) * 0.13);
-  const lx     = margin;
-  const ly     = h - margin - lgSz;
+  
+  // Constrain width to 12% of screen width, or height to 5% of screen height
+  const aspect = logoImg.width / logoImg.height;
+  let drawW = w * 0.12;
+  let drawH = drawW / aspect;
+  
+  if (drawH > h * 0.06) {
+    drawH = h * 0.06;
+    drawW = drawH * aspect;
+  }
+  
+  const lx = margin;
+  const ly = h - margin - drawH;
   
   // Floating offset using sine wave based on time
   const floatY = Math.sin(time * 2.0) * 3.5;
@@ -539,8 +549,7 @@ function drawWatermark(ctx, w, h, time, logoImg) {
   // 100% visible
   ctx.globalAlpha = 1.0;
   
-  const aspect = logoImg.width / logoImg.height;
-  ctx.drawImage(logoImg, lx, ly + floatY, lgSz * aspect, lgSz);
+  ctx.drawImage(logoImg, lx, ly + floatY, drawW, drawH);
   ctx.restore();
 }
 
@@ -1245,4 +1254,10 @@ async function renderSlideshow({
   });
 }
 
-module.exports = { renderVideo, getAudioAmplitude, detectAudioStart, renderSlideshow };
+module.exports = {
+  renderVideo,
+  generateThumbnail,
+  getAudioAmplitude,
+  detectAudioStart,
+  renderSlideshow
+};

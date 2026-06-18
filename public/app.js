@@ -540,9 +540,19 @@ function drawWatermark(W, H, t) {
   ctx.save();
   
   const margin = Math.round(Math.min(W, H) * 0.05);
-  const lgSz   = Math.round(Math.min(W, H) * 0.13);
-  const lx     = margin;
-  const ly     = H - margin - lgSz;
+  
+  // Constrain width to 12% of screen width, or height to 5% of screen height
+  const aspect = logoImg.width / logoImg.height;
+  let drawW = W * 0.12;
+  let drawH = drawW / aspect;
+  
+  if (drawH > H * 0.06) {
+    drawH = H * 0.06;
+    drawW = drawH * aspect;
+  }
+  
+  const lx = margin;
+  const ly = H - margin - drawH;
   
   // Floating offset using sine wave based on time (t)
   const floatY = Math.sin(t * 2.0) * 3.5;
@@ -550,8 +560,7 @@ function drawWatermark(W, H, t) {
   // 100% visible
   ctx.globalAlpha = 1.0;
   
-  const aspect = logoImg.width / logoImg.height;
-  ctx.drawImage(logoImg, lx, ly + floatY, lgSz * aspect, lgSz);
+  ctx.drawImage(logoImg, lx, ly + floatY, drawW, drawH);
   ctx.restore();
 }
 
