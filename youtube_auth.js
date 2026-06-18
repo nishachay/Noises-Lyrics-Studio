@@ -88,6 +88,53 @@ function isChannelAuthenticated(channelIdLabel) {
   return { authenticated: false, name: null };
 }
 
+// --- Auto-Scheduler State ---
+const SCHEDULE_FILE = path.join(__dirname, 'scheduled_dates.json');
+
+function getNextPublishTime(channelLabel) {
+  let scheduleState = {};
+  if (fs.existsSync(SCHEDULE_FILE)) {
+    scheduleState = JSON.parse(fs.readFileSync(SCHEDULE_FILE, 'utf8'));
+  }
+
+  const now = new Date();
+  
+  // Target times in local server time (IST)
+  let targetHour = 0; let targetMin = 0;
+  switch(channelLabel.toLowerCase()) {
+    case 'kpop': targetHour = 14; targetMin = 30; break; // 6 PM KST
+    case 'hindi': targetHour = 18; targetMin = 0; break;
+    case 'dhh': targetHour = 20; targetMin = 0; break;
+    case 'pop': targetHour = 21; targetMin = 30; break; // 12 PM EST
+    case 'hiphop': targetHour = 1; targetMin = 30; break; // 4 PM EST
+    default: return null;
+  }
+
+  // Calculate base target for today
+  let targetDate = new Date(now);
+  targetDate.setHours(targetHour, targetMin, 0, 0);
+
+  // Must be at least 30 mins in future
+  if (targetDate.getTime() - now.getTime() < 30 * 60 * 1000) {
+    targetDate.setDate(targetDate.getDate() + 1);
+  }
+
+  // Check if we already scheduled something in the future for this channel
+  if (scheduleState[channelLabel]) {
+    const lastScheduled = new Date(scheduleState[channelLabel]);
+    // If the last scheduled date is later than or equal to our base target, push it to the next day
+    if (lastScheduled >= targetDate) {
+      targetDate = new Date(lastScheduled);
+      targetDate.setDate(targetDate.getDate() + 1);
+    }
+  }
+
+  scheduleState[channelLabel] = targetDate.toISOString();
+  fs.writeFileSync(SCHEDULE_FILE, JSON.stringify(scheduleState, null, 2));
+
+  return targetDate.toISOString();
+}
+
 /**
  * Uploads a video to the specified channel.
  */
@@ -103,7 +150,17 @@ async function uploadToYouTube({ channelIdLabel, videoPath, thumbnailPath, title
 
   const youtube = google.youtube({ version: 'v3', auth: oauth2Client });
 
+  const publishAt = getNextPublishTime(channelIdLabel);
   console.log(`[YouTube] Starting upload to channel: ${channelIdLabel}...`);
+  if (publishAt) console.log(`[YouTube] Will auto-schedule for: ${publishAt}`);
+
+  const statusObj = {
+    privacyStatus: 'private', // Upload as private so it can be scheduled
+    selfDeclaredMadeForKids: false
+  };
+  if (publishAt) {
+    statusObj.publishAt = publishAt;
+  }
 
   // 1. Upload Video
   const res = await youtube.videos.insert({
@@ -115,10 +172,7 @@ async function uploadToYouTube({ channelIdLabel, videoPath, thumbnailPath, title
         tags: tags || [],
         categoryId: '10' // Music
       },
-      status: {
-        privacyStatus: 'private', // Upload as private first so you can review it!
-        selfDeclaredMadeForKids: false
-      }
+      status: statusObj
     },
     media: {
       body: fs.createReadStream(videoPath)
