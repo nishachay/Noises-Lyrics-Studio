@@ -12,9 +12,21 @@ const TEMP_DIR = path.join(__dirname, 'temp');
 
 [BIN_DIR, TEMP_DIR].forEach(d => { if (!fs.existsSync(d)) fs.mkdirSync(d, { recursive: true }); });
 
+let hasUpdatedYtdlp = false;
+
 // ── Ensure yt-dlp binary ─────────────────────────────────────────────────────
 async function ensureYtdlp() {
-  if (fs.existsSync(YTDLP)) return;
+  if (fs.existsSync(YTDLP)) {
+    if (!hasUpdatedYtdlp) {
+      console.log('[yt-dlp] Checking for updates in the background...');
+      hasUpdatedYtdlp = true;
+      spawn(YTDLP, ['-U']).on('close', code => {
+        if (code === 0) console.log('[yt-dlp] Successfully updated to the latest anti-bot patch.');
+        else console.log('[yt-dlp] Update check finished (already up to date or failed).');
+      });
+    }
+    return;
+  }
   console.log('[yt-dlp] Downloading binary...');
   const res = await axios({ method: 'get', responseType: 'stream',
     url: 'https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp.exe' });
@@ -185,29 +197,61 @@ async function downloadAudio(id, url) {
   }
   await ensureYtdlp();
   const out = path.join(TEMP_DIR, `${id}.%(ext)s`);
-  await spawnYtdlpSingle([
+  const baseArgs = [
     '-f', 'bestaudio[ext=m4a]/bestaudio/best',
     '-x', '--audio-format', 'm4a',
     '--ffmpeg-location', ffmpegInstaller.path,
     '-o', out,
     url,
-  ]);
+  ];
+
+  try {
+    console.log(`[Audio] Downloading ${id} (Standard)`);
+    await spawnYtdlpSingle(baseArgs);
+  } catch (err) {
+    console.warn(`[Audio] Standard download failed. Trying with Chrome cookies...`);
+    try {
+      await spawnYtdlpSingle(['--cookies-from-browser', 'chrome', ...baseArgs]);
+    } catch (err2) {
+      console.warn(`[Audio] Chrome cookie fallback failed. Trying with Edge cookies...`);
+      try {
+        await spawnYtdlpSingle(['--cookies-from-browser', 'edge', ...baseArgs]);
+      } catch (err3) {
+        console.error(`[Audio] All download attempts failed for ${id}`);
+      }
+    }
+  }
+
   return fs.existsSync(audioPath) ? audioPath : null;
 }
 
 // ── GET DIRECT AUDIO URL (for instant streaming without download) ────────────
 async function getDirectAudioUrl(url) {
   await ensureYtdlp();
+  const baseArgs = [
+    '-f', 'bestaudio[ext=m4a]/bestaudio/best',
+    '-g',
+    url
+  ];
+
   try {
-    const raw = await spawnYtdlpSingle([
-      '-f', 'bestaudio[ext=m4a]/bestaudio/best',
-      '-g',
-      url
-    ]);
+    const raw = await spawnYtdlpSingle(baseArgs);
     return raw.trim().split('\n')[0];
   } catch (e) {
-    console.error('[YouTube] getDirectAudioUrl failed:', e.message);
-    return null;
+    console.warn('[YouTube] getDirectAudioUrl failed, trying Chrome cookies...');
+    try {
+      const raw = await spawnYtdlpSingle(['--cookies-from-browser', 'chrome', ...baseArgs]);
+      return raw.trim().split('\n')[0];
+    } catch (e2) {
+      console.warn('[YouTube] getDirectAudioUrl Chrome fallback failed, trying Edge cookies...');
+      try {
+        const raw = await spawnYtdlpSingle(['--cookies-from-browser', 'edge', ...baseArgs]);
+        return raw.trim().split('\n')[0];
+      } catch (e3) {
+        console.error('[YouTube] getDirectAudioUrl all attempts failed:', e3.message);
+        return null;
+      }
+    }
   }
 }
 

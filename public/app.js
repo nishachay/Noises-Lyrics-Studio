@@ -232,8 +232,8 @@ function initAudio(videoId) {
       
       const modal = document.getElementById('audio-error-modal');
       const ytLink = document.getElementById('error-yt-link');
-      if (modal && ytLink && S.track && S.track.id) {
-        ytLink.value = `https://www.youtube.com/watch?v=${S.track.id}`;
+      if (modal && ytLink && S.track && S.track.youtubeId) {
+        ytLink.value = `https://www.youtube.com/watch?v=${S.track.youtubeId}`;
         modal.classList.remove('hidden');
       } else {
         alert("Audio stream blocked or unavailable! Please try a different version of the song.");
