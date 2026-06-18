@@ -541,13 +541,13 @@ function drawWatermark(W, H, t) {
   
   const margin = Math.round(Math.min(W, H) * 0.05);
   
-  // Constrain width to 8% of screen width, or height to 4% of screen height
+  // Constrain width to 10% of screen width, or height to 5% of screen height
   const aspect = logoImg.width / logoImg.height;
-  let drawW = W * 0.08;
+  let drawW = W * 0.10;
   let drawH = drawW / aspect;
   
-  if (drawH > H * 0.04) {
-    drawH = H * 0.04;
+  if (drawH > H * 0.05) {
+    drawH = H * 0.05;
     drawW = drawH * aspect;
   }
   
