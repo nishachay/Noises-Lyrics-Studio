@@ -290,35 +290,59 @@ function cleanYoutubeMeta(rawTitle, rawChannel) {
 
 // ══════════════════════════════════════════════════════════════
 // GET /api/trending
-// Fetches the global Top 50 from iTunes public RSS
+// Fetches authentic Spotify Playlists per category
 // ══════════════════════════════════════════════════════════════
+const trendingCache = {};
+
 app.get('/api/trending', async (req, res) => {
   try {
     const category = req.query.category || 'pop';
-    let country = 'us';
-    if (category === 'hindi' || category === 'dhh') country = 'in';
-    if (category === 'kpop') country = 'kr';
-    if (category === 'hiphop') country = 'us';
+    
+    if (trendingCache[category] && (Date.now() - trendingCache[category].timestamp) < 3600000) {
+      return res.json(trendingCache[category].data);
+    }
 
-    const url = `https://rss.applemarketingtools.com/api/v2/${country}/music/most-played/50/songs.json`;
-    const response = await axios.get(url, { timeout: 10000 });
-    const data = response.data;
+    const { getTracks, getData } = require('spotify-url-info')(fetch);
     
-    const songs = data.feed.results.map(item => ({
-      title: item.name,
-      artist: item.artistName,
-      artworkUrl: item.artworkUrl100 ? item.artworkUrl100.replace('100x100bb', '300x300bb') : null
-    }));
+    // Using stable Editorial Playlists that support embed scraping
+    // New Music Friday & New Joints provide the absolute newest drops.
+    const playlists = {
+      pop: 'https://open.spotify.com/playlist/37i9dQZF1DX4JAvHpjipBk',     // New Music Friday (Global Drops)
+      hiphop: 'https://open.spotify.com/playlist/37i9dQZF1DWY4xHQp97fN6',  // New Joints (New Hip-Hop Drops)
+      hindi: 'https://open.spotify.com/playlist/37i9dQZF1DX0XUfTFmNBRM',   // Hot Hits Hindi (Stable)
+      dhh: 'https://open.spotify.com/playlist/37i9dQZF1DX1ct2TQrAvRf',     // Rap 91 (Stable DHH Drops)
+      kpop: 'https://open.spotify.com/playlist/37i9dQZF1DX9tPFwDMOaN1'     // K-Pop ON! (Stable K-Pop Drops)
+    };
     
+    const url = playlists[category] || playlists['pop'];
+
+    // getData returns the playlist metadata including coverArt
+    const data = await getData(url);
+    const playlistArtwork = (data.coverArt && data.coverArt.sources && data.coverArt.sources.length > 0) 
+                            ? data.coverArt.sources[0].url : null;
+    
+    const tracks = await getTracks(url);
+
+    const songs = tracks.slice(0, 15).map(t => {
+      // spotify-url-info getTracks returns { artist: 'Name', name: 'Title', duration: ... }
+      return {
+        title: t.name || t.title || 'Unknown Title',
+        artist: t.artist || t.subtitle || 'Unknown Artist',
+        artworkUrl: playlistArtwork // Use playlist cover as fallback since tracks lack individual art
+      };
+    });
+
+    trendingCache[category] = {
+      timestamp: Date.now(),
+      data: songs
+    };
+
     res.json(songs);
   } catch (err) {
-    console.error('[Trending] Failed to fetch iTunes RSS:', err.message);
+    console.error('[Trending] Failed to fetch Spotify Playlists:', err.message);
     res.status(500).json({ error: 'Failed to fetch trending songs' });
   }
 });
-
-
-
 // ══════════════════════════════════════════════════════════════
 // GET /api/search-metadata
 // YouTube is the ground truth anchor (it has the audio).
@@ -393,6 +417,34 @@ app.get('/api/search-metadata', async (req, res) => {
         });
       });
     }
+
+    // Smart Sorting: Boost results that match the search query words exactly
+    const lowerQ = q.toLowerCase().replace(/ by /g, ' ').replace(/[^a-z0-9\s]/g, '').trim();
+    const queryWords = lowerQ.split(/\s+/).filter(w => w.length > 0);
+    
+    results.forEach(r => {
+      r.score = 0;
+      const targetStr = `${r.title} ${r.artist}`.toLowerCase();
+      
+      // Exact substring match gives huge boost
+      if (targetStr.includes(lowerQ)) r.score += 100;
+      
+      // Individual word matches
+      queryWords.forEach(w => {
+        if (targetStr.includes(w)) r.score += 10;
+      });
+      
+      // Penalize unwanted versions unless the user explicitly searched for them
+      const badWords = ['karaoke', 'cover', 'instrumental', 'tribute', 'slowed', 'reverb', 'type beat', 'remix'];
+      badWords.forEach(w => {
+        if (targetStr.includes(w) && !lowerQ.includes(w)) {
+          r.score -= 50;
+        }
+      });
+    });
+    
+    // Sort highest score first
+    results.sort((a, b) => b.score - a.score);
 
     const payload = { results };
     searchCache.set(cacheKey, payload);

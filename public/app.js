@@ -131,12 +131,6 @@ const btnSlideshow = $('btn-slideshow');
 const btnSearch    = $('btn-search');
 const btnModalClose = $('btn-modal-close');
 
-// Trending
-const btnTrending      = $('btn-trending');
-const trendingPanel    = $('trending-panel');
-const btnTrendingClose = $('btn-trending-close');
-const trendingLoading  = $('trending-loading');
-const trendingList     = $('trending-list');
 
 // Progress view
 const progArt    = $('prog-art');
@@ -1217,6 +1211,8 @@ function drawFrame() {
 
 let searchTimer = null;
 
+let viralDataFetched = false;
+
 function openSearch() {
   searchModal.classList.remove('hidden');
   modalQuery.value = '';
@@ -1236,6 +1232,69 @@ function showSuggestions() {
   modalEmpty.classList.add('hidden');
   S.searchResults = [];
   S.searchHighlight = -1;
+  
+  if (!viralDataFetched) {
+    fetchTrendingInsights('pop');
+  }
+}
+
+// Attach event listeners to the tabs
+document.querySelectorAll('.trending-tab').forEach(tab => {
+  tab.addEventListener('click', (e) => {
+    document.querySelectorAll('.trending-tab').forEach(t => t.classList.remove('active'));
+    e.target.classList.add('active');
+    
+    // Update the Visit Source link
+    const sourceLink = document.getElementById('source-link');
+    if (sourceLink && e.target.dataset.url && e.target.dataset.source) {
+      sourceLink.href = e.target.dataset.url;
+      sourceLink.innerHTML = `${e.target.dataset.source} ↗`;
+    }
+    
+    fetchTrendingInsights(e.target.dataset.cat);
+  });
+});
+
+async function fetchTrendingInsights(category) {
+  const loading = document.getElementById('viral-loading');
+  const content = document.getElementById('viral-content');
+  const hotList = document.getElementById('viral-hot-list');
+  
+  if (!loading || !content || !hotList) return;
+  
+  loading.classList.remove('hidden');
+  content.classList.add('hidden');
+  
+  try {
+    const res = await fetch(`/api/trending?category=${category}`);
+    if (!res.ok) throw new Error('Failed to fetch trending insights');
+    const data = await res.json();
+    
+    hotList.innerHTML = '';
+    data.forEach(t => {
+      const el = document.createElement('div');
+      el.className = 'viral-card';
+      el.innerHTML = `
+        <img src="${t.artworkUrl || 'logo.png'}" class="viral-card-img">
+        <div class="viral-card-info">
+          <div class="viral-card-title">${esc(t.title)}</div>
+          <div class="viral-card-artist">${esc(t.artist)}</div>
+        </div>
+      `;
+      el.onclick = () => {
+        modalQuery.value = `${t.title} ${t.artist}`;
+        fetchMetadataResults(modalQuery.value);
+      };
+      hotList.appendChild(el);
+    });
+    
+    loading.classList.add('hidden');
+    content.classList.remove('hidden');
+    viralDataFetched = true;
+  } catch (e) {
+    console.error('Trending fetch error:', e);
+    loading.innerHTML = 'Failed to load trending insights.';
+  }
 }
 
 function showSearching(msg = 'Searching iTunes...') {
@@ -2125,72 +2184,7 @@ btnSearch.addEventListener('click', openSearch);
 btnModalClose.addEventListener('click', closeSearch);
 searchModal.addEventListener('click', e => { if (e.target === searchModal) closeSearch(); });
 
-// Trending tabs & panel
-const trendingTabs = document.querySelectorAll('.trending-tab');
-const trendingTitle = document.getElementById('trending-title');
 
-btnTrending.addEventListener('click', () => {
-  if (trendingPanel.classList.contains('hidden')) {
-    openTrendingPanel('pop', 'Global Pop'); // Default
-    // Reset active tab
-    trendingTabs.forEach(t => t.classList.remove('active'));
-    document.querySelector('.trending-tab[data-category="pop"]').classList.add('active');
-  } else {
-    trendingPanel.classList.add('hidden');
-  }
-});
-
-btnTrendingClose.addEventListener('click', () => trendingPanel.classList.add('hidden'));
-
-trendingTabs.forEach(tab => {
-  tab.addEventListener('click', (e) => {
-    trendingTabs.forEach(t => t.classList.remove('active'));
-    tab.classList.add('active');
-    
-    const category = tab.getAttribute('data-category');
-    const titleText = tab.getAttribute('data-title');
-    openTrendingPanel(category, titleText);
-  });
-});
-
-async function openTrendingPanel(category, titleText) {
-  trendingPanel.classList.remove('hidden');
-  trendingTitle.textContent = titleText;
-  trendingList.innerHTML = '';
-  trendingList.classList.add('hidden');
-  trendingLoading.classList.remove('hidden');
-  
-  try {
-    const res = await fetch(`/api/trending?category=${category}`);
-    const tracks = await res.json();
-    
-    trendingList.innerHTML = '';
-    tracks.forEach((t, i) => {
-      const item = document.createElement('div');
-      item.className = 'trending-item';
-      item.innerHTML = `
-        <div class="trending-rank">${i + 1}</div>
-        <img class="trending-art" src="${t.artworkUrl || 'logo.png'}" alt="Art">
-        <div class="trending-meta">
-          <div class="trending-title">${t.title}</div>
-          <div class="trending-artist">${t.artist}</div>
-        </div>
-      `;
-      item.addEventListener('click', () => {
-        trendingPanel.classList.add('hidden');
-        openSearch();
-        fetchMetadataResults(`${t.title} ${t.artist}`);
-      });
-      trendingList.appendChild(item);
-    });
-    
-    trendingLoading.classList.add('hidden');
-    trendingList.classList.remove('hidden');
-  } catch (e) {
-    console.error('Trending fetch error:', e);
-    trendingLoading.innerHTML = '<span>Failed to load charts.</span>';
-  }
-}
 
 
 modalQuery.addEventListener('keydown', e => {

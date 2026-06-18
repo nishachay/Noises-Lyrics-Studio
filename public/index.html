@@ -8,8 +8,36 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&family=Noto+Sans+Devanagari:wght@400;500;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=4.0">
+  <link rel="stylesheet" href="style.css?v=5.1">
   <link rel="stylesheet" href="premium.css?v=4.0">
+  <style>
+    /* Hard-coded to bypass any browser cache issues */
+    .trending-tab {
+      -webkit-appearance: none !important;
+      appearance: none !important;
+      background-color: transparent !important;
+      border: 1px solid rgba(255,255,255,0.08) !important;
+      color: rgba(255,255,255,0.4) !important;
+      padding: 4px 12px !important;
+      border-radius: 100px !important;
+      font-size: 11px !important;
+      font-family: 'Inter', sans-serif !important;
+      font-weight: 500 !important;
+      cursor: pointer !important;
+      white-space: nowrap !important;
+      transition: all 0.2s ease !important;
+    }
+    .trending-tab:hover {
+      background-color: rgba(255,255,255,0.05) !important;
+      color: rgba(255,255,255,0.8) !important;
+    }
+    .trending-tab.active {
+      background-color: rgba(255,255,255,0.9) !important;
+      color: #000000 !important;
+      border-color: rgba(255,255,255,0.9) !important;
+      font-weight: 600 !important;
+    }
+  </style>
 </head>
 <body>
 
@@ -26,20 +54,32 @@
     <div id="modal-results" class="modal-results">
       <!-- Suggestions default state -->
       <div id="modal-suggestions" class="modal-suggestions">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
-          <div class="suggestions-label" style="margin-bottom:0;">Suggested</div>
-          <a href="https://charts.youtube.com/us" target="_blank" style="color:rgba(255,255,255,0.5); font-size:11px; text-decoration:none; display:flex; align-items:center; gap:4px; padding:4px 8px; border-radius:4px; background:rgba(255,255,255,0.05); transition:all 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.1)'; this.style.color='rgba(255,255,255,0.8)';" onmouseout="this.style.background='rgba(255,255,255,0.05)'; this.style.color='rgba(255,255,255,0.5)';">
-            Trending Charts 
-            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
-          </a>
+        <div style="padding: 16px 24px 0 24px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+            <div style="font-size: 12px; font-weight: 600; color: var(--text-2); letter-spacing: 0.5px; text-transform: uppercase; display: flex; align-items: center; gap: 6px;">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+              Top Drops
+            </div>
+            <a id="source-link" href="https://open.spotify.com/playlist/37i9dQZF1DX4JAvHpjipBk" target="_blank" style="font-size: 11px; color: var(--text-3); text-decoration: none;">Source: New Music Friday (Global) ↗</a>
+          </div>
+
+          <!-- Category Tabs -->
+          <div class="trending-tabs" style="margin-bottom:8px; display:flex; gap:6px; overflow-x:auto; padding-bottom:4px;">
+            <button class="trending-tab active" data-cat="pop" data-url="https://open.spotify.com/playlist/37i9dQZF1DX4JAvHpjipBk" data-source="Source: New Music Friday (Global)">Global Pop</button>
+            <button class="trending-tab" data-cat="hiphop" data-url="https://open.spotify.com/playlist/37i9dQZF1DWY4xHQp97fN6" data-source="Source: New Joints">Hip-Hop</button>
+            <button class="trending-tab" data-cat="hindi" data-url="https://open.spotify.com/playlist/37i9dQZF1DX0XUfTFmNBRM" data-source="Source: Hot Hits Hindi">Hindi</button>
+            <button class="trending-tab" data-cat="dhh" data-url="https://open.spotify.com/playlist/37i9dQZF1DX1ct2TQrAvRf" data-source="Source: Rap 91">Desi Hip-Hop</button>
+            <button class="trending-tab" data-cat="kpop" data-url="https://open.spotify.com/playlist/37i9dQZF1DX9tPFwDMOaN1" data-source="Source: K-Pop ON!">K-Pop</button>
+          </div>
         </div>
-        <div class="suggestions-grid">
-          <button class="suggest-chip" data-query="KR$NA &amp; Dhanda Nyoliwala - Boom Shaka"><span>Boom Shaka</span><small>KR$NA</small></button>
-          <button class="suggest-chip" data-query="The Weeknd - Starboy"><span>Starboy</span><small>The Weeknd</small></button>
-          <button class="suggest-chip" data-query="Billie Eilish - Birds of a Feather"><span>Birds of a Feather</span><small>Billie Eilish</small></button>
-          <button class="suggest-chip" data-query="Post Malone - I Had Some Help"><span>I Had Some Help</span><small>Post Malone</small></button>
-          <button class="suggest-chip" data-query="Charlie Puth - Suffer"><span>Suffer</span><small>Charlie Puth</small></button>
-          <button class="suggest-chip" data-query="Arijit Singh - Uska Hi Banana"><span>Uska Hi Banana</span><small>Arijit Singh</small></button>
+
+        <div id="viral-loading" style="padding: 30px 20px; text-align: center; color: var(--text-3); font-size: 13px;">
+          <div class="state-spinner" style="margin: 0 auto 10px;"></div>
+          <span>Loading live trends...</span>
+        </div>
+        
+        <div id="viral-content" class="hidden">
+          <div id="viral-hot-list" class="viral-grid" style="grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));"></div>
         </div>
       </div>
       <!-- Search result list -->
@@ -125,15 +165,12 @@
     </div>
 
     <div class="header-actions">
-      <button id="btn-local-audio" class="header-trending-btn" aria-label="Use Local Audio">
+      <button id="btn-local-audio" class="header-action-btn" aria-label="Use Local Audio">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right:6px;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
         Upload Audio
       </button>
       <input type="file" id="local-audio-upload" accept="audio/*" style="display:none">
 
-      <button id="btn-trending" class="header-trending-btn" aria-label="Trending Music">
-        🔥 Trending
-      </button>
       <button id="btn-search" class="header-search-btn" aria-label="Search (Ctrl+K)">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
         <span>Search song...</span>
@@ -141,26 +178,6 @@
       </button>
     </div>
   </header>
-
-  <!-- TRENDING PANEL -->
-  <div id="trending-panel" class="trending-panel hidden">
-    <div class="trending-header">
-      <h2 id="trending-title">Trending</h2>
-      <button id="btn-trending-close" class="modal-esc-btn">Esc</button>
-    </div>
-    <div class="trending-tabs">
-      <button class="trending-tab active" data-category="pop" data-title="Global Pop">🇺🇸 Pop</button>
-      <button class="trending-tab" data-category="hiphop" data-title="Western Hip-Hop">🎤 Hip-Hop</button>
-      <button class="trending-tab" data-category="hindi" data-title="Hindi Pop">🇮🇳 Hindi</button>
-      <button class="trending-tab" data-category="dhh" data-title="Desi Hip-Hop">🔥 DHH</button>
-      <button class="trending-tab" data-category="kpop" data-title="K-Pop">🇰🇷 K-Pop</button>
-    </div>
-    <div id="trending-loading" class="trending-loading">
-      <div class="state-spinner"></div>
-      <span>Loading live charts...</span>
-    </div>
-    <div id="trending-list" class="trending-list hidden"></div>
-  </div>
 
   <!-- WORKSPACE -->
   <div class="studio-workspace">
