@@ -1,6 +1,6 @@
 {
-  "name": "noises-lyric-generator",
-  "version": "4.0.0",
+  "name": "noises-lyrics-studio",
+  "version": "4.0.1",
   "description": "Automatic karaoke lyrics video generator",
   "main": "server.js",
   "scripts": {
