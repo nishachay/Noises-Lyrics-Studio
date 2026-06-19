@@ -1301,9 +1301,8 @@ async function autoLoadAndPlay(query) {
     if (text) text.textContent = 'Fetching lyrics & metadata...';
     await resolveSong(item);
     
-    // 2. Load Audio
+    // 2. Audio is already initialized inside resolveSong
     if (text) text.textContent = 'Connecting to audio stream...';
-    loadAudio(item.id || item.youtubeId);
     
     // 3. Play automatically
     audio.play().catch(() => {});
@@ -1463,7 +1462,6 @@ function renderMetadataResults(results) {
       await resolveSong(item);
       
       if (text) text.textContent = 'Connecting to audio stream...';
-      loadAudio(item.id || item.youtubeId);
       audio.play().catch(() => {});
       
       if (overlay) overlay.classList.add('hidden');
