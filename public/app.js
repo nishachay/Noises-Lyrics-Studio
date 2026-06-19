@@ -1602,11 +1602,10 @@ async function resolveSong(metadata) {
 
 function matchSkeleton(show) {
   if (show) {
-    headerSkeleton.classList.remove('hidden');
-    headerTrackContent.classList.add('hidden');
-  } else {
-    headerSkeleton.classList.add('hidden');
-    headerTrackContent.classList.remove('hidden');
+    headerTitle.textContent = 'Resolving Audio...';
+    headerArtist.textContent = 'Please wait';
+    headerArt.style.display = 'none';
+    headerArt.src = '';
   }
 }
 
