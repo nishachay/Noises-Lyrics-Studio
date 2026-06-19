@@ -35,6 +35,8 @@ const S = {
   // UI state
   activeTab: 'tab-track',
   showTranslations: false,
+  targetScrollTop: null,
+  currentScrollTop: 0,
   lastHighlightIdx: -1,
 
   // Tap-sync state
@@ -207,6 +209,7 @@ function initAudio(videoId) {
     });
 
     audio.addEventListener('play', () => {
+      btnPlay.disabled = false;
       iconPlay.classList.add('hidden');
       iconPause.classList.remove('hidden');
       if (!S.isPlaying) {
@@ -215,6 +218,7 @@ function initAudio(videoId) {
       }
     });
     audio.addEventListener('pause', () => {
+      btnPlay.disabled = false;
       iconPlay.classList.remove('hidden');
       iconPause.classList.add('hidden');
       S.isPlaying = false;
@@ -1976,9 +1980,48 @@ function updateSyncHighlight(curTime, force = false) {
 
   if (activeIdx >= 0) {
     const activeEl = lyricsList.querySelector('.sync-line.active');
-    if (activeEl) activeEl.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    if (activeEl) {
+      const containerHeight = lyricsList.clientHeight;
+      const activeTop = activeEl.offsetTop;
+      const activeHeight = activeEl.clientHeight;
+      const target = activeTop - (containerHeight / 2) + (activeHeight / 2);
+      S.targetScrollTop = Math.max(0, Math.min(lyricsList.scrollHeight - containerHeight, target));
+      triggerSmoothScroll();
+    }
   }
 }
+
+let scrollAnimId = null;
+function triggerSmoothScroll() {
+  if (scrollAnimId) return;
+  if (S.currentScrollTop === undefined || S.currentScrollTop === null) {
+    S.currentScrollTop = lyricsList.scrollTop;
+  }
+  const animate = () => {
+    if (S.targetScrollTop === null || S.targetScrollTop === undefined) {
+      scrollAnimId = null;
+      return;
+    }
+    const diff = S.targetScrollTop - S.currentScrollTop;
+    if (Math.abs(diff) > 0.5) {
+      S.currentScrollTop += diff * 0.12;
+      lyricsList.scrollTop = Math.round(S.currentScrollTop);
+      scrollAnimId = requestAnimationFrame(animate);
+    } else {
+      S.currentScrollTop = S.targetScrollTop;
+      lyricsList.scrollTop = Math.round(S.currentScrollTop);
+      scrollAnimId = null;
+    }
+  };
+  scrollAnimId = requestAnimationFrame(animate);
+}
+
+// Sync current scroll position on manual user scroll
+lyricsList.addEventListener('scroll', () => {
+  if (!scrollAnimId) {
+    S.currentScrollTop = lyricsList.scrollTop;
+  }
+});
 
 function stampLine(idx) {
   if (!audio) return;
