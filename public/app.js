@@ -34,6 +34,7 @@ const S = {
 
   // UI state
   activeTab: 'tab-track',
+  showTranslations: false,
   lastHighlightIdx: -1,
 
   // Tap-sync state
@@ -115,6 +116,7 @@ const btnTapToggle = $('btn-tap-toggle');
 const btnReset     = $('btn-reset-timings');
 const btnTranslate = $('btn-translate');
 const btnClearTrans = $('btn-clear-translations');
+const btnToggleTrans = $('btn-toggle-translations');
 const tapBanner    = $('tap-banner');
 const lyricsList   = $('lyrics-list');
 const tapFooter    = $('tap-footer');
@@ -610,7 +612,8 @@ let precomputedLyrics = [];
 
 // ── Precompute wrapped lyrics and layout coordinates ──────────────
 function precomputeLyricsLayout(W, H, alignment) {
-  const lyrics = S.lyrics;
+  // Sort a copy chronologically for rendering, keeping S.lyrics in its natural text order
+  const lyrics = [...S.lyrics].sort((a, b) => (a.time || 0) - (b.time || 0));
   if (!lyrics || !lyrics.length) {
     precomputedLyrics = [];
     return;
@@ -1750,6 +1753,9 @@ function renderLyricsList() {
     const hasTrans = S.lyrics.some(l => l.translation);
     btnClearTrans.style.display = hasTrans ? 'inline-block' : 'none';
   }
+  if (btnToggleTrans) {
+    btnToggleTrans.style.display = lines.length ? 'inline-block' : 'none';
+  }
 
   if (!lines.length) {
     lyricsList.innerHTML = `<div class="hint-state">${
@@ -1778,18 +1784,26 @@ function renderLyricsList() {
     textWrap.appendChild(textEl);
 
     if (!S.tapMode) {
-      const transInput = document.createElement('input');
-      transInput.type = 'text';
-      transInput.className = 'line-translation-input';
-      transInput.placeholder = 'Add translation (optional)...';
-      transInput.value = line.translation || '';
-      
-      transInput.addEventListener('change', (e) => {
-        S.lyrics[idx].translation = e.target.value.trim();
-        precomputeLyricsLayout(canvas.width, canvas.height, selectAlign.value);
-      });
-      transInput.addEventListener('click', e => e.stopPropagation());
-      textWrap.appendChild(transInput);
+      if (S.showTranslations) {
+        const transInput = document.createElement('input');
+        transInput.type = 'text';
+        transInput.className = 'line-translation-input';
+        transInput.placeholder = 'Add translation...';
+        transInput.value = line.translation || '';
+        
+        transInput.addEventListener('change', (e) => {
+          S.lyrics[idx].translation = e.target.value.trim();
+          precomputeLyricsLayout(canvas.width, canvas.height, selectAlign.value);
+        });
+        transInput.addEventListener('click', e => e.stopPropagation());
+        textWrap.appendChild(transInput);
+      } else if (line.translation) {
+        const transEl = document.createElement('span');
+        transEl.className = 'line-translation-label';
+        transEl.style.cssText = 'font-size:12px; color:var(--text-3); font-style:italic; margin-top:2px;';
+        transEl.textContent = line.translation;
+        textWrap.appendChild(transEl);
+      }
     }
 
     const timeEl = document.createElement('input');
@@ -1820,14 +1834,12 @@ function renderLyricsList() {
         e.target.value = '';
       }
       
-      // Auto re-sort array if we change a time, but only if not currently mid-tap-sync
+      // Update the LRC box and layouts without sorting the array to prevent scrambling the lyrics structure
       if (!S.tapMode) {
-        S.lyrics.sort((a, b) => (a.time || 0) - (b.time || 0));
         lyricsEditor.value = lyricsToLRC(S.lyrics);
         precomputeLyricsLayout(canvas.width, canvas.height, selectAlign.value);
-        renderLyricsList(); // Redraw immediately to reflect order
+        renderLyricsList(); // Redraw immediately
       } else {
-        // If in tap mode, just update the LRC box
         lyricsEditor.value = lyricsToLRC(S.tapLines);
       }
     });
@@ -1920,9 +1932,21 @@ function updateSyncHighlight(curTime, force = false) {
   let activeIdx = -1;
   let shortEndIdx = -1;
 
+  let maxTime = -1;
+  let maxShortEndTime = -1;
+
   for (let i = 0; i < S.lyrics.length; i++) {
-    if (S.lyrics[i].time <= adjTime) activeIdx = i;
-    if (S.lyrics[i].time <= adjTime + 30) shortEndIdx = i;
+    const l = S.lyrics[i];
+    if (l.time !== null && l.time !== undefined) {
+      if (l.time <= adjTime && l.time > maxTime) {
+        maxTime = l.time;
+        activeIdx = i;
+      }
+      if (l.time <= adjTime + 30 && l.time > maxShortEndTime) {
+        maxShortEndTime = l.time;
+        shortEndIdx = i;
+      }
+    }
   }
 
   const shortStartIdx = activeIdx >= 0 ? activeIdx : 0;
@@ -1954,7 +1978,6 @@ function stampLine(idx) {
   const cur = audio.currentTime || 0;
   const t   = Math.max(0, cur - S.syncOffset);
   S.lyrics[idx].time = Math.round(t * 100) / 100;
-  S.lyrics.sort((a, b) => (a.time || 0) - (b.time || 0));
   S.tapLines = S.lyrics.map(l => ({ text: l.text, time: l.time }));
   lyricsEditor.value = lyricsToLRC(S.lyrics);
   editorFormat.textContent = 'Synced LRC';
@@ -2309,6 +2332,14 @@ btnTapToggle.addEventListener('click', () => {
 });
 btnTap.addEventListener('click', handleTap);
 btnReset.addEventListener('click', resetTimings);
+
+// Toggle translations
+btnToggleTrans.addEventListener('click', () => {
+  S.showTranslations = !S.showTranslations;
+  btnToggleTrans.classList.toggle('active', S.showTranslations);
+  btnToggleTrans.textContent = S.showTranslations ? 'Hide Trans' : 'Show Trans';
+  renderLyricsList();
+});
 
 // Export
 btnCompile.addEventListener('click', () => {

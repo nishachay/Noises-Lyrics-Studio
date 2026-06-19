@@ -147,7 +147,7 @@ async function searchItunes(query) {
     const url = `https://itunes.apple.com/search?term=${encodeURIComponent(query)}&media=music&entity=song&limit=5`;
     console.log(`[iTunes] Searching: "${query}"`);
     const { data } = await axios.get(url, {
-      timeout: 4000,
+      timeout: 10000,
       headers: { 'User-Agent': 'NoisesMusic/2.0' }
     });
 
@@ -301,7 +301,7 @@ async function searchDeezer(query) {
     const url = `https://api.deezer.com/search?q=${encoded}&limit=5&order=RANKING`;
     console.log(`[Deezer] Searching: "${query}"`);
     const { data } = await axios.get(url, {
-      timeout: 6000,
+      timeout: 10000,
       headers: { 'User-Agent': 'NoisesMusic/2.0' }
     });
 

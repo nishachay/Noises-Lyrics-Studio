@@ -222,3 +222,48 @@
   filter: drop-shadow(0 0 2px rgba(239, 68, 68, 0.3));
 }
 
+/* Show Translations button active state */
+#btn-toggle-translations.active {
+  background: rgba(16, 185, 129, 0.15) !important;
+  border-color: rgba(16, 185, 129, 0.4) !important;
+  color: #10b981 !important;
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.1) !important;
+}
+
+/* Premium active / hover states for sync lines */
+.sync-line {
+  background: var(--surface-3) !important;
+  border: 1px solid rgba(255, 255, 255, 0.02) !important;
+  margin-bottom: 6px !important;
+  border-radius: 8px !important;
+}
+
+/* Better stamp button visibility */
+.btn-stamp {
+  opacity: 0.35 !important;
+}
+.sync-line:hover .btn-stamp {
+  opacity: 1 !important;
+  color: var(--accent) !important;
+}
+
+/* Clean translation labels */
+.line-translation-label {
+  display: block;
+  font-size: 11.5px;
+  color: var(--text-3);
+  font-style: italic;
+  margin-top: 3px;
+  line-height: 1.4;
+}
+
+/* Slide-down animations for inline edit inputs */
+.line-translation-input {
+  animation: slideDown 0.15s ease-out;
+  margin-top: 6px !important;
+}
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+

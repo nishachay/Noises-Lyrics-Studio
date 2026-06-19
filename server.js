@@ -256,14 +256,6 @@ function artistVariants(artist) {
 // Clean track title (strip parenthetical noise like (feat. ...), (Official Video), [Remix], etc.)
 function cleanTrackTitle(title) {
   let t = title.toLowerCase();
-  
-  // Split off common separators if they got into the track name
-  const separators = [' | ', ' - ', ' : '];
-  for (const sep of separators) {
-    if (t.includes(sep)) {
-      t = t.split(sep)[0];
-    }
-  }
 
   const noise = [
     /\(feat\..*?\)/g,
@@ -322,7 +314,7 @@ async function fetchLyricsList(title, artist) {
   const fetchAndMerge = async (url, label) => {
     try {
       console.log(`[LRCLIB] ${label}: ${url}`);
-      const { data } = await axios.get(url, { timeout: 4000, headers: LRCLIB_UA });
+      const { data } = await axios.get(url, { timeout: 10000, headers: LRCLIB_UA });
       if (Array.isArray(data)) {
         for (const record of data) {
           if (record.id) map.set(record.id, record);
@@ -335,15 +327,20 @@ async function fetchLyricsList(title, artist) {
     }
   };
 
-  // 1 & 2. Try exact /get endpoint AND general /search?q= query concurrently to get ALL options
+  // Run all variations in parallel to maximize lyrics resolution success
   await Promise.all([
-    fetchAndMerge(`${LRCLIB}/get?track_name=${encodeURIComponent(cleanTitle)}&artist_name=${encodeURIComponent(cleanArtist)}`, 'Exact Get'),
-    fetchAndMerge(`${LRCLIB}/search?q=${encodeURIComponent(cleanArtist + ' ' + cleanTitle)}`, 'General Search')
+    fetchAndMerge(`${LRCLIB}/get?track_name=${encodeURIComponent(cleanTitle)}&artist_name=${encodeURIComponent(cleanArtist)}`, 'Cleaned Get'),
+    fetchAndMerge(`${LRCLIB}/get?track_name=${encodeURIComponent(title)}&artist_name=${encodeURIComponent(artist)}`, 'Raw Get'),
+    fetchAndMerge(`${LRCLIB}/search?q=${encodeURIComponent(cleanArtist + ' ' + cleanTitle)}`, 'Cleaned Search'),
+    fetchAndMerge(`${LRCLIB}/search?q=${encodeURIComponent(artist + ' ' + title)}`, 'Raw Search')
   ]);
 
-  // 3. Absolute fallback: Title only (if the artist is super obscure or parsed wrong)
+  // Absolute fallback: Title only (if the artist is super obscure or parsed wrong)
   if (map.size === 0) {
-    await fetchAndMerge(`${LRCLIB}/search?q=${encodeURIComponent(cleanTitle)}`, 'Title Only Search');
+    await Promise.all([
+      fetchAndMerge(`${LRCLIB}/search?q=${encodeURIComponent(cleanTitle)}`, 'Cleaned Title Only Search'),
+      fetchAndMerge(`${LRCLIB}/search?q=${encodeURIComponent(title)}`, 'Raw Title Only Search')
+    ]);
   }
 
   const list = Array.from(map.values());
@@ -534,9 +531,16 @@ app.get('/api/search-metadata', async (req, res) => {
     const results = [];
     const seen = new Set();
     
+    // Normalize key helper to filter duplicate search results
+    const getCleanKey = (title, artist) => {
+      const cleanT = cleanTrackTitle(title);
+      const cleanA = cleanArtistName(artist);
+      return `${cleanT}|${cleanA}`;
+    };
+    
     // Prioritize iTunes as it has better high-res artwork and clean studio durations
     itunesResult.forEach(item => {
-      const key = `${item.trackName}|${item.artistName}`.toLowerCase();
+      const key = getCleanKey(item.trackName, item.artistName);
       if (!seen.has(key)) {
         seen.add(key);
         results.push({
@@ -550,7 +554,7 @@ app.get('/api/search-metadata', async (req, res) => {
       }
     });
     ytmResult.forEach(item => {
-      const key = `${item.title}|${item.artist}`.toLowerCase();
+      const key = getCleanKey(item.title, item.artist);
       if (!seen.has(key)) {
         seen.add(key);
         results.push({
@@ -570,14 +574,18 @@ app.get('/api/search-metadata', async (req, res) => {
       const fallback = await searchYoutube(q).catch(() => []);
       fallback.forEach(item => {
         const meta = cleanYoutubeMeta(item.title, item.uploader || item.channel?.name);
-        results.push({
-          source: 'youtube',
-          title: meta.title,
-          artist: meta.artist,
-          album: '',
-          duration: item.duration,
-          artworkUrl: item.id ? `https://i.ytimg.com/vi/${item.id}/hqdefault.jpg` : null
-        });
+        const key = getCleanKey(meta.title, meta.artist);
+        if (!seen.has(key)) {
+          seen.add(key);
+          results.push({
+            source: 'youtube',
+            title: meta.title,
+            artist: meta.artist,
+            album: '',
+            duration: item.duration,
+            artworkUrl: item.id ? `https://i.ytimg.com/vi/${item.id}/hqdefault.jpg` : null
+          });
+        }
       });
     }
 
@@ -587,21 +595,42 @@ app.get('/api/search-metadata', async (req, res) => {
     
     results.forEach(r => {
       r.score = 0;
-      const targetStr = `${r.title} ${r.artist}`.toLowerCase();
+      const titleLower = r.title.toLowerCase();
+      const artistLower = r.artist.toLowerCase();
+      const targetStr1 = `${titleLower} ${artistLower}`;
+      const targetStr2 = `${artistLower} ${titleLower}`;
       
-      // Exact substring match gives huge boost
-      if (targetStr.includes(lowerQ)) r.score += 100;
+      // 1. Exact match for full title or full title+artist
+      if (titleLower === lowerQ) {
+        r.score += 200;
+      } else if (targetStr1 === lowerQ || targetStr2 === lowerQ) {
+        r.score += 250;
+      } else if (targetStr1.includes(lowerQ) || targetStr2.includes(lowerQ)) {
+        r.score += 150;
+      }
       
-      // Individual word matches
+      // 2. Query words containment: if all words in the query match the result
+      const allWordsMatch = queryWords.every(w => targetStr1.includes(w));
+      if (allWordsMatch) {
+        r.score += 100;
+      }
+      
+      // 3. Individual word matches
       queryWords.forEach(w => {
-        if (targetStr.includes(w)) r.score += 10;
+        if (targetStr1.includes(w)) r.score += 10;
+        if (titleLower.includes(w)) r.score += 5; // Boost if word is in title
       });
       
-      // Penalize unwanted versions unless the user explicitly searched for them
+      // 4. Source prioritization
+      if (r.source === 'itunes') {
+        r.score += 15;
+      }
+      
+      // 5. Penalize unwanted versions unless the user explicitly searched for them
       const badWords = ['karaoke', 'cover', 'instrumental', 'tribute', 'slowed', 'reverb', 'type beat', 'remix'];
       badWords.forEach(w => {
-        if (targetStr.includes(w) && !lowerQ.includes(w)) {
-          r.score -= 50;
+        if (targetStr1.includes(w) && !lowerQ.includes(w)) {
+          r.score -= 80;
         }
       });
     });
