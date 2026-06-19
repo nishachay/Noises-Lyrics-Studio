@@ -1252,24 +1252,7 @@ if (btnTrendingClose && trendingModal) {
   });
 }
 
-// ═══════════════════════════════════════════════════════════════════
-// PUBLISH MODAL LOGIC
-// ═══════════════════════════════════════════════════════════════════
-const publishModal = document.getElementById('publish-modal');
-const btnPublishModal = document.getElementById('btn-publish-modal');
-const btnPublishClose = document.getElementById('btn-publish-close');
 
-if (btnPublishModal && publishModal) {
-  btnPublishModal.addEventListener('click', () => {
-    publishModal.classList.remove('hidden');
-  });
-}
-
-if (btnPublishClose && publishModal) {
-  btnPublishClose.addEventListener('click', () => {
-    publishModal.classList.add('hidden');
-  });
-}
 
 document.querySelectorAll('.trending-tab').forEach(tab => {
   tab.addEventListener('click', (e) => {
@@ -1722,9 +1705,18 @@ function autoSelectBestLyrics() {
     lyricsSource.value = 'none';
     setLyrics([], 'none', '');
     
-    // Auto-switch to Edit Raw tab and pulse it
-    const editBtn = document.querySelector('.tab-btn[data-tab="tab-edit"]');
-    if (editBtn) editBtn.click();
+    // Auto-switch to Lyrics tab and show raw edit
+    const lyricsTabBtn = document.querySelector('.tab-btn[data-tab="tab-lyrics"]');
+    if (lyricsTabBtn) lyricsTabBtn.click();
+    
+    const rawEditView = document.getElementById('raw-edit-view');
+    const lyricsList = document.getElementById('lyrics-list');
+    const btnRawEdit = document.getElementById('btn-raw-edit');
+    if (rawEditView && rawEditView.classList.contains('hidden')) {
+      rawEditView.classList.remove('hidden');
+      lyricsList.classList.add('hidden');
+      if (btnRawEdit) btnRawEdit.classList.add('active');
+    }
     
     const editor = document.getElementById('lyrics-editor');
     if (editor) {
@@ -2377,6 +2369,31 @@ if (btnSlideshow) {
   });
 }
 
+const btnRawEdit = document.getElementById('btn-raw-edit');
+if (btnRawEdit) {
+  btnRawEdit.addEventListener('click', () => {
+    const rawEditView = document.getElementById('raw-edit-view');
+    const lyricsList = document.getElementById('lyrics-list');
+    if (!rawEditView || !lyricsList) return;
+    
+    if (rawEditView.classList.contains('hidden')) {
+      // Show raw edit
+      rawEditView.classList.remove('hidden');
+      lyricsList.classList.add('hidden');
+      if (S.isTapping) {
+        // stop tapping if active
+        document.getElementById('btn-tap-toggle').click();
+      }
+      btnRawEdit.classList.add('active');
+    } else {
+      // Hide raw edit
+      rawEditView.classList.add('hidden');
+      lyricsList.classList.remove('hidden');
+      btnRawEdit.classList.remove('active');
+    }
+  });
+}
+
 btnTranslate.addEventListener('click', async () => {
   if (!S.lyrics || S.lyrics.length === 0) return;
   btnTranslate.disabled = true;
@@ -2434,6 +2451,12 @@ btnApply.addEventListener('click', () => {
     setLyrics(parseLRC(text), 'synced', text);
   } else if (S.track) {
     setLyrics(spreadPlain(text, S.track.duration), 'plain', text);
+  }
+  
+  // Close raw edit view automatically
+  const btnRawEdit = document.getElementById('btn-raw-edit');
+  if (btnRawEdit && btnRawEdit.classList.contains('active')) {
+    btnRawEdit.click();
   }
 });
 
