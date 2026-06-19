@@ -179,9 +179,16 @@ function initAudio(videoId) {
       S.audioDuration = audio.duration || 0;
       btnPlay.disabled = false;
       audioOverlay.classList.add('hidden');
-      if (isInitial) {
-        S.videoTime = 0;
-        S.isPlaying = false;
+      
+      // Prevent race conditions: check if the audio is already playing
+      S.isPlaying = !audio.paused;
+      if (S.isPlaying) {
+        iconPlay.classList.add('hidden');
+        iconPause.classList.remove('hidden');
+      } else {
+        if (isInitial) {
+          S.videoTime = 0;
+        }
         iconPlay.classList.remove('hidden');
         iconPause.classList.add('hidden');
       }

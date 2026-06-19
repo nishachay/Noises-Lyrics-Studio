@@ -267,3 +267,21 @@
   to { opacity: 1; transform: translateY(0); }
 }
 
+/* Prevent blue browser text selection highlight on sync lines */
+.sync-line {
+  user-select: none !important;
+}
+
+/* Premium color coding overrides for selected and short regions */
+.sync-line.selected {
+  background: rgba(139, 92, 246, 0.08) !important;
+  border-color: rgba(139, 92, 246, 0.2) !important;
+  border-left: 3px solid #8b5cf6 !important;
+}
+
+.sync-line.short-region {
+  background: rgba(245, 158, 11, 0.06) !important;
+  border-color: rgba(245, 158, 11, 0.15) !important;
+  border-left: 3px dashed #f59e0b !important;
+}
+
