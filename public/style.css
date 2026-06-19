@@ -351,11 +351,6 @@ body {
   color: var(--text-1);
   border-color: var(--border-2);
 }
-.btn-action.active {
-  background: rgba(16, 185, 129, 0.2);
-  color: #10b981;
-  border-color: rgba(16, 185, 129, 0.5);
-}
 
 .btn-publish-header {
   display: flex;

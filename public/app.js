@@ -33,7 +33,7 @@ const S = {
   syncOffset: 0.0,
 
   // UI state
-  activeTab: 'tab-sync',
+  activeTab: 'tab-track',
   lastHighlightIdx: -1,
 
   // Tap-sync state
@@ -1252,7 +1252,24 @@ if (btnTrendingClose && trendingModal) {
   });
 }
 
+// ═══════════════════════════════════════════════════════════════════
+// PUBLISH MODAL LOGIC
+// ═══════════════════════════════════════════════════════════════════
+const publishModal = document.getElementById('publish-modal');
+const btnPublishModal = document.getElementById('btn-publish-modal');
+const btnPublishClose = document.getElementById('btn-publish-close');
 
+if (btnPublishModal && publishModal) {
+  btnPublishModal.addEventListener('click', () => {
+    publishModal.classList.remove('hidden');
+  });
+}
+
+if (btnPublishClose && publishModal) {
+  btnPublishClose.addEventListener('click', () => {
+    publishModal.classList.add('hidden');
+  });
+}
 
 document.querySelectorAll('.trending-tab').forEach(tab => {
   tab.addEventListener('click', (e) => {
@@ -1486,6 +1503,36 @@ async function resolveSong(metadata) {
     editTitle.value = S.track.title || '';
     editArtist.value = S.track.artist || '';
     
+    // Auto-fetch LRCLIB from frontend proxy
+    if (S.lyricsRecords.length === 0 && S.track.title && S.track.artist) {
+      lyricsSource.innerHTML = '<option>Fetching Lyrics from LRCLIB...</option>';
+      try {
+        const getUrl = `/api/lyrics?title=${encodeURIComponent(S.track.title)}&artist=${encodeURIComponent(S.track.artist)}`;
+        const controller = new AbortController();
+        const id = setTimeout(() => controller.abort(), 5000);
+        const getRes = await fetch(getUrl, { signal: controller.signal }).catch(() => null);
+        clearTimeout(id);
+
+        if (getRes && getRes.ok) {
+           const lres = await getRes.json();
+           if (lres.records && lres.records.length > 0) {
+             S.lyricsRecords = lres.records.map(r => ({
+               id: `lrclib_${r.id}`,
+               trackName: r.trackName,
+               artistName: r.artistName,
+               albumName: r.albumName || '',
+               duration: r.duration || 0,
+               syncedLyrics: r.syncedLyrics,
+               plainLyrics: r.plainLyrics,
+               source: 'LRCLIB (Auto)'
+             }));
+           }
+        }
+      } catch (e) {
+        console.warn('Frontend LRCLIB fetch failed:', e);
+      }
+    }
+
     const editCover = document.getElementById('edit-cover');
     const editCoverPreview = document.getElementById('edit-cover-preview');
     if (editCover) editCover.value = S.track.artworkUrl || '';
@@ -1508,60 +1555,7 @@ async function resolveSong(metadata) {
       initAudio(S.track.youtubeId);
     }
 
-    // Auto-fetch LRCLIB from frontend
-    if (S.lyricsRecords.length === 0 && S.track.title && S.track.artist) {
-      lyricsSource.innerHTML = '<option>Fetching Lyrics from LRCLIB...</option>';
-      try {
-        let ldata = null;
-        
-        // Helper with timeout
-        const fetchWithTimeout = async (url) => {
-          const controller = new AbortController();
-          const id = setTimeout(() => controller.abort(), 5000);
-          try {
-            const response = await fetch(url, { signal: controller.signal });
-            clearTimeout(id);
-            return response;
-          } catch (e) {
-            clearTimeout(id);
-            throw e;
-          }
-        };
 
-        // 1. Try exact match
-        const getUrl = `https://lrclib.net/api/get?track_name=${encodeURIComponent(S.track.title)}&artist_name=${encodeURIComponent(S.track.artist)}`;
-        const getRes = await fetchWithTimeout(getUrl);
-        if (getRes.ok) {
-           ldata = await getRes.json();
-        } else {
-           // 2. Try fuzzy search fallback
-           const searchUrl = `https://lrclib.net/api/search?q=${encodeURIComponent(S.track.title + ' ' + S.track.artist)}`;
-           const searchRes = await fetchWithTimeout(searchUrl);
-           if (searchRes.ok) {
-             const items = await searchRes.json();
-             if (items && items.length > 0) {
-               // Pick the best match (prioritize synced)
-               ldata = items.find(i => i.syncedLyrics) || items[0];
-             }
-           }
-        }
-        
-        if (ldata && ldata.id) {
-           S.lyricsRecords = [{
-             id: `lrclib_${ldata.id}`,
-             trackName: ldata.trackName,
-             artistName: ldata.artistName,
-             albumName: ldata.albumName || '',
-             duration: ldata.duration || 0,
-             syncedLyrics: ldata.syncedLyrics,
-             plainLyrics: ldata.plainLyrics,
-             source: 'LRCLIB (Auto)'
-           }];
-        }
-      } catch (e) {
-        console.warn('Frontend LRCLIB fetch failed:', e);
-      }
-    }
 
     // Lyrics
     populateLyricsSource();
@@ -1705,18 +1699,9 @@ function autoSelectBestLyrics() {
     lyricsSource.value = 'none';
     setLyrics([], 'none', '');
     
-    // Auto-switch to Lyrics tab and show raw edit
-    const lyricsTabBtn = document.querySelector('.tab-btn[data-tab="tab-lyrics"]');
-    if (lyricsTabBtn) lyricsTabBtn.click();
-    
-    const rawEditView = document.getElementById('raw-edit-view');
-    const lyricsList = document.getElementById('lyrics-list');
-    const btnRawEdit = document.getElementById('btn-raw-edit');
-    if (rawEditView && rawEditView.classList.contains('hidden')) {
-      rawEditView.classList.remove('hidden');
-      lyricsList.classList.add('hidden');
-      if (btnRawEdit) btnRawEdit.classList.add('active');
-    }
+    // Auto-switch to Edit Raw tab and pulse it
+    const editBtn = document.querySelector('.tab-btn[data-tab="tab-edit"]');
+    if (editBtn) editBtn.click();
     
     const editor = document.getElementById('lyrics-editor');
     if (editor) {
@@ -1740,6 +1725,10 @@ function loadLyricsRecord(r) {
   } else {
     setLyrics([], 'none', '');
   }
+
+  // Switch to Sync & Lyrics tab
+  const syncBtn = document.querySelector('.tab-btn[data-tab="tab-sync"]');
+  if (syncBtn) syncBtn.click();
 }
 
 function loadLyricsByIdx(idx) {
@@ -2369,31 +2358,6 @@ if (btnSlideshow) {
   });
 }
 
-const btnRawEdit = document.getElementById('btn-raw-edit');
-if (btnRawEdit) {
-  btnRawEdit.addEventListener('click', () => {
-    const rawEditView = document.getElementById('raw-edit-view');
-    const lyricsList = document.getElementById('lyrics-list');
-    if (!rawEditView || !lyricsList) return;
-    
-    if (rawEditView.classList.contains('hidden')) {
-      // Show raw edit
-      rawEditView.classList.remove('hidden');
-      lyricsList.classList.add('hidden');
-      if (S.isTapping) {
-        // stop tapping if active
-        document.getElementById('btn-tap-toggle').click();
-      }
-      btnRawEdit.classList.add('active');
-    } else {
-      // Hide raw edit
-      rawEditView.classList.add('hidden');
-      lyricsList.classList.remove('hidden');
-      btnRawEdit.classList.remove('active');
-    }
-  });
-}
-
 btnTranslate.addEventListener('click', async () => {
   if (!S.lyrics || S.lyrics.length === 0) return;
   btnTranslate.disabled = true;
@@ -2451,12 +2415,6 @@ btnApply.addEventListener('click', () => {
     setLyrics(parseLRC(text), 'synced', text);
   } else if (S.track) {
     setLyrics(spreadPlain(text, S.track.duration), 'plain', text);
-  }
-  
-  // Close raw edit view automatically
-  const btnRawEdit = document.getElementById('btn-raw-edit');
-  if (btnRawEdit && btnRawEdit.classList.contains('active')) {
-    btnRawEdit.click();
   }
 });
 
@@ -2561,7 +2519,7 @@ modalLyricsQuery.addEventListener('input', () => {
 async function runLyricsSearch(query) {
   showLyricsSearching();
   try {
-    const res = await fetch(`https://lrclib.net/api/search?q=${encodeURIComponent(query)}`);
+    const res = await fetch(`/api/lyrics-search?q=${encodeURIComponent(query)}`);
     const data = await res.json();
     if (!Array.isArray(data) || data.length === 0) {
       showLyricsEmpty('No lyrics found.');

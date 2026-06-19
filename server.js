@@ -1,4 +1,5 @@
 'use strict';
+require('dns').setDefaultResultOrder('ipv4first');
 
 const express = require('express');
 const path    = require('path');
@@ -469,6 +470,61 @@ app.get('/api/search-metadata', async (req, res) => {
   console.log(`\n${'─'.repeat(60)}`);
   console.log(`[Search Metadata] "${q}"`);
 
+  // Direct YouTube Link Resolving
+  if (q.includes('youtube.com/') || q.includes('youtu.be/')) {
+    console.log(`[Search Metadata] Detected YouTube URL: "${q}"`);
+    try {
+      const info = await getVideoInfo(q);
+      if (info) {
+        const meta = cleanYoutubeMeta(info.title, info.uploader);
+        const results = [{
+          source: 'youtube',
+          title: meta.title,
+          artist: meta.artist,
+          album: '',
+          duration: info.duration,
+          artworkUrl: `https://i.ytimg.com/vi/${info.id}/hqdefault.jpg`,
+          youtubeId: info.id
+        }];
+        const payload = { results };
+        searchCache.set(cacheKey, payload);
+        return res.json(payload);
+      }
+    } catch (err) {
+      console.error('[Search Metadata] YouTube URL resolve failed:', err.message);
+    }
+  }
+
+  // Direct Spotify Track Link Resolving
+  if (q.includes('spotify.com/track/')) {
+    console.log(`[Search Metadata] Detected Spotify Track URL: "${q}"`);
+    try {
+      const { getData } = require('spotify-url-info')(fetch);
+      const data = await getData(q);
+      if (data) {
+        const title = data.name;
+        const artist = data.artists?.[0]?.name || '';
+        const album = data.album?.name || '';
+        const duration = Math.round((data.duration_ms || 0) / 1000);
+        const artworkUrl = data.album?.images?.[0]?.url || null;
+        
+        const results = [{
+          source: 'spotify',
+          title,
+          artist,
+          album,
+          duration,
+          artworkUrl
+        }];
+        const payload = { results };
+        searchCache.set(cacheKey, payload);
+        return res.json(payload);
+      }
+    } catch (err) {
+      console.error('[Search Metadata] Spotify URL resolve failed:', err.message);
+    }
+  }
+
   try {
     const [itunesResult, ytmResult] = await Promise.all([
       searchItunes(q),
@@ -503,7 +559,7 @@ app.get('/api/search-metadata', async (req, res) => {
           artist: item.artist,
           album: item.albumName || '',
           duration: item.duration,
-          artworkUrl: item.artworkUrl || null
+          artworkUrl: item.artworkUrl || (item.id ? `https://i.ytimg.com/vi/${item.id}/hqdefault.jpg` : null)
         });
       }
     });
@@ -520,7 +576,7 @@ app.get('/api/search-metadata', async (req, res) => {
           artist: meta.artist,
           album: '',
           duration: item.duration,
-          artworkUrl: item.thumbnail || (item.thumbnails && item.thumbnails.length > 0 ? item.thumbnails[0].url : null)
+          artworkUrl: item.id ? `https://i.ytimg.com/vi/${item.id}/hqdefault.jpg` : null
         });
       });
     }
@@ -580,30 +636,56 @@ app.post('/api/resolve-song', async (req, res) => {
 
   try {
     // Step 1: Search YouTube for the audio
-    const ytResult = await searchYoutube(query);
+    let ytResult = [];
+    try {
+      ytResult = await searchYoutube(query);
+    } catch (e) {
+      console.error('[Resolve Audio] searchYoutube failed:', e.message);
+    }
+
+    // Fallback: If YouTube search fails or returns nothing, search YTMusic
+    if (!ytResult || ytResult.length === 0) {
+      console.log('[Resolve Audio] YouTube search returned no results. Trying YTMusic fallback...');
+      try {
+        const ytm = await searchYTMusic(query);
+        if (ytm && ytm.length > 0) {
+          ytResult = ytm.map(item => ({
+            id: item.id,
+            title: item.title,
+            uploader: item.artist,
+            duration: item.duration,
+            webpage_url: `https://www.youtube.com/watch?v=${item.id}`
+          }));
+        }
+      } catch (e) {
+        console.error('[Resolve Audio] YTMusic fallback failed:', e.message);
+      }
+    }
     
     let bestYt = null;
     let minDiff = Infinity;
 
-    // Scan top 10 results to find the studio version that perfectly matches the iTunes duration
-    const searchLimit = Math.min(10, ytResult.length);
-    for (let i = 0; i < searchLimit; i++) {
-      const y = ytResult[i];
-      const diff = Math.abs(y.duration - duration);
-      // Fuzziness: if it's within 3 seconds, it's virtually a perfect match.
-      if (diff < minDiff) {
-        minDiff = diff;
-        bestYt = y;
+    if (ytResult && ytResult.length > 0) {
+      // Scan top 10 results to find the studio version that perfectly matches the iTunes duration
+      const searchLimit = Math.min(10, ytResult.length);
+      for (let i = 0; i < searchLimit; i++) {
+        const y = ytResult[i];
+        const diff = Math.abs(y.duration - duration);
+        // Fuzziness: if it's within 3 seconds, it's virtually a perfect match.
+        if (diff < minDiff) {
+          minDiff = diff;
+          bestYt = y;
+        }
+        if (diff <= 3) break; // Perfect studio match found, stop scanning!
       }
-      if (diff <= 3) break; // Perfect studio match found, stop scanning!
-    }
 
-    // Fallback: If duration is wildly off (e.g., only a 7 minute music video exists), fallback to the absolute top result.
-    if (!bestYt || minDiff > 15) {
-      bestYt = ytResult[0];
-      console.log(`[Resolve Audio] No exact duration match. Falling back to top result: diff=${minDiff}s`);
-    } else {
-      console.log(`[Resolve Audio] Found audio match with duration diff: ${minDiff}s`);
+      // Fallback: If duration is wildly off (e.g., only a 7 minute music video exists), fallback to the absolute top result.
+      if (!bestYt || minDiff > 15) {
+        bestYt = ytResult[0];
+        console.log(`[Resolve Audio] No exact duration match. Falling back to top result: diff=${minDiff}s`);
+      } else {
+        console.log(`[Resolve Audio] Found audio match with duration diff: ${minDiff}s`);
+      }
     }
 
     const bestMatch = {
@@ -619,7 +701,12 @@ app.post('/api/resolve-song', async (req, res) => {
     };
 
     // Step 2: Fetch LRCLIB lyrics using the guaranteed clean iTunes title and artist
-    let lyricsRecords = await fetchLyricsList(title, artist);
+    let lyricsRecords = [];
+    try {
+      lyricsRecords = await fetchLyricsList(title, artist);
+    } catch (e) {
+      console.error('[Resolve Lyrics] fetchLyricsList failed:', e.message);
+    }
     console.log(`[Resolve Lyrics] LRCLIB found ${lyricsRecords.length} record(s)`);
 
     const payload = { bestMatch, lyricsRecords };
@@ -913,9 +1000,48 @@ app.get('/api/render', async (req, res) => {
   }
 });
 
+// Helper to stream/proxy the audio from YouTube's CDN to the client
+async function proxyAudioStream(directUrl, req, res) {
+  try {
+    const headers = {
+      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+    };
+
+    if (req.headers.range) {
+      headers['Range'] = req.headers.range;
+    }
+
+    const streamResponse = await axios({
+      method: 'get',
+      url: directUrl,
+      responseType: 'stream',
+      headers: headers,
+      timeout: 15000
+    });
+
+    res.setHeader('Content-Type', streamResponse.headers['content-type'] || 'audio/webm');
+    res.setHeader('Accept-Ranges', 'bytes');
+
+    if (streamResponse.headers['content-range']) {
+      res.setHeader('Content-Range', streamResponse.headers['content-range']);
+    }
+    if (streamResponse.headers['content-length']) {
+      res.setHeader('Content-Length', streamResponse.headers['content-length']);
+    }
+
+    res.status(streamResponse.status || 200);
+    streamResponse.data.pipe(res);
+  } catch (err) {
+    console.error('[Stream Proxy] Error:', err.message);
+    if (!res.headersSent) {
+      res.status(500).send('Streaming error: ' + err.message);
+    }
+  }
+}
+
 // ══════════════════════════════════════════════════════════════
 // GET /api/stream/:videoId
-// Redirects to direct YouTube audio stream URL.
+// Proxies direct YouTube audio stream URL through the server to bypass 403 blocks.
 // ══════════════════════════════════════════════════════════════
 const directUrlCache = new Map();
 
@@ -928,7 +1054,7 @@ app.get('/api/stream/:videoId', async (req, res) => {
   try {
     if (directUrlCache.has(videoId)) {
       console.log(`[Stream] Cache hit for direct URL: ${videoId}`);
-      return res.redirect(directUrlCache.get(videoId));
+      return proxyAudioStream(directUrlCache.get(videoId), req, res);
     }
 
     console.log(`[Stream] Fetching direct stream URL for: ${videoId}`);
@@ -954,7 +1080,7 @@ app.get('/api/stream/:videoId', async (req, res) => {
             console.log(`[Stream] Fallback SUCCESS with ${altId}!`);
             directUrlCache.set(videoId, directUrl); // Cache under original requested ID
             setTimeout(() => directUrlCache.delete(videoId), 4 * 60 * 60 * 1000);
-            return res.redirect(directUrl);
+            return proxyAudioStream(directUrl, req, res);
           }
         }
         
@@ -966,7 +1092,7 @@ app.get('/api/stream/:videoId', async (req, res) => {
     
     directUrlCache.set(videoId, directUrl);
     setTimeout(() => directUrlCache.delete(videoId), 4 * 60 * 60 * 1000);
-    res.redirect(directUrl);
+    return proxyAudioStream(directUrl, req, res);
   } catch (err) {
     console.error('[Stream] Error:', err.message);
     if (!res.headersSent) res.status(500).send('Stream error: ' + err.message);

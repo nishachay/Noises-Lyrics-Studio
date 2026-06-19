@@ -48,8 +48,13 @@ function spawnYtdlp(args) {
     p.stderr.on('data', d => err += d);
     
     p.on('close', code => {
-      if (code === 0) resolve(out);
-      else reject(new Error(err || out));
+      if (out.trim().length > 0) {
+        resolve(out);
+      } else if (code === 0) {
+        resolve(out);
+      } else {
+        reject(new Error(err || `Exit code ${code}`));
+      }
     });
     p.on('error', (e) => reject(new Error(e.message || 'spawn error')));
   });

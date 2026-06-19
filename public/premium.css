@@ -189,3 +189,36 @@
 .modal-search-row {
   border-bottom: 1px solid rgba(255,255,255,0.05);
 }
+
+/* Header layout overrides */
+.studio-header {
+  position: relative !important;
+}
+
+/* Redesigned Top Drops button */
+.trending-redesign {
+  background: var(--surface-2) !important;
+  border: 1px solid var(--border) !important;
+  color: var(--text-2) !important;
+  font-family: var(--sans) !important;
+  font-size: 12px !important;
+  font-weight: 500 !important;
+  padding: 7px 12px !important;
+  border-radius: 7px !important;
+  display: inline-flex !important;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease-in-out !important;
+}
+.trending-redesign:hover {
+  background: rgba(239, 68, 68, 0.08) !important;
+  border-color: rgba(239, 68, 68, 0.4) !important;
+  color: var(--text-1) !important;
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.1) !important;
+}
+.trending-redesign svg {
+  stroke: #ef4444 !important;
+  filter: drop-shadow(0 0 2px rgba(239, 68, 68, 0.3));
+}
+

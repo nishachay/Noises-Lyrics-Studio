@@ -11,11 +11,31 @@ const path = require('path');
 // 5. Go to "Credentials" -> "Create Credentials" -> "OAuth client ID".
 // 6. Choose "Web application". 
 // 7. Add Authorized redirect URI: "http://localhost:3000/api/youtube-callback"
-// 8. Copy Client ID and Client Secret into the variables below.
+// 8. Copy Client ID and Client Secret into a `.env` file in the project root.
 // ============================================================================
 
-const CLIENT_ID = 'REMOVED_CLIENT_ID';
-const CLIENT_SECRET = 'REMOVED';
+// Load environment variables from .env file if it exists
+try {
+  const dotenvPath = path.join(__dirname, '.env');
+  if (fs.existsSync(dotenvPath)) {
+    const envConfig = fs.readFileSync(dotenvPath, 'utf-8');
+    envConfig.split('\n').forEach(line => {
+      if (line.trim() && !line.trim().startsWith('#')) {
+        const parts = line.split('=');
+        if (parts.length >= 2) {
+          const key = parts[0].trim();
+          const val = parts.slice(1).join('=').trim().replace(/^['"]|['"]$/g, '');
+          process.env[key] = val;
+        }
+      }
+    });
+  }
+} catch (e) {
+  console.warn('Error reading .env file in youtube_auth.js:', e.message);
+}
+
+const CLIENT_ID = process.env.YOUTUBE_CLIENT_ID || '';
+const CLIENT_SECRET = process.env.YOUTUBE_CLIENT_SECRET || '';
 const REDIRECT_URI = 'http://localhost:3000/api/youtube-callback';
 
 const SCOPES = [

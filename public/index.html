@@ -117,15 +117,38 @@
 <div id="view-studio" class="studio">
 
   <!-- TOP HEADER -->
-  <header class="studio-header">
-    <div class="header-brand">
+  <header class="studio-header" style="position: relative;">
+    <!-- LEFT BRAND (Logo) -->
+    <div class="header-brand" style="display: flex; align-items: center; gap: 8px;">
       <div class="brand-dot"></div>
       <span class="brand-name">noises studio</span>
     </div>
 
-    <div class="header-actions">
+    <!-- CENTER ACTIONS (Search and Top Drops) -->
+    <div class="header-center-actions" style="position: absolute; left: 50%; transform: translateX(-50%); display: flex; align-items: center; gap: 8px;">
+      <button id="btn-search" class="header-search-btn" aria-label="Search (Ctrl+K)" style="margin: 0;">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <span>Search song...</span>
+        <kbd>Ctrl K</kbd>
+      </button>
+
+      <button id="btn-trending" class="header-action-btn trending-redesign" aria-label="Top Drops" style="margin: 0;">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right:6px;"><path d="M12 2c0 0-5 6.5-5 11a5 5 0 0 0 10 0c0-4.5-5-11-5-11Z"/></svg>
+        Top Drops
+      </button>
+    </div>
+
+    <!-- Hidden compat node for header-track-content -->
+    <div id="header-track-content" style="display:none !important;">
+      <img id="header-art" src="" alt="" style="display:none;">
+      <div id="header-title"></div>
+      <div id="header-artist"></div>
+    </div>
+
+    <!-- RIGHT ACTIONS (Quota and Publish) -->
+    <div class="header-right-actions" style="display:flex; align-items:center; gap:16px; margin-left: auto;">
       <!-- QUOTA TRACKER -->
-      <div id="quota-tracker" style="display:flex; align-items:center; gap:8px; margin-right: 12px; font-size: 11px; color: var(--text-2);">
+      <div id="quota-tracker" style="display:flex; align-items:center; gap:8px; font-size: 11px; color: var(--text-2);">
         <span>Quota:</span>
         <div style="width: 80px; height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px; overflow: hidden;">
           <div id="quota-bar-fill" style="width: 0%; height: 100%; background: var(--accent); transition: width 0.3s ease;"></div>
@@ -133,15 +156,9 @@
         <span id="quota-text">...</span>
       </div>
 
-      <button id="btn-trending" class="header-action-btn" aria-label="Top Drops" style="background: rgba(255,255,255,0.05); border-color: rgba(255,255,255,0.1); margin-right: 8px;">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right:6px;"><path d="M12 2c0 0-5 6.5-5 11a5 5 0 0 0 10 0c0-4.5-5-11-5-11Z"/></svg>
-        Top Drops
-      </button>
-
-      <button id="btn-search" class="header-search-btn" aria-label="Search (Ctrl+K)">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-        <span>Search song...</span>
-        <kbd>Ctrl K</kbd>
+      <button id="btn-publish-modal" class="btn-publish-header" aria-label="Publish / Export" style="margin: 0;">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right:6px;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        Publish
       </button>
     </div>
   </header>
@@ -178,16 +195,17 @@
     <aside class="control-column">
       <!-- Tab bar -->
       <div class="tab-bar">
-        <button class="tab-btn active" data-tab="tab-project">Project</button>
-        <button class="tab-btn" data-tab="tab-lyrics">Lyrics</button>
+        <button class="tab-btn active" data-tab="tab-track">Track Info</button>
+        <button class="tab-btn" data-tab="tab-sync">Sync &amp; Lyrics</button>
+        <button class="tab-btn" data-tab="tab-edit">Edit Raw</button>
+        <button class="tab-btn" data-tab="tab-pipeline">Pipeline</button>
       </div>
 
-      <!-- TAB: Project -->
-      <div id="tab-project" class="tab-pane active">
-        <div class="inspector-scroll">
-          
+      <!-- TAB: Track Info -->
+      <div id="tab-track" class="tab-pane active">
+        <div class="inspector-scroll" style="padding: 16px; display: flex; flex-direction: column; gap: 16px;">
           <!-- Premium Track Info Card -->
-          <div class="glass-card track-info-card">
+          <div class="glass-card track-info-card" style="margin: 0;">
             <div class="track-info-cover-wrapper">
               <img id="edit-cover-preview" src="" alt="" class="track-info-cover hidden">
               <div class="track-info-cover-placeholder">
@@ -204,8 +222,7 @@
             </div>
           </div>
 
-          <!-- Lyrics Source & Upload Audio -->
-          <div class="inspector-section glass-card" style="margin-top: 16px;">
+          <div class="inspector-section glass-card" style="margin: 0; padding: 14px 16px;">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 8px;">
               <label class="field-label" style="margin:0;" for="lyrics-source">Lyrics Source</label>
               <button id="btn-manual-lyrics" class="btn-action btn-glass" style="font-size: 11px; padding: 4px 8px;">Search LRCLIB</button>
@@ -214,96 +231,23 @@
               <option>No song loaded — press Ctrl+K</option>
             </select>
             
+            <!-- Upload Audio File Button -->
             <button id="btn-local-audio" class="btn-action primary" style="width:100%; margin-top:12px; justify-content:center;">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right:6px;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
               Upload Audio File
             </button>
             <input type="file" id="local-audio-upload" accept="audio/*" style="display:none">
           </div>
-
-          <!-- 1. OUTPUT SPECS -->
-          <div style="margin-top: 24px;">
-            <div style="font-size: 12px; font-weight: 600; color: var(--text-2); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 12px;">1. Output Specs</div>
-            <div class="glass-card" style="display: flex; gap: 16px; align-items: center; background: rgba(0,0,0,0.4); padding: 16px;">
-              <div style="flex:1;">
-                <label for="select-res" style="display:block; font-size:11px; color:var(--text-3); margin-bottom:4px;">Resolution</label>
-                <select id="select-res" class="select-field glass-select" style="width:100%;">
-                  <option value="720" selected>720p (Fast)</option>
-                  <option value="1080">1080p (HQ)</option>
-                </select>
-              </div>
-              <div style="flex:1;">
-                <label for="select-fps" style="display:block; font-size:11px; color:var(--text-3); margin-bottom:4px;">Framerate</label>
-                <select id="select-fps" class="select-field glass-select" style="width:100%;">
-                  <option value="24" selected>24 FPS</option>
-                  <option value="30">30 FPS</option>
-                  <option value="60">60 FPS</option>
-                </select>
-              </div>
-              <div style="flex:1;">
-                <label for="select-align" style="display:block; font-size:11px; color:var(--text-3); margin-bottom:4px;">Text Align</label>
-                <select id="select-align" class="select-field glass-select" style="width:100%;">
-                  <option value="center" selected>Center</option>
-                  <option value="left">Left</option>
-                </select>
-              </div>
-            </div>
-          </div>
-
-          <!-- 2. RENDER FORMAT -->
-          <div style="margin-top: 24px;">
-            <div style="font-size: 12px; font-weight: 600; color: var(--text-2); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 12px;">2. Render Format</div>
-            <div class="glass-card" style="display: flex; flex-direction: column; gap: 8px; background: rgba(0,0,0,0.4); padding: 16px;">
-              <button id="btn-compile" class="btn-compile" disabled style="width: 100%; justify-content: center; height: 44px; font-size: 14px; background: #10b981;" title="Export Full Video">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right:8px;"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-                Export Full Video
-              </button>
-              
-              <div style="display: flex; gap: 8px;">
-                <button id="btn-short" class="btn-compile" disabled style="flex: 1; justify-content: center; background: #ef4444; height: 40px;" title="Export 30s Short (Starts at current playhead)">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right:6px;"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
-                  Export 30s Short
-                </button>
-                <button id="btn-slideshow" class="btn-compile" disabled style="flex: 1; justify-content: center; background: #2b2b2b; height: 40px;" title="Export Checkmarked Lyrics as Slides">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:6px;"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>
-                  Export Slides
-                </button>
-              </div>
-              
-              <button id="btn-preview-thumb" class="btn-compile" disabled style="width: 100%; justify-content: center; background: var(--surface-2); border: 1px solid var(--border); margin-top: 4px; color: var(--text-2);" title="Preview Thumbnail before exporting">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:6px;"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
-                Generate Custom Thumbnail
-              </button>
-            </div>
-          </div>
-
-          <!-- PIPELINE (Studio Status) -->
-          <div class="inspector-section" style="margin-top: 24px; margin-bottom: 24px; padding: 16px; background: rgba(0,0,0,0.2); border-radius: 8px; border: 1px solid rgba(255,255,255,0.05);">
-            <div class="settings-label" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0;">
-              <span>Daily Pipeline</span>
-              <span style="font-size:10px; font-weight:normal; color:var(--text-3);">Auto-updates</span>
-            </div>
-            <div style="display:flex; flex-direction:column; gap:10px; margin-top:12px;">
-              <div class="pipeline-item" id="pipe-pop" style="display:flex; align-items:center; font-size:12px; color:var(--text-2);"><span class="dot" style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#ef4444;margin-right:8px;"></span>Pop</div>
-              <div class="pipeline-item" id="pipe-hiphop" style="display:flex; align-items:center; font-size:12px; color:var(--text-2);"><span class="dot" style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#ef4444;margin-right:8px;"></span>Hip-Hop</div>
-              <div class="pipeline-item" id="pipe-hindi" style="display:flex; align-items:center; font-size:12px; color:var(--text-2);"><span class="dot" style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#ef4444;margin-right:8px;"></span>Hindi</div>
-              <div class="pipeline-item" id="pipe-dhh" style="display:flex; align-items:center; font-size:12px; color:var(--text-2);"><span class="dot" style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#ef4444;margin-right:8px;"></span>DHH</div>
-              <div class="pipeline-item" id="pipe-kpop" style="display:flex; align-items:center; font-size:12px; color:var(--text-2);"><span class="dot" style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#ef4444;margin-right:8px;"></span>K-Pop</div>
-            </div>
-          </div>
-          
         </div>
       </div>
 
-      <!-- TAB: Lyrics -->
-      <div id="tab-lyrics" class="tab-pane hidden">
-        
-        <div class="sync-actions">
+      <!-- TAB: Sync & Lyrics -->
+      <div id="tab-sync" class="tab-pane hidden">
+        <div class="sync-actions" style="margin-top: 0;">
           <button id="btn-tap-toggle" class="btn-action">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
             Tap Sync
           </button>
-          <button id="btn-raw-edit" class="btn-action">Raw Edit</button>
           <button id="btn-translate" class="btn-action">Auto-Translate</button>
           <button id="btn-clear-translations" class="btn-action" style="display:none;">Clear Trans</button>
           <button id="btn-reset-timings" class="btn-action">Reset</button>
@@ -329,17 +273,38 @@
               <div style="color:rgba(255,255,255,0.4);">Press <kbd>Ctrl K</kbd> or click here to search a song, or paste a YouTube link.</div>
             </div>
           </div>
-          <div id="raw-edit-view" class="hidden" style="height: 100%; display: flex; flex-direction: column;">
-            <div class="editor-header" style="margin-bottom: 8px;">
-              <span id="editor-format" class="editor-format">Format: LRC (Synced)</span>
-              <button id="btn-apply" class="btn-action">Apply</button>
-            </div>
-            <textarea id="lyrics-editor" class="code-editor" spellcheck="false" autocomplete="off" placeholder="Paste LRC lyrics or plain text lyrics here..." style="flex: 1; margin: 0; width: 100%; border-radius: 8px; padding: 12px; border: 1px solid rgba(255,255,255,0.1); background: rgba(0,0,0,0.3); resize: none;"></textarea>
-          </div>
         </div>
 
         <div id="tap-footer" class="tap-footer hidden">
           <button id="btn-tap" class="btn-tap">TAP — STAMP THIS LINE&nbsp;<kbd>Space</kbd></button>
+        </div>
+      </div>
+
+      <!-- TAB: Edit Raw -->
+      <div id="tab-edit" class="tab-pane hidden">
+        <div class="editor-header">
+          <span id="editor-format" class="editor-format">Format: LRC (Synced)</span>
+          <button id="btn-apply" class="btn-action">Apply</button>
+        </div>
+        <textarea id="lyrics-editor" class="code-editor" spellcheck="false" autocomplete="off" placeholder="Paste LRC lyrics or plain text lyrics here..."></textarea>
+      </div>
+
+      <!-- TAB: Pipeline -->
+      <div id="tab-pipeline" class="tab-pane hidden">
+        <div class="inspector-scroll">
+          <div class="inspector-section" style="padding: 16px; background: rgba(0,0,0,0.2); border-radius: 8px; margin-bottom: 16px; border: 1px solid rgba(255,255,255,0.05);">
+            <div class="settings-label" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0;">
+              <span>Daily Pipeline</span>
+              <span style="font-size:10px; font-weight:normal; color:var(--text-3);">Auto-updates</span>
+            </div>
+            <div style="display:flex; flex-direction:column; gap:10px; margin-top:12px;">
+              <div class="pipeline-item" id="pipe-pop" style="display:flex; align-items:center; font-size:12px; color:var(--text-2);"><span class="dot" style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#ef4444;margin-right:8px;"></span>Pop</div>
+              <div class="pipeline-item" id="pipe-hiphop" style="display:flex; align-items:center; font-size:12px; color:var(--text-2);"><span class="dot" style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#ef4444;margin-right:8px;"></span>Hip-Hop</div>
+              <div class="pipeline-item" id="pipe-hindi" style="display:flex; align-items:center; font-size:12px; color:var(--text-2);"><span class="dot" style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#ef4444;margin-right:8px;"></span>Hindi</div>
+              <div class="pipeline-item" id="pipe-dhh" style="display:flex; align-items:center; font-size:12px; color:var(--text-2);"><span class="dot" style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#ef4444;margin-right:8px;"></span>DHH</div>
+              <div class="pipeline-item" id="pipe-kpop" style="display:flex; align-items:center; font-size:12px; color:var(--text-2);"><span class="dot" style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#ef4444;margin-right:8px;"></span>K-Pop</div>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -459,7 +424,80 @@
   </div>
 </div>
 
+<!-- ═══════════════════════════════════════════════
+  EXPORT / PUBLISH MODAL
+════════════════════════════════════════════════ -->
+<div id="publish-modal" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-label="Publish Project">
+  <div class="modal-card" style="max-width: 500px;">
+    <div class="modal-search-row" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.05); padding: 16px 24px;">
+      <div style="font-size: 16px; font-weight: 600; color: #fff; display: flex; align-items: center; gap: 8px;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        Publish Project
+      </div>
+      <button id="btn-publish-close" class="modal-esc-btn" aria-label="Close">Esc</button>
+    </div>
+    
+    <div style="padding: 24px; display: flex; flex-direction: column; gap: 24px;">
+      
+      <!-- Video Quality -->
+      <div>
+        <div style="font-size: 12px; font-weight: 600; color: var(--text-2); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 12px;">1. Output Specs</div>
+        <div style="display: flex; gap: 16px; align-items: center; background: rgba(0,0,0,0.2); padding: 16px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.05);">
+          <div style="flex:1;">
+            <label for="select-res" style="display:block; font-size:11px; color:var(--text-3); margin-bottom:4px;">Resolution</label>
+            <select id="select-res" class="select-field" style="width:100%; background: var(--bg); border: 1px solid var(--border);">
+              <option value="720" selected>720p (Fast)</option>
+              <option value="1080">1080p (HQ)</option>
+            </select>
+          </div>
+          <div style="flex:1;">
+            <label for="select-fps" style="display:block; font-size:11px; color:var(--text-3); margin-bottom:4px;">Framerate</label>
+            <select id="select-fps" class="select-field" style="width:100%; background: var(--bg); border: 1px solid var(--border);">
+              <option value="24" selected>24 FPS</option>
+              <option value="30">30 FPS</option>
+              <option value="60">60 FPS</option>
+            </select>
+          </div>
+          <div style="flex:1;">
+            <label for="select-align" style="display:block; font-size:11px; color:var(--text-3); margin-bottom:4px;">Text Align</label>
+            <select id="select-align" class="select-field" style="width:100%; background: var(--bg); border: 1px solid var(--border);">
+              <option value="center" selected>Center</option>
+              <option value="left">Left</option>
+            </select>
+          </div>
+        </div>
+      </div>
 
+      <!-- Action Buttons -->
+      <div>
+        <div style="font-size: 12px; font-weight: 600; color: var(--text-2); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 12px;">2. Render Format</div>
+        <div style="display: flex; flex-direction: column; gap: 8px;">
+          <button id="btn-compile" class="btn-compile" disabled style="width: 100%; justify-content: center; height: 44px; font-size: 14px;" title="Export Full Video">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right:8px;"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+            Export Full Video
+          </button>
+          
+          <div style="display: flex; gap: 8px;">
+            <button id="btn-short" class="btn-compile" disabled style="flex: 1; justify-content: center; background: #962525; height: 40px;" title="Export 30s Short (Starts at current playhead)">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right:6px;"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
+              Export 30s Short
+            </button>
+            <button id="btn-slideshow" class="btn-compile" disabled style="flex: 1; justify-content: center; background: #2b2b2b; height: 40px;" title="Export Checkmarked Lyrics as Slides">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:6px;"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>
+              Export Slides
+            </button>
+          </div>
+          
+          <button id="btn-preview-thumb" class="btn-compile" disabled style="width: 100%; justify-content: center; background: var(--surface-2); border: 1px solid var(--border); margin-top: 4px; color: var(--text-2);" title="Preview Thumbnail before exporting">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:6px;"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+            Generate Custom Thumbnail
+          </button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
 
 <!-- ═══════════════════════════════════════════════
   AUDIO ERROR MODAL

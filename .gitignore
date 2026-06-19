@@ -12,3 +12,10 @@ test_*.js
 measure*.js
 verify_font.js
 .env
+tokens/
+scratch/
+public/app.backup.js
+bin/yt-dlp.exe.old
+fix_slashes.js
+old_style.css
+test_saavn.json
