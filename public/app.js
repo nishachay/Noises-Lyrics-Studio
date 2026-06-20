@@ -2535,10 +2535,9 @@ if (btnCloudExport) {
   btnCloudExport.addEventListener('click', async () => {
     if (!S.track || !S.lyrics.length) return;
     
-    // Check if channel is selected if they want youtube
-    const channelSelect = document.getElementById('channel-select');
-    if (channelSelect && channelSelect.value === 'none') {
-      // It's just a local cloud render, which is kinda useless, but okay
+    const channelSelect = document.querySelector('input[name="export-dest"]:checked');
+    if (!channelSelect || channelSelect.value === 'local') {
+      // Local selected, will not upload to YouTube
     }
 
     const pubModal = document.getElementById('publish-modal');
