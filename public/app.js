@@ -2573,6 +2573,7 @@ if (btnCloudExport) {
 
       formData.append('project', JSON.stringify(projectData));
 
+      lastPct = 0; // Reset progress bar state
       setProgress(20, 'Uploading audio & payload to cloud...');
       
       const res = await fetch('/api/cloud-export', {
