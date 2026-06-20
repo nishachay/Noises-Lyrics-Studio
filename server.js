@@ -205,9 +205,14 @@ app.post('/api/cloud-export', upload.single('audio'), async (req, res) => {
         if (fs.existsSync(tokenPath)) {
           projectData.channelTokenJson = fs.readFileSync(tokenPath, 'utf8');
         }
+        
+        // CRITICAL FIX: Calculate the exact schedule time locally on the PC, where the persistent 
+        // schedule.json lives. Lock this date in so the cloud worker blindly follows it.
+        const ytAuth = require('./youtube_auth');
+        projectData.publishAt = ytAuth.getNextPublishTime(projectData.channel);
       }
     } catch (err) {
-      console.warn('[Cloud Export] Could not bundle credentials:', err.message);
+      console.warn('[Cloud Export] Could not bundle credentials or schedule:', err.message);
     }
 
     // Write project.json temporarily

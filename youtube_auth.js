@@ -203,7 +203,7 @@ function getSchedulePreview(channelLabel) {
 /**
  * Uploads a video to the specified channel.
  */
-async function uploadToYouTube({ channelIdLabel, videoPath, thumbnailPath, title, description, tags }) {
+async function uploadToYouTube({ channelIdLabel, videoPath, thumbnailPath, title, description, tags, publishAtOverride }) {
   const tokenPath = path.join(TOKENS_DIR, `${channelIdLabel}.json`);
   if (!fs.existsSync(tokenPath)) {
     throw new Error(`Channel '${channelIdLabel}' is not authenticated. Please authenticate first.`);
@@ -215,7 +215,7 @@ async function uploadToYouTube({ channelIdLabel, videoPath, thumbnailPath, title
 
   const youtube = google.youtube({ version: 'v3', auth: oauth2Client });
 
-  const publishAt = getNextPublishTime(channelIdLabel);
+  const publishAt = publishAtOverride || getNextPublishTime(channelIdLabel);
   console.log(`[YouTube] Starting upload to channel: ${channelIdLabel}...`);
   if (publishAt) console.log(`[YouTube] Will auto-schedule for: ${publishAt}`);
 

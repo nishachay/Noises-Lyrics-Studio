@@ -106,7 +106,8 @@ async function main() {
         thumbnailPath: fs.existsSync(thumbnailPath) ? thumbnailPath : null, 
         title: finalTitle,
         description: finalDescription,
-        tags: finalTags.split(',').map(t => t.trim())
+        tags: finalTags.split(',').map(t => t.trim()),
+        publishAtOverride: project.publishAt
       });
       console.log('[Cloud] YouTube Upload Success! Edit URL:', editUrl);
     } catch (err) {
