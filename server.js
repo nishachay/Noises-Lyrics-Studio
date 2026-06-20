@@ -219,21 +219,44 @@ app.post('/api/cloud-export', upload.single('audio'), async (req, res) => {
     const tempProject = path.join(__dirname, 'temp', `project_${Date.now()}.json`);
     fs.writeFileSync(tempProject, JSON.stringify(projectData, null, 2));
 
-    // Helper to upload to file.io
-    const uploadToFileIo = async (filePath) => {
-      const form = new FormData();
-      form.append('file', fs.createReadStream(filePath));
-      const response = await axios.post('https://file.io', form, {
-        headers: form.getHeaders(),
-        maxBodyLength: Infinity
-      });
-      return response.data.link;
+    // Helper to upload to ephemeral cloud storage
+    const uploadToCloud = async (filePath) => {
+      try {
+        const form = new FormData();
+        form.append('file', fs.createReadStream(filePath));
+        const res = await axios.post('https://file.io', form, {
+          headers: form.getHeaders(),
+          maxBodyLength: Infinity
+        });
+        if (res.data && res.data.success && res.data.link) {
+          return res.data.link;
+        }
+      } catch (e) {
+        console.warn('[Cloud Export] file.io failed, trying fallback...', e.message);
+      }
+
+      // Fallback to tmpfiles.org
+      try {
+        const form = new FormData();
+        form.append('file', fs.createReadStream(filePath));
+        const res = await axios.post('https://tmpfiles.org/api/v1/upload', form, {
+          headers: form.getHeaders(),
+          maxBodyLength: Infinity
+        });
+        if (res.data && res.data.data && res.data.data.url) {
+          return res.data.data.url.replace('tmpfiles.org/', 'tmpfiles.org/dl/');
+        }
+      } catch (e) {
+        console.warn('[Cloud Export] tmpfiles.org failed.', e.message);
+      }
+
+      throw new Error('Failed to upload payload to cloud storage. Please try again later.');
     };
 
     console.log('[Cloud Export] Uploading assets to temporary cloud storage...');
     const [audioUrl, jsonUrl] = await Promise.all([
-      uploadToFileIo(finalAudioPath),
-      uploadToFileIo(tempProject)
+      uploadToCloud(finalAudioPath),
+      uploadToCloud(tempProject)
     ]);
 
     console.log('[Cloud Export] Triggering GitHub Actions Workflow...');
