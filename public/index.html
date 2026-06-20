@@ -176,6 +176,10 @@
             <span id="audio-loading-text">Buffering stream...</span>
           </div>
         </div>
+        <!-- Playback action indicator -->
+        <div id="canvas-action-indicator" class="canvas-action-indicator">
+          <div class="indicator-icon"></div>
+        </div>
       </div>
       <div class="canvas-label">Real-time preview · output matches exactly</div>
 
@@ -195,10 +199,22 @@
     <aside class="control-column">
       <!-- Tab bar -->
       <div class="tab-bar">
-        <button class="tab-btn active" data-tab="tab-track">Track Info</button>
-        <button class="tab-btn" data-tab="tab-sync">Sync &amp; Lyrics</button>
-        <button class="tab-btn" data-tab="tab-edit">Edit Raw</button>
-        <button class="tab-btn" data-tab="tab-pipeline">Pipeline</button>
+        <button class="tab-btn active" data-tab="tab-track" title="Track Info">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+          Track
+        </button>
+        <button class="tab-btn" data-tab="tab-sync" title="Sync &amp; Lyrics">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+          Sync
+        </button>
+        <button class="tab-btn" data-tab="tab-edit" title="Edit Raw Lyrics">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+          Edit
+        </button>
+        <button class="tab-btn" data-tab="tab-pipeline" title="Channel Pipeline">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+          Pipeline
+        </button>
       </div>
 
       <!-- TAB: Track Info -->
@@ -259,7 +275,7 @@
             <label class="field-label" style="margin:0;">Sync Offset</label>
             <span id="offset-label" class="badge">+0.0s</span>
           </div>
-          <input type="range" id="sync-offset" min="-30" max="30" step="0.1" value="0" class="range-field" style="margin-top: 8px;">
+          <input type="range" id="sync-offset" min="-10" max="10" step="0.1" value="0" class="range-field" style="margin-top: 8px;">
         </div>
 
         <div id="tap-banner" class="tap-banner hidden">
@@ -438,30 +454,30 @@
       <button id="btn-publish-close" class="modal-esc-btn" aria-label="Close">Esc</button>
     </div>
     
-    <div style="padding: 24px; display: flex; flex-direction: column; gap: 24px;">
+    <div style="padding: 20px; display: flex; flex-direction: column; gap: 16px;">
       
       <!-- Video Quality -->
       <div>
-        <div style="font-size: 12px; font-weight: 600; color: var(--text-2); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 12px;">1. Output Specs</div>
-        <div style="display: flex; gap: 16px; align-items: center; background: rgba(0,0,0,0.2); padding: 16px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.05);">
+        <div style="font-size: 11px; font-weight: 600; color: var(--text-2); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px;">1. Output Specs</div>
+        <div style="display: flex; gap: 12px; align-items: center; background: rgba(0,0,0,0.2); padding: 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.05);">
           <div style="flex:1;">
-            <label for="select-res" style="display:block; font-size:11px; color:var(--text-3); margin-bottom:4px;">Resolution</label>
-            <select id="select-res" class="select-field" style="width:100%; background: var(--bg); border: 1px solid var(--border);">
-              <option value="720" selected>720p (Fast)</option>
-              <option value="1080">1080p (HQ)</option>
+            <label for="select-res" style="display:block; font-size:10px; color:var(--text-3); margin-bottom:4px;">Resolution</label>
+            <select id="select-res" class="select-field" style="width:100%; padding: 6px 8px; font-size: 12px; background: var(--bg); border: 1px solid var(--border);">
+              <option value="720">720p (Fast)</option>
+              <option value="1080" selected>1080p (HQ)</option>
             </select>
           </div>
           <div style="flex:1;">
-            <label for="select-fps" style="display:block; font-size:11px; color:var(--text-3); margin-bottom:4px;">Framerate</label>
-            <select id="select-fps" class="select-field" style="width:100%; background: var(--bg); border: 1px solid var(--border);">
-              <option value="24" selected>24 FPS</option>
-              <option value="30">30 FPS</option>
+            <label for="select-fps" style="display:block; font-size:10px; color:var(--text-3); margin-bottom:4px;">Framerate</label>
+            <select id="select-fps" class="select-field" style="width:100%; padding: 6px 8px; font-size: 12px; background: var(--bg); border: 1px solid var(--border);">
+              <option value="24">24 FPS</option>
+              <option value="30" selected>30 FPS</option>
               <option value="60">60 FPS</option>
             </select>
           </div>
           <div style="flex:1;">
-            <label for="select-align" style="display:block; font-size:11px; color:var(--text-3); margin-bottom:4px;">Text Align</label>
-            <select id="select-align" class="select-field" style="width:100%; background: var(--bg); border: 1px solid var(--border);">
+            <label for="select-align" style="display:block; font-size:10px; color:var(--text-3); margin-bottom:4px;">Text Align</label>
+            <select id="select-align" class="select-field" style="width:100%; padding: 6px 8px; font-size: 12px; background: var(--bg); border: 1px solid var(--border);">
               <option value="center" selected>Center</option>
               <option value="left">Left</option>
             </select>
@@ -469,28 +485,64 @@
         </div>
       </div>
 
+      <!-- Destination Selection -->
+      <div>
+        <div style="font-size: 11px; font-weight: 600; color: var(--text-2); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px;">2. Destination</div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px;">
+          <label style="display: flex; align-items: center; gap: 8px; background: var(--surface-2); padding: 10px 12px; border-radius: 6px; border: 1px solid var(--border); cursor: pointer; transition: background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.05)'" onmouseout="this.style.background='var(--surface-2)'">
+            <input type="radio" name="export-dest" value="local" checked style="accent-color: var(--accent); width: 14px; height: 14px; cursor: pointer;">
+            <div style="font-size: 12px; color: #fff; font-weight: 500;">Local Download</div>
+          </label>
+          <label style="display: flex; align-items: center; gap: 8px; background: var(--surface-2); padding: 10px 12px; border-radius: 6px; border: 1px solid var(--border); cursor: pointer; transition: background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.05)'" onmouseout="this.style.background='var(--surface-2)'">
+            <input type="radio" name="export-dest" value="pop" style="accent-color: var(--accent); width: 14px; height: 14px; cursor: pointer;">
+            <div style="font-size: 12px; color: #fff; font-weight: 500;">▶ Noises Music</div>
+          </label>
+          <label style="display: flex; align-items: center; gap: 8px; background: var(--surface-2); padding: 10px 12px; border-radius: 6px; border: 1px solid var(--border); cursor: pointer; transition: background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.05)'" onmouseout="this.style.background='var(--surface-2)'">
+            <input type="radio" name="export-dest" value="hiphop" style="accent-color: var(--accent); width: 14px; height: 14px; cursor: pointer;">
+            <div style="font-size: 12px; color: #fff; font-weight: 500;">▶ Noises HipHop</div>
+          </label>
+          <label style="display: flex; align-items: center; gap: 8px; background: var(--surface-2); padding: 10px 12px; border-radius: 6px; border: 1px solid var(--border); cursor: pointer; transition: background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.05)'" onmouseout="this.style.background='var(--surface-2)'">
+            <input type="radio" name="export-dest" value="hindi" style="accent-color: var(--accent); width: 14px; height: 14px; cursor: pointer;">
+            <div style="font-size: 12px; color: #fff; font-weight: 500;">▶ Noises Geet</div>
+          </label>
+          <label style="display: flex; align-items: center; gap: 8px; background: var(--surface-2); padding: 10px 12px; border-radius: 6px; border: 1px solid var(--border); cursor: pointer; transition: background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.05)'" onmouseout="this.style.background='var(--surface-2)'">
+            <input type="radio" name="export-dest" value="dhh" style="accent-color: var(--accent); width: 14px; height: 14px; cursor: pointer;">
+            <div style="font-size: 12px; color: #fff; font-weight: 500;">▶ Noises DHH</div>
+          </label>
+          <label style="display: flex; align-items: center; gap: 8px; background: var(--surface-2); padding: 10px 12px; border-radius: 6px; border: 1px solid var(--border); cursor: pointer; transition: background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.05)'" onmouseout="this.style.background='var(--surface-2)'">
+            <input type="radio" name="export-dest" value="kpop" style="accent-color: var(--accent); width: 14px; height: 14px; cursor: pointer;">
+            <div style="font-size: 12px; color: #fff; font-weight: 500;">▶ Noises KPop</div>
+          </label>
+        </div>
+      </div>
+
       <!-- Action Buttons -->
       <div>
-        <div style="font-size: 12px; font-weight: 600; color: var(--text-2); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 12px;">2. Render Format</div>
-        <div style="display: flex; flex-direction: column; gap: 8px;">
-          <button id="btn-compile" class="btn-compile" disabled style="width: 100%; justify-content: center; height: 44px; font-size: 14px;" title="Export Full Video">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right:8px;"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-            Export Full Video
+        <div style="font-size: 11px; font-weight: 600; color: var(--text-2); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px;">3. Render & Publish</div>
+        <div style="display: flex; flex-direction: column; gap: 6px;">
+          <button id="btn-compile" class="btn-compile" disabled style="width: 100%; justify-content: center; height: 40px; font-size: 13px;" title="Export Full Video locally on your PC">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right:6px;"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+            Export Full Video (Local)
+          </button>
+
+          <button id="btn-cloud-export" class="btn-compile" disabled style="width: 100%; justify-content: center; height: 40px; font-size: 13px; background: #0066cc;" title="Export quietly in the cloud via GitHub Actions">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right:6px;"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"></path></svg>
+            Cloud Export (Background)
           </button>
           
-          <div style="display: flex; gap: 8px;">
-            <button id="btn-short" class="btn-compile" disabled style="flex: 1; justify-content: center; background: #962525; height: 40px;" title="Export 30s Short (Starts at current playhead)">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right:6px;"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
+          <div style="display: flex; gap: 6px;">
+            <button id="btn-short" class="btn-compile" disabled style="flex: 1; justify-content: center; background: #962525; height: 34px; font-size: 12px;" title="Export 30s Short (Starts at current playhead)">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right:4px;"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
               Export 30s Short
             </button>
-            <button id="btn-slideshow" class="btn-compile" disabled style="flex: 1; justify-content: center; background: #2b2b2b; height: 40px;" title="Export Checkmarked Lyrics as Slides">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:6px;"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>
+            <button id="btn-slideshow" class="btn-compile" disabled style="flex: 1; justify-content: center; background: #2b2b2b; height: 34px; font-size: 12px;" title="Export Checkmarked Lyrics as Slides">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:4px;"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>
               Export Slides
             </button>
           </div>
           
-          <button id="btn-preview-thumb" class="btn-compile" disabled style="width: 100%; justify-content: center; background: var(--surface-2); border: 1px solid var(--border); margin-top: 4px; color: var(--text-2);" title="Preview Thumbnail before exporting">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:6px;"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+          <button id="btn-preview-thumb" class="btn-compile" disabled style="width: 100%; justify-content: center; background: var(--surface-2); border: 1px solid var(--border); margin-top: 2px; color: var(--text-2); height: 34px; font-size: 12px;" title="Preview Thumbnail before exporting">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:4px;"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
             Generate Custom Thumbnail
           </button>
         </div>
@@ -534,34 +586,53 @@
 <!-- ═══════════════════════════════════════════════
   TRENDING MODAL
 ════════════════════════════════════════════════ -->
-<div id="trending-modal" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-label="Top Drops">
-  <div class="modal-card" style="max-width: 700px; height: 80vh; max-height: 700px;">
+<div id="trending-modal" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-label="Top Drops & iTunes Trending">
+  <div class="modal-card" style="max-width: 900px; height: 85vh; max-height: 800px; display: flex; flex-direction: column;">
     <div class="modal-search-row" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.05); padding: 16px 24px;">
       <div style="font-size: 16px; font-weight: 600; color: #fff; display: flex; align-items: center; gap: 8px;">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2c0 0-5 6.5-5 11a5 5 0 0 0 10 0c0-4.5-5-11-5-11Z"/></svg>
-        Top Drops
+        Top Drops & iTunes Trending
       </div>
       <button id="btn-trending-close" class="modal-esc-btn" aria-label="Close">Esc</button>
     </div>
     
-    <div style="padding: 16px 24px 0 24px; border-bottom: 1px solid rgba(255,255,255,0.05);">
-      <div class="trending-tabs" style="display:flex; gap:6px; overflow-x:auto; padding-bottom:12px;">
-        <button class="trending-tab active" data-cat="pop" data-url="https://open.spotify.com/playlist/37i9dQZF1DX4JAvHpjipBk">Pop</button>
-        <button class="trending-tab" data-cat="hiphop" data-url="https://open.spotify.com/playlist/37i9dQZF1DWY4xHQp97fN6">Hip-Hop</button>
-        <button class="trending-tab" data-cat="hindi" data-url="https://open.spotify.com/playlist/37i9dQZF1DX0XUfTFmNBRM">Hindi</button>
-        <button class="trending-tab" data-cat="dhh" data-url="https://open.spotify.com/playlist/37i9dQZF1DX1ct2TQrAvRf">Desi Hip-Hop</button>
-        <button class="trending-tab" data-cat="kpop" data-url="https://open.spotify.com/playlist/37i9dQZF1DX9tPFwDMOaN1">K-Pop</button>
+    <div style="padding: 16px 24px 0 24px; border-bottom: 1px solid rgba(255,255,255,0.05); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; padding-bottom: 12px;">
+      <div class="trending-tabs" style="display:flex; gap:6px; overflow-x:auto;">
+        <button class="trending-tab active" data-cat="pop">Pop</button>
+        <button class="trending-tab" data-cat="hiphop">Hip-Hop</button>
+        <button class="trending-tab" data-cat="hindi">Hindi</button>
+        <button class="trending-tab" data-cat="dhh">Desi Hip-Hop</button>
+        <button class="trending-tab" data-cat="kpop">K-Pop</button>
       </div>
+      <a id="youtube-charts-link" href="https://charts.youtube.com/charts/TrendingVideos/US" target="_blank" style="display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; color: #fff; background: #ef4444; padding: 6px 12px; border-radius: 6px; text-decoration: none; transition: opacity 0.2s;">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M21.58 6.09c-.23-.88-.93-1.58-1.81-1.81C18.17 3.86 12 3.86 12 3.86s-6.17 0-7.77.42c-.88.23-1.58.93-1.81 1.81C2 7.69 2 12 2 12s0 4.31.42 5.91c.23.88.93 1.58 1.81 1.81 1.6.42 7.77.42 7.77.42s6.17 0 7.77-.42c.88-.23 1.58-.93 1.81-1.81.42-1.6.42-5.91.42-5.91s0-4.31-.42-5.91zM9.5 15.5v-7l6.5 3.5-6.5 3.5z"/></svg>
+        YouTube Charts
+      </a>
     </div>
 
-    <div class="modal-results" style="padding: 0;">
-      <div id="viral-loading" style="padding: 40px 20px; text-align: center; color: var(--text-3); font-size: 13px;">
-        <div class="state-spinner" style="margin: 0 auto 10px;"></div>
-        <span>Loading live trends...</span>
+    <div class="modal-results" style="padding: 0; flex: 1; display: flex; overflow: hidden;">
+      <!-- Spotify Top Drops Column -->
+      <div style="flex: 1; border-right: 1px solid rgba(255,255,255,0.05); display: flex; flex-direction: column;">
+        <div style="padding: 12px 24px; font-size: 11px; font-weight: 700; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.05em; background: rgba(0,0,0,0.2);">Spotify Top Drops</div>
+        <div id="viral-loading" style="padding: 40px 20px; text-align: center; color: var(--text-3); font-size: 13px;">
+          <div class="state-spinner" style="margin: 0 auto 10px;"></div>
+          <span>Loading live trends...</span>
+        </div>
+        <div id="viral-content" class="hidden" style="flex: 1; overflow-y: auto; padding: 16px 24px;">
+          <div id="viral-hot-list" class="viral-grid" style="grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));"></div>
+        </div>
       </div>
       
-      <div id="viral-content" class="hidden" style="padding: 16px 24px;">
-        <div id="viral-hot-list" class="viral-grid" style="grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));"></div>
+      <!-- iTunes Trending Column -->
+      <div style="flex: 1; display: flex; flex-direction: column;">
+        <div style="padding: 12px 24px; font-size: 11px; font-weight: 700; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.05em; background: rgba(0,0,0,0.2);">iTunes Top Trending</div>
+        <div id="itunes-loading" style="padding: 40px 20px; text-align: center; color: var(--text-3); font-size: 13px;">
+          <div class="state-spinner" style="margin: 0 auto 10px;"></div>
+          <span>Loading iTunes charts...</span>
+        </div>
+        <div id="itunes-content" class="hidden" style="flex: 1; overflow-y: auto; padding: 16px 24px;">
+          <div id="itunes-hot-list" class="viral-grid" style="grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));"></div>
+        </div>
       </div>
     </div>
   </div>

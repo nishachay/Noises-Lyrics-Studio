@@ -1289,7 +1289,16 @@ document.querySelectorAll('.trending-tab').forEach(tab => {
   tab.addEventListener('click', (e) => {
     document.querySelectorAll('.trending-tab').forEach(t => t.classList.remove('active'));
     e.target.classList.add('active');
-    fetchTrendingInsights(e.target.dataset.cat);
+    
+    // Update YouTube Charts Link
+    const cat = e.target.dataset.cat;
+    const ytLink = document.getElementById('youtube-charts-link');
+    if (ytLink) {
+      if (cat === 'pop') ytLink.href = 'https://charts.youtube.com/charts/TrendingVideos/US';
+      else ytLink.href = `https://www.youtube.com/results?search_query=top+trending+${cat}+music`;
+    }
+
+    fetchTrendingInsights(cat);
   });
 });
 
@@ -1341,16 +1350,21 @@ async function fetchTrendingInsights(category) {
   const content = document.getElementById('viral-content');
   const hotList = document.getElementById('viral-hot-list');
   
+  const itunesLoading = document.getElementById('itunes-loading');
+  const itunesContent = document.getElementById('itunes-content');
+  const itunesHotList = document.getElementById('itunes-hot-list');
+  
   if (!loading || !content || !hotList) return;
   
   loading.classList.remove('hidden');
   content.classList.add('hidden');
+  if (itunesLoading) {
+    itunesLoading.classList.remove('hidden');
+    itunesContent.classList.add('hidden');
+  }
   
-  try {
-    const res = await fetch(`/api/trending?category=${category}`);
-    if (!res.ok) throw new Error('Failed to fetch trending insights');
-    const data = await res.json();
-    
+  // Fetch Spotify Drops
+  fetch(`/api/trending?category=${category}`).then(res => res.json()).then(data => {
     hotList.innerHTML = '';
     data.forEach(t => {
       const el = document.createElement('div');
@@ -1362,19 +1376,42 @@ async function fetchTrendingInsights(category) {
           <div class="viral-card-artist">${esc(t.artist)}</div>
         </div>
       `;
-      el.onclick = () => {
-        autoLoadAndPlay(`${t.title} ${t.artist}`);
-      };
+      el.onclick = () => autoLoadAndPlay(`${t.title} ${t.artist}`);
       hotList.appendChild(el);
     });
-    
     loading.classList.add('hidden');
     content.classList.remove('hidden');
-    viralDataFetched = true;
-  } catch (e) {
-    console.error('Trending fetch error:', e);
-    loading.innerHTML = 'Failed to load trending insights.';
+  }).catch(e => {
+    console.error('Spotify trending fetch error:', e);
+    loading.innerHTML = 'Failed to load Spotify trends.';
+  });
+
+  // Fetch iTunes Trending
+  if (itunesLoading) {
+    fetch('/api/itunes-trending').then(res => res.json()).then(data => {
+      itunesHotList.innerHTML = '';
+      data.forEach(t => {
+        const el = document.createElement('div');
+        el.className = 'viral-card';
+        el.innerHTML = `
+          <img src="${t.artworkUrl || 'logo.png'}" class="viral-card-img">
+          <div class="viral-card-info">
+            <div class="viral-card-title">${esc(t.title)}</div>
+            <div class="viral-card-artist">${esc(t.artist)}</div>
+          </div>
+        `;
+        el.onclick = () => autoLoadAndPlay(`${t.title} ${t.artist}`);
+        itunesHotList.appendChild(el);
+      });
+      itunesLoading.classList.add('hidden');
+      itunesContent.classList.remove('hidden');
+    }).catch(e => {
+      console.error('iTunes fetch error:', e);
+      itunesLoading.innerHTML = 'Failed to load iTunes charts.';
+    });
   }
+  
+  viralDataFetched = true;
 }
 
 function showSearching(msg = 'Searching iTunes...') {
@@ -1489,6 +1526,7 @@ async function resolveSong(metadata) {
   resolving = true;
   matchSkeleton(true);
   btnCompile.disabled = true;
+  if(btnCloudExport) btnCloudExport.disabled = true;
   if (btnShort) btnShort.disabled = true;
   if (btnSlideshow) btnSlideshow.disabled = true;
   lyricsSource.disabled = true;
@@ -1571,12 +1609,16 @@ async function resolveSong(metadata) {
 
 
 
-    // Lyrics
-    populateLyricsSource();
-    autoSelectBestLyrics();
+    // Try to load saved state from localStorage
+    const loaded = loadProjectState();
+    if (!loaded) {
+      populateLyricsSource();
+      autoSelectBestLyrics();
+    }
 
     resolving = false;
     btnCompile.disabled = false;
+    if(btnCloudExport) btnCloudExport.disabled = false;
     if (btnShort) btnShort.disabled = false;
     if (btnSlideshow) btnSlideshow.disabled = false;
     lyricsSource.disabled = false;
@@ -1673,6 +1715,7 @@ function setLyrics(list, type, rawText) {
   exitTapMode();
   precomputeLyricsLayout(canvas.width, canvas.height, selectAlign.value);
   renderLyricsList();
+  saveProjectState();
 }
 
 function populateLyricsSource() {
@@ -1885,9 +1928,9 @@ function renderLyricsList() {
     div.appendChild(textWrap);
     div.appendChild(controls);
 
-    // Click to seek
+    // Double-Click to seek
     if (!S.tapMode && isSynced) {
-      div.addEventListener('click', () => {
+      div.addEventListener('dblclick', () => {
         const t = Math.max(0, line.time - S.syncOffset);
         seekTo(t);
         if (audio && audio.paused) audio.play().catch(() => {});
@@ -2034,6 +2077,7 @@ function stampLine(idx) {
   editorFormat.className = 'editor-format ok';
   precomputeLyricsLayout(canvas.width, canvas.height, selectAlign.value);
   renderLyricsList();
+  saveProjectState();
 }
 
 // ── Tap sync mode ─────────────────────────────────────────────────
@@ -2077,6 +2121,10 @@ function handleTap() {
     editorFormat.className = 'editor-format ok';
     exitTapMode();
     precomputeLyricsLayout(canvas.width, canvas.height, selectAlign.value);
+    saveProjectState();
+  } else {
+    // Save intermediate tap sync data too!
+    saveProjectState();
   }
 
   renderLyricsList();
@@ -2093,7 +2141,72 @@ function resetTimings() {
   editorFormat.className = 'editor-format';
   exitTapMode();
   renderLyricsList();
+  saveProjectState();
 }
+
+// ── Project State Autosave & Restore ────────────────────────────────
+function saveProjectState() {
+  if (!S.track || !S.track.youtubeId) return;
+  const state = {
+    lyrics: S.lyrics,
+    lyricsType: S.lyricsType,
+    lyricsRecords: S.lyricsRecords,
+    syncOffset: S.syncOffset,
+    lyricsSourceValue: lyricsSource.value,
+    trackTitle: S.track.title,
+    trackArtist: S.track.artist
+  };
+  localStorage.setItem(`noises_lyric_project_${S.track.youtubeId}`, JSON.stringify(state));
+}
+
+function loadProjectState() {
+  if (!S.track || !S.track.youtubeId) return false;
+  const stored = localStorage.getItem(`noises_lyric_project_${S.track.youtubeId}`);
+  if (!stored) return false;
+  try {
+    const state = JSON.parse(stored);
+    S.lyrics = state.lyrics || [];
+    S.lyricsType = state.lyricsType || 'none';
+    S.lyricsRecords = state.lyricsRecords || [];
+    S.syncOffset = state.syncOffset || 0.0;
+    if (state.trackTitle) S.track.title = state.trackTitle;
+    if (state.trackArtist) S.track.artist = state.trackArtist;
+    
+    // Restore UI elements
+    syncOffsetEl.value = S.syncOffset;
+    offsetLabel.textContent = `${S.syncOffset >= 0 ? '+' : ''}${S.syncOffset.toFixed(1)}s`;
+    headerTitle.textContent = S.track.title;
+    headerArtist.textContent = S.track.artist;
+    editTitle.value = S.track.title;
+    editArtist.value = S.track.artist;
+    
+    populateLyricsSource();
+    lyricsSource.value = state.lyricsSourceValue || 'none';
+    
+    lyricsEditor.value = lyricsToLRC(S.lyrics);
+    if (S.lyricsType === 'synced') {
+      editorFormat.textContent = 'Synced LRC';
+      editorFormat.className = 'editor-format ok';
+    } else if (S.lyricsType === 'plain') {
+      editorFormat.textContent = 'Plain text (auto-distributed)';
+      editorFormat.className = 'editor-format';
+    } else {
+      editorFormat.textContent = 'No lyrics';
+      editorFormat.className = 'editor-format';
+    }
+    
+    S.tapLines = S.lyrics.map(l => ({ text: l.text, time: S.lyricsType === 'synced' ? l.time : null }));
+    S.tapIdx = 0;
+    
+    precomputeLyricsLayout(canvas.width, canvas.height, selectAlign.value);
+    renderLyricsList();
+    return true;
+  } catch (e) {
+    console.error('Failed to parse project state', e);
+    return false;
+  }
+}
+
 
 // ═══════════════════════════════════════════════════════════════════
 // 8. TRACK INFO EDITORS
@@ -2103,6 +2216,7 @@ editTitle.addEventListener('input', () => {
   if (S.track) {
     S.track.title = editTitle.value;
     headerTitle.textContent = editTitle.value;
+    saveProjectState();
   }
 });
 
@@ -2110,6 +2224,7 @@ editArtist.addEventListener('input', () => {
   if (S.track) {
     S.track.artist = editArtist.value;
     headerArtist.textContent = editArtist.value;
+    saveProjectState();
   }
 });
 
@@ -2207,6 +2322,10 @@ async function startCompile(isShort = false, shortStartTime = 0, isSlideshow = f
   if (audio && !audio.paused) audio.pause();
   stopCanvasLoop();
 
+  // Hide the publish modal so it doesn't cover the progress view
+  const pubModal = document.getElementById('publish-modal');
+  if (pubModal) pubModal.classList.add('hidden');
+
   lastPct = 0;
   progLog.innerHTML = '';
   setProgress(0, 'Initializing...');
@@ -2253,6 +2372,12 @@ async function startCompile(isShort = false, shortStartTime = 0, isSlideshow = f
       case 'downloading': setProgress(msg.progress ?? 5, msg.message); break;
       case 'rendering':   setProgress(msg.progress ?? 18, msg.message); break;
       case 'progress':    setProgress(msg.progress, `Rendering... ${msg.progress}%`); break;
+      case 'error':
+        activeSSE.close();
+        setProgress(lastPct, 'Error!');
+        logLine(msg.error || 'Unknown error occurred', 'error');
+        showView('publish'); // Optionally go back or just let them read the log
+        break;
       case 'completed':
         activeSSE.close();
         setProgress(100, 'Done!');
@@ -2315,6 +2440,13 @@ function showDone(msg) {
   }
 
   showView('done');
+
+  // Check if a YouTube destination was selected
+  const destInput = document.querySelector('input[name="export-dest"]:checked');
+  if (destInput && destInput.value !== 'local') {
+    // Automatically trigger publish
+    publishToYouTube(destInput.value);
+  }
 }
 
 // ═══════════════════════════════════════════════════════════════════
@@ -2373,6 +2505,7 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
 // Lyrics source select
 lyricsSource.addEventListener('change', () => {
   loadLyricsByIdx(lyricsSource.value);
+  saveProjectState();
 });
 
 // Tap sync
@@ -2396,6 +2529,72 @@ btnCompile.addEventListener('click', () => {
   if (!S.track || !S.lyrics.length) return;
   startCompile();
 });
+
+const btnCloudExport = document.getElementById('btn-cloud-export');
+if (btnCloudExport) {
+  btnCloudExport.addEventListener('click', async () => {
+    if (!S.track || !S.lyrics.length) return;
+    
+    // Check if channel is selected if they want youtube
+    const channelSelect = document.getElementById('channel-select');
+    if (channelSelect && channelSelect.value === 'none') {
+      // It's just a local cloud render, which is kinda useless, but okay
+    }
+
+    const pubModal = document.getElementById('publish-modal');
+    if (pubModal) pubModal.classList.add('hidden');
+
+    showView('progress');
+    progLog.innerHTML = '';
+    setProgress(5, 'Preparing payload for cloud...');
+    progTitle.textContent  = S.track.title + ' (Cloud Render)';
+    progArtist.textContent = S.track.artist;
+    if (S.track.artworkUrl) { progArt.src = S.track.artworkUrl; progArt.style.display = 'block'; }
+    else progArt.style.display = 'none';
+
+    try {
+      const formData = new FormData();
+      
+      const projectData = {
+        id: S.track.youtubeId || S.track.id || 'song',
+        videoUrl: `https://www.youtube.com/watch?v=${S.track.youtubeId || S.track.id || ''}`,
+        songTitle: S.track.title,
+        songArtist: S.track.artist,
+        duration: S.track.duration,
+        lyrics: S.lyrics,
+        offset: S.syncOffset,
+        outRes: document.getElementById('select-res').value,
+        outFps: parseInt(document.getElementById('select-fps').value, 10),
+        outAlign: document.getElementById('select-align').value,
+        customAudioPath: S.track.customAudioPath,
+        channel: channelSelect ? channelSelect.value : 'local',
+        seoKeywords: Array.from(document.querySelectorAll('#tag-list .tag')).map(t => t.textContent.replace('×','').trim())
+      };
+
+      formData.append('project', JSON.stringify(projectData));
+
+      setProgress(20, 'Uploading audio & payload to cloud...');
+      
+      const res = await fetch('/api/cloud-export', {
+        method: 'POST',
+        body: formData
+      });
+      
+      const data = await res.json();
+      
+      if (data.success) {
+        setProgress(100, 'Cloud Render Queued!');
+        logLine('Video successfully queued in GitHub Actions!', 'ok');
+        logLine('You can safely close this app or start another project.', 'ok');
+      } else {
+        throw new Error(data.error || 'Unknown error');
+      }
+    } catch (e) {
+      logLine(`ERROR: ${e.message}`, 'error');
+      setProgress(20, 'Cloud Export Failed.');
+    }
+  });
+}
 
 if (btnShort) {
   btnShort.addEventListener('mouseenter', () => {
@@ -2504,12 +2703,25 @@ syncOffsetEl.addEventListener('input', () => {
   const v = parseFloat(syncOffsetEl.value);
   S.syncOffset = v;
   offsetLabel.textContent = `${v >= 0 ? '+' : ''}${v.toFixed(1)}s`;
+  
+  // Immediately update the lyrics highlight in the sync tab
+  const curTime = audio ? audio.currentTime : S.videoTime;
+  updateSyncHighlight(curTime, true);
+  
+  // Re-render the canvas if paused to reflect the new offset
+  if (!S.isPlaying) {
+    drawFrame(curTime);
+  }
+  
+  saveProjectState();
 });
 
 // Alignment change recomputes lyrics layout
 selectAlign.addEventListener('change', () => {
+  localStorage.setItem('noises_lyric_setting_align', selectAlign.value);
   if (S.track) {
     precomputeLyricsLayout(canvas.width, canvas.height, selectAlign.value);
+    saveProjectState();
   }
 });
 
@@ -2716,6 +2928,7 @@ function selectManualLyrics(lrclibRecord) {
   // Select it
   lyricsSource.value = "0";
   loadLyricsByIdx("0");
+  saveProjectState();
 }
 
 modalLyricsQuery.addEventListener('keydown', e => {
@@ -2777,6 +2990,7 @@ if (localAudioUpload) {
     try {
       const prevText = btnCompile.innerHTML;
       btnCompile.disabled = true;
+      if(btnCloudExport) btnCloudExport.disabled = true;
       btnCompile.textContent = 'Uploading Audio...';
       const res = await fetch('/api/upload-audio', { method: 'POST', body: formData });
       const data = await res.json();
@@ -2796,10 +3010,12 @@ if (localAudioUpload) {
       audio.addEventListener('canplay', () => { audioOverlay.classList.add('hidden'); }, { once: true });
 
       btnCompile.disabled = false;
+      if(btnCloudExport) btnCloudExport.disabled = false;
       btnCompile.innerHTML = prevText;
     } catch (err) {
       alert('Failed to upload custom audio: ' + err.message);
       btnCompile.disabled = false;
+      if(btnCloudExport) btnCloudExport.disabled = false;
       btnCompile.innerHTML = 'Compile Video';
     }
   });
@@ -2865,6 +3081,11 @@ async function publishToYouTube(channel) {
     statusEl.style.color = '#ef4444';
     statusEl.innerText = `Error: ${err.message}`;
   }
+}
+
+const savedAlign = localStorage.getItem('noises_lyric_setting_align');
+if (savedAlign && selectAlign) {
+  selectAlign.value = savedAlign;
 }
 
 showView('studio');
@@ -2945,6 +3166,11 @@ document.getElementById('btn-thumb-modal-close')?.addEventListener('click', () =
 if (btnPreviewThumb) {
   btnPreviewThumb.addEventListener('click', async () => {
     if (!S.track) return;
+    
+    // Hide publish modal so thumb modal is visible
+    const publishModal = document.getElementById('publish-modal');
+    if (publishModal) publishModal.classList.add('hidden');
+    
     thumbModal.classList.remove('hidden');
     thumbImage.style.opacity = '0';
     thumbLoading.style.display = 'block';
@@ -2983,27 +3209,72 @@ window.syncStateChange = function() {
   }
 };
 
+// --- Visual Canvas Indicator Helper ---
+let indicatorTimeout;
+function flashIndicator(content) {
+  const indicator = document.getElementById('canvas-action-indicator');
+  const icon = indicator.querySelector('.indicator-icon');
+  if (!indicator || !icon) return;
+  
+  icon.innerHTML = content;
+  indicator.classList.remove('flash');
+  void indicator.offsetWidth; // trigger reflow
+  indicator.classList.add('flash');
+  
+  clearTimeout(indicatorTimeout);
+  indicatorTimeout = setTimeout(() => {
+    indicator.classList.remove('flash');
+  }, 600);
+}
+
 // --- Keyboard Shortcuts ---
 document.addEventListener('keydown', (e) => {
   // Ignore if typing in an input or textarea
-  if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.isContentEditable) return;
 
   if (e.code === 'Space') {
-    e.preventDefault();
-    if (S.isPlaying) pauseAudio();
-    else playAudio();
+    e.preventDefault(); // Stop focused buttons from being clicked
+    togglePlay();
+    if (S.isPlaying) {
+      flashIndicator('<svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>');
+    } else {
+      flashIndicator('<svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>');
+    }
   } else if (e.code === 'ArrowRight') {
     e.preventDefault();
-    seekAudio(S.videoTime + 5);
+    seekTo(S.videoTime + 5);
+    flashIndicator('+5s');
   } else if (e.code === 'ArrowLeft') {
     e.preventDefault();
-    seekAudio(S.videoTime - 5);
+    seekTo(S.videoTime - 5);
+    flashIndicator('-5s');
+  } else if (e.code === 'ArrowUp') {
+    e.preventDefault();
+    audio.volume = Math.min(1, audio.volume + 0.1);
+    flashIndicator(`Vol: ${Math.round(audio.volume * 100)}%`);
+  } else if (e.code === 'ArrowDown') {
+    e.preventDefault();
+    audio.volume = Math.max(0, audio.volume - 0.1);
+    flashIndicator(`Vol: ${Math.round(audio.volume * 100)}%`);
   } else if (e.ctrlKey && e.code === 'Enter') {
     e.preventDefault();
     const btnCompile = document.getElementById('btn-compile');
     if (btnCompile && !btnCompile.disabled) btnCompile.click();
   }
 });
+
+// --- Canvas Click to Play/Pause ---
+const previewCanvas = document.getElementById('preview-canvas');
+if (previewCanvas) {
+  previewCanvas.addEventListener('click', () => {
+    togglePlay();
+    if (S.isPlaying) {
+      flashIndicator('<svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>');
+    } else {
+      flashIndicator('<svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>');
+    }
+  });
+}
 
 updateYouTubeChannelNames();
 fetchQuota();

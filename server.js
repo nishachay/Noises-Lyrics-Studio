@@ -19,6 +19,7 @@ const { renderVideo, getAudioAmplitude, detectAudioStart } = require('./video_re
 // YTMusic integration
 const YTMusic = require('ytmusic-api').default || require('ytmusic-api');
 const ytmusic = new YTMusic();
+const FormData = require('form-data');
 
 let ytmusicInitialized = false;
 async function ensureYTMusic() {
@@ -163,6 +164,94 @@ app.post('/api/youtube-upload', async (req, res) => {
     });
     res.json({ success: true, editUrl });
   } catch (err) {
+    console.error('YouTube Upload Error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ----------------------------------------------------
+// CLOUD EXPORT ENDPOINT (Trigger GitHub Actions)
+// ----------------------------------------------------
+app.post('/api/cloud-export', upload.single('audio'), async (req, res) => {
+  try {
+    let githubPat = '';
+    try {
+      githubPat = fs.readFileSync(path.join(__dirname, 'github_token.txt'), 'utf8').trim();
+    } catch (e) {
+      return res.status(400).json({ error: 'Missing github_token.txt file. Please create it and paste your GitHub Personal Access Token.' });
+    }
+
+    const projectData = JSON.parse(req.body.project || '{}');
+    
+    let finalAudioPath = req.file ? req.file.path : null;
+    if (!finalAudioPath) {
+      if (projectData.customAudioPath && fs.existsSync(path.resolve(projectData.customAudioPath))) {
+        finalAudioPath = path.resolve(projectData.customAudioPath);
+      } else if (projectData.id && projectData.videoUrl) {
+        console.log('[Cloud Export] Downloading audio from YouTube before queuing...');
+        finalAudioPath = await downloadAudio(projectData.id, projectData.videoUrl);
+      }
+    }
+
+    if (!finalAudioPath) return res.status(400).json({ error: 'No audio file could be obtained' });
+
+    
+    // Write project.json temporarily
+    const tempProject = path.join(__dirname, 'temp', `project_${Date.now()}.json`);
+    fs.writeFileSync(tempProject, JSON.stringify(projectData, null, 2));
+
+    // Helper to upload to file.io
+    const uploadToFileIo = async (filePath) => {
+      const form = new FormData();
+      form.append('file', fs.createReadStream(filePath));
+      const response = await axios.post('https://file.io', form, {
+        headers: form.getHeaders(),
+        maxBodyLength: Infinity
+      });
+      return response.data.link;
+    };
+
+    console.log('[Cloud Export] Uploading assets to temporary cloud storage...');
+    const [audioUrl, jsonUrl] = await Promise.all([
+      uploadToFileIo(finalAudioPath),
+      uploadToFileIo(tempProject)
+    ]);
+
+    console.log('[Cloud Export] Triggering GitHub Actions Workflow...');
+    
+    // Get repo name dynamically
+    let repoName = 'Nishachay/Noises-Lyrics-Studio';
+    try {
+      const { execSync } = require('child_process');
+      const origin = execSync('git remote get-url origin').toString().trim();
+      const match = origin.match(/github\.com[/:](.+?)\.git$/);
+      if (match) repoName = match[1];
+    } catch (e) { }
+
+    await axios.post(`https://api.github.com/repos/${repoName}/dispatches`, {
+      event_type: 'cloud-export',
+      client_payload: { audioUrl, jsonUrl }
+    }, {
+      headers: {
+        'Accept': 'application/vnd.github.v3+json',
+        'Authorization': `token ${githubPat}`,
+        'User-Agent': 'Noises-Studio-App'
+      }
+    });
+
+    res.json({ success: true, message: 'Cloud Render successfully queued!' });
+
+    // Cleanup local temp if it was a direct upload (not youtube cached)
+    setTimeout(() => {
+      if (req.file && fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
+      if (fs.existsSync(tempProject)) fs.unlinkSync(tempProject);
+    }, 1000);
+
+  } catch (err) {
+    console.error('Cloud Export Error:', err.response?.data || err.message);
+    res.status(500).json({ error: err.response?.data?.message || err.message });
+  }
+});
     console.error('[YouTube Upload Error]', err.message);
     res.status(500).json({ error: err.message });
   }
@@ -419,7 +508,7 @@ app.get('/api/trending', async (req, res) => {
       kpop: 'https://open.spotify.com/playlist/37i9dQZF1DX9tPFwDMOaN1'     // K-Pop ON! (Stable K-Pop Drops)
     };
     
-    const url = playlists[category] || playlists['pop'];
+    const url = (playlists[category] || playlists['pop']) + '?_t=' + Date.now();
 
     // getData returns the playlist metadata including coverArt
     const data = await getData(url);
@@ -428,7 +517,7 @@ app.get('/api/trending', async (req, res) => {
     
     const tracks = await getTracks(url);
 
-    const songs = tracks.slice(0, 15).map(t => {
+    const songs = tracks.slice(0, 50).map(t => {
       // spotify-url-info getTracks returns { artist: 'Name', name: 'Title', duration: ... }
       return {
         title: t.name || t.title || 'Unknown Title',
@@ -437,6 +526,7 @@ app.get('/api/trending', async (req, res) => {
       };
     });
 
+    // Cache for only 5 minutes to ensure freshness
     trendingCache[category] = {
       timestamp: Date.now(),
       data: songs
@@ -446,6 +536,46 @@ app.get('/api/trending', async (req, res) => {
   } catch (err) {
     console.error('[Trending] Failed to fetch Spotify Playlists:', err.message);
     res.status(500).json({ error: 'Failed to fetch trending songs' });
+  }
+});
+
+// ══════════════════════════════════════════════════════════════
+// GET /api/itunes-trending
+// Fetches live iTunes Top Songs via Apple RSS feed
+// ══════════════════════════════════════════════════════════════
+let itunesCache = { timestamp: 0, data: null };
+
+app.get('/api/itunes-trending', async (req, res) => {
+  try {
+    if (itunesCache.data && (Date.now() - itunesCache.timestamp) < 300000) { // 5 minutes cache
+      return res.json(itunesCache.data);
+    }
+    
+    const url = `https://itunes.apple.com/us/rss/topsongs/limit=50/json?_t=${Date.now()}`;
+    const response = await fetch(url);
+    const data = await response.json();
+    
+    const entries = data.feed.entry || [];
+    const songs = entries.map(entry => {
+      let artworkUrl = '';
+      if (entry['im:image'] && entry['im:image'].length > 0) {
+        artworkUrl = entry['im:image'][entry['im:image'].length - 1].label;
+      }
+      return {
+        title: entry['im:name'].label || 'Unknown Title',
+        artist: entry['im:artist'].label || 'Unknown Artist',
+        artworkUrl: artworkUrl
+      };
+    });
+    
+    itunesCache = {
+      timestamp: Date.now(),
+      data: songs
+    };
+    res.json(songs);
+  } catch (err) {
+    console.error('[iTunes Trending] Failed to fetch iTunes RSS:', err.message);
+    res.status(500).json({ error: 'Failed to fetch iTunes trending' });
   }
 });
 // ══════════════════════════════════════════════════════════════
