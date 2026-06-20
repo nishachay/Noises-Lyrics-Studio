@@ -266,10 +266,6 @@ app.post('/api/cloud-export', upload.single('audio'), async (req, res) => {
     res.status(500).json({ error: err.response?.data?.message || err.message });
   }
 });
-    console.error('[YouTube Upload Error]', err.message);
-    res.status(500).json({ error: err.message });
-  }
-});
 
 
 
