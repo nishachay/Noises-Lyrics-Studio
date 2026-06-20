@@ -196,6 +196,20 @@ app.post('/api/cloud-export', upload.single('audio'), async (req, res) => {
     if (!finalAudioPath) return res.status(400).json({ error: 'No audio file could be obtained' });
 
     
+    // Inject local YouTube credentials so the user doesn't need to configure GitHub Secrets manually
+    try {
+      projectData.youtubeClientId = process.env.YOUTUBE_CLIENT_ID || '';
+      projectData.youtubeClientSecret = process.env.YOUTUBE_CLIENT_SECRET || '';
+      if (projectData.channel && projectData.channel !== 'local') {
+        const tokenPath = path.join(__dirname, 'tokens', `${projectData.channel}.json`);
+        if (fs.existsSync(tokenPath)) {
+          projectData.channelTokenJson = fs.readFileSync(tokenPath, 'utf8');
+        }
+      }
+    } catch (err) {
+      console.warn('[Cloud Export] Could not bundle credentials:', err.message);
+    }
+
     // Write project.json temporarily
     const tempProject = path.join(__dirname, 'temp', `project_${Date.now()}.json`);
     fs.writeFileSync(tempProject, JSON.stringify(projectData, null, 2));

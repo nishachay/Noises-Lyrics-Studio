@@ -33,10 +33,5 @@ jobs:
           echo "Downloading JSON from file.io..."
           curl -L -o temp/project.json "${{ github.event.client_payload.jsonUrl }}"
 
-      - name: Setup YouTube Credentials
-        run: |
-          echo '${{ secrets.YOUTUBE_OAUTH_JSON }}' > youtube_auth.json
-          echo '${{ secrets.YOUTUBE_CLIENT_SECRET_JSON }}' > youtube_client_secret.json
-
       - name: Render and Upload
         run: node run-cloud.js temp/project.json temp/audio.mp3

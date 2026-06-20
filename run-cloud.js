@@ -14,6 +14,20 @@ async function main() {
 
   const project = JSON.parse(fs.readFileSync(projectPath, 'utf8'));
 
+  // Extract bundled credentials safely
+  if (project.youtubeClientId && project.youtubeClientSecret) {
+    const envPath = path.join(__dirname, '.env');
+    fs.writeFileSync(envPath, `YOUTUBE_CLIENT_ID=${project.youtubeClientId}\nYOUTUBE_CLIENT_SECRET=${project.youtubeClientSecret}\n`);
+    console.log('[Cloud] Extracted OAuth credentials from payload.');
+  }
+
+  if (project.channel && project.channel !== 'local' && project.channelTokenJson) {
+    const tokensDir = path.join(__dirname, 'tokens');
+    if (!fs.existsSync(tokensDir)) fs.mkdirSync(tokensDir);
+    fs.writeFileSync(path.join(tokensDir, `${project.channel}.json`), project.channelTokenJson);
+    console.log(`[Cloud] Extracted channel token for: ${project.channel}`);
+  }
+
   const outputPath = path.join(__dirname, 'temp', 'output_video.mp4');
   const thumbnailPath = path.join(__dirname, 'temp', 'output_thumbnail.png');
 
