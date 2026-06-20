@@ -484,7 +484,7 @@ function scoreYoutubeResult(y, targetTitle, targetArtist, targetDur) {
   const channel = (y.uploader || '').toLowerCase();
   const title = (y.title || '').toLowerCase();
   if (channel.includes('topic')) {
-    score -= 30; // Large bonus for official Topic upload
+    score -= 500; // Massive trump-card bonus for official Topic upload to guarantee it beats music videos
   }
   if (channel.includes('vevo') || title.includes('official audio') || title.includes('official stream')) {
     score -= 15;
