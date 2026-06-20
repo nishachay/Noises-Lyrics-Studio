@@ -832,30 +832,30 @@ app.post('/api/resolve-song', async (req, res) => {
   console.log(`[Resolve Audio] Metadata: "${title}" by "${artist}" [${duration}s]`);
 
   try {
-    // Step 1: Search YouTube for the audio
+    // Step 1: Search YTMusic (Guarantees clean, official 'Topic' audio without music video intros)
     let ytResult = [];
     try {
-      ytResult = await searchYoutube(query);
+      const ytm = await searchYTMusic(query);
+      if (ytm && ytm.length > 0) {
+        ytResult = ytm.map(item => ({
+          id: item.id,
+          title: item.title,
+          uploader: item.artist,
+          duration: item.duration,
+          webpage_url: `https://www.youtube.com/watch?v=${item.id}`
+        }));
+      }
     } catch (e) {
-      console.error('[Resolve Audio] searchYoutube failed:', e.message);
+      console.error('[Resolve Audio] searchYTMusic failed:', e.message);
     }
 
-    // Fallback: If YouTube search fails or returns nothing, search YTMusic
+    // Fallback: If YTMusic fails or returns nothing, search standard YouTube
     if (!ytResult || ytResult.length === 0) {
-      console.log('[Resolve Audio] YouTube search returned no results. Trying YTMusic fallback...');
+      console.log('[Resolve Audio] YTMusic returned no results. Trying standard YouTube fallback...');
       try {
-        const ytm = await searchYTMusic(query);
-        if (ytm && ytm.length > 0) {
-          ytResult = ytm.map(item => ({
-            id: item.id,
-            title: item.title,
-            uploader: item.artist,
-            duration: item.duration,
-            webpage_url: `https://www.youtube.com/watch?v=${item.id}`
-          }));
-        }
+        ytResult = await searchYoutube(query);
       } catch (e) {
-        console.error('[Resolve Audio] YTMusic fallback failed:', e.message);
+        console.error('[Resolve Audio] standard YouTube search failed:', e.message);
       }
     }
     
@@ -992,23 +992,23 @@ app.get('/api/resolve', async (req, res) => {
         searchYoutube(`${targetTitle} ${targetArtist}`)
       ]);
       
-      // Merge results, prioritizing standard YouTube search results (guarantees browser embeddability)
+      // Merge results, prioritizing YTMusic (clean audio, no music video intros)
       ytResult = [];
-      if (ytSearchLogs.length > 0) {
-        ytSearchLogs.forEach(item => {
-          ytResult.push(item);
-        });
-      }
       if (ytmResult.length > 0) {
         ytmResult.forEach(item => {
+          ytResult.push({
+            id:          item.id,
+            title:       item.title,
+            uploader:    item.artist + ' - Topic', // Spoof 'Topic' to heavily weight YTMusic results
+            duration:    item.duration,
+            webpage_url: `https://www.youtube.com/watch?v=${item.id}`,
+          });
+        });
+      }
+      if (ytSearchLogs.length > 0) {
+        ytSearchLogs.forEach(item => {
           if (!ytResult.some(y => y.id === item.id)) {
-            ytResult.push({
-              id:          item.id,
-              title:       item.title,
-              uploader:    item.artist,
-              duration:    item.duration,
-              webpage_url: `https://www.youtube.com/watch?v=${item.id}`,
-            });
+            ytResult.push(item);
           }
         });
       }
