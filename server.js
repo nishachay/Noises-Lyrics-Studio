@@ -489,8 +489,8 @@ function scoreYoutubeResult(y, targetTitle, targetArtist, targetDur) {
   if (channel.includes('vevo') || title.includes('official audio') || title.includes('official stream')) {
     score -= 15;
   }
-  const isTargetLive = targetTitle.toLowerCase().includes('live');
-  const isTargetRemix = targetTitle.toLowerCase().includes('remix');
+  const isTargetLive = (targetTitle || '').toLowerCase().includes('live');
+  const isTargetRemix = (targetTitle || '').toLowerCase().includes('remix');
   if (title.includes('live') && !isTargetLive) score += 50;
   if (title.includes('cover')) score += 100;
   if (title.includes('remix') && !isTargetRemix) score += 40;
@@ -840,7 +840,7 @@ app.post('/api/resolve-song', async (req, res) => {
         ytResult = ytm.map(item => ({
           id: item.id,
           title: item.title,
-          uploader: item.artist,
+          uploader: item.artist + ' - Topic',
           duration: item.duration,
           webpage_url: `https://www.youtube.com/watch?v=${item.id}`
         }));

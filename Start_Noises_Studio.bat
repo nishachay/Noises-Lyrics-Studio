@@ -1,5 +1,6 @@
 @echo off
 title Noises Lyrics Studio
+cd /d "e:\noises lyric"
 echo ====================================================
 echo Starting Noises Lyrics Studio (v6.0.0)...
 echo ====================================================
