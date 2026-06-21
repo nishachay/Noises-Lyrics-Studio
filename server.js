@@ -483,8 +483,8 @@ function scoreYoutubeResult(y, targetTitle, targetArtist, targetDur) {
   }
   const channel = (y.uploader || '').toLowerCase();
   const title = (y.title || '').toLowerCase();
-  if (channel.includes('topic')) {
-    score -= 500; // Massive trump-card bonus for official Topic upload to guarantee it beats music videos
+  if (channel.includes('topic') || channel.includes('auto-generated')) {
+    score -= 1000; // HUGE bonus for official Topic / Auto-generated audio
   }
   if (channel.includes('vevo') || title.includes('official audio') || title.includes('official stream')) {
     score -= 15;
@@ -863,17 +863,14 @@ app.post('/api/resolve-song', async (req, res) => {
     let minDiff = Infinity;
 
     if (ytResult && ytResult.length > 0) {
-      // Scan top 10 results to find the studio version that perfectly matches the iTunes duration
-      const searchLimit = Math.min(10, ytResult.length);
-      for (let i = 0; i < searchLimit; i++) {
-        const y = ytResult[i];
-        const diff = Math.abs(y.duration - duration);
-        // Fuzziness: if it's within 3 seconds, it's virtually a perfect match.
-        if (diff < minDiff) {
-          minDiff = diff;
+      let bestScore = Infinity;
+      for (const y of ytResult) {
+        const score = scoreYoutubeResult(y, targetTitle, targetArtist, duration);
+        if (score < bestScore) {
+          bestScore = score;
           bestYt = y;
+          minDiff = Math.abs(y.duration - duration);
         }
-        if (diff <= 3) break; // Perfect studio match found, stop scanning!
       }
 
       // Fallback: If duration is wildly off (e.g., only a 7 minute music video exists), fallback to the absolute top result.
