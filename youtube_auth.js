@@ -277,5 +277,6 @@ module.exports = {
   uploadToYouTube,
   getSchedulePreview,
   getQuota,
-  getDailyStatus
+  getDailyStatus,
+  getNextPublishTime
 };
