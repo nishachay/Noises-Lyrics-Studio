@@ -1,8 +1,16 @@
 name: Cloud Video Render
+run-name: Render [${{ github.event.action }}]
 
 on:
   repository_dispatch:
-    types: [cloud-export]
+    types: 
+      - cloud-export-pop
+      - cloud-export-hiphop
+      - cloud-export-hindi
+      - cloud-export-dhh
+      - cloud-export-kpop
+      - cloud-export-local
+      - cloud-export-unknown
 
 jobs:
   render:

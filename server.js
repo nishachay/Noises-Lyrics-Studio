@@ -170,6 +170,50 @@ app.post('/api/youtube-upload', async (req, res) => {
 });
 
 // ----------------------------------------------------
+// GITHUB ACTIONS STATUS
+// ----------------------------------------------------
+app.get('/api/github-status', async (req, res) => {
+  try {
+    let githubPat = '';
+    try {
+      githubPat = fs.readFileSync(path.join(__dirname, 'github_token.txt'), 'utf8').trim();
+    } catch (e) {
+      return res.json({ status: 'unknown', error: 'No token' });
+    }
+
+    let repoName = 'Nishachay/Noises-Lyrics-Studio';
+    try {
+      const { execSync } = require('child_process');
+      const origin = execSync('git remote get-url origin').toString().trim();
+      const match = origin.match(/github\.com[/:](.+?)\.git$/);
+      if (match) repoName = match[1];
+    } catch (e) { }
+
+    const response = await axios.get(`https://api.github.com/repos/${repoName}/actions/runs?event=repository_dispatch&per_page=1`, {
+      headers: {
+        'Accept': 'application/vnd.github.v3+json',
+        'Authorization': `token ${githubPat}`,
+        'User-Agent': 'Noises-Studio-App'
+      }
+    });
+
+    if (response.data && response.data.workflow_runs && response.data.workflow_runs.length > 0) {
+      const run = response.data.workflow_runs[0];
+      res.json({
+        status: run.status,
+        conclusion: run.conclusion,
+        html_url: run.html_url,
+        updated_at: run.updated_at
+      });
+    } else {
+      res.json({ status: 'unknown', error: 'No runs found' });
+    }
+  } catch (err) {
+    res.json({ status: 'unknown', error: err.message });
+  }
+});
+
+// ----------------------------------------------------
 // CLOUD EXPORT ENDPOINT (Trigger GitHub Actions)
 // ----------------------------------------------------
 app.post('/api/cloud-export', upload.single('audio'), async (req, res) => {
@@ -271,7 +315,7 @@ app.post('/api/cloud-export', upload.single('audio'), async (req, res) => {
     } catch (e) { }
 
     await axios.post(`https://api.github.com/repos/${repoName}/dispatches`, {
-      event_type: 'cloud-export',
+      event_type: `cloud-export-${projectData.channel || 'unknown'}`,
       client_payload: { audioUrl, jsonUrl }
     }, {
       headers: {
@@ -295,6 +339,63 @@ app.post('/api/cloud-export', upload.single('audio'), async (req, res) => {
   }
 });
 
+// ----------------------------------------------------
+// PIPELINE STATUS ENDPOINT
+// ----------------------------------------------------
+app.get('/api/pipeline-status', async (req, res) => {
+  try {
+    let githubPat = '';
+    try {
+      githubPat = fs.readFileSync(path.join(__dirname, 'github_token.txt'), 'utf8').trim();
+    } catch (e) {
+      return res.json({ success: false, error: 'missing_token' });
+    }
+
+    let repoName = 'Nishachay/Noises-Lyrics-Studio';
+    try {
+      const { execSync } = require('child_process');
+      const origin = execSync('git remote get-url origin').toString().trim();
+      const match = origin.match(/github\.com[/:](.+?)\.git$/);
+      if (match) repoName = match[1];
+    } catch (e) { }
+
+    const response = await axios.get(`https://api.github.com/repos/${repoName}/actions/runs?per_page=15`, {
+      headers: {
+        'Accept': 'application/vnd.github.v3+json',
+        'Authorization': `token ${githubPat}`,
+        'User-Agent': 'Noises-Studio-App'
+      }
+    });
+
+    const runs = response.data.workflow_runs || [];
+    
+    // We only care about runs that have our custom name: "Render [cloud-export-<channel>]"
+    // However, GitHub Actions might take a moment to update the name, so we also check event: repository_dispatch
+    const pipelineStatus = {};
+    for (const run of runs) {
+      if (run.event === 'repository_dispatch') {
+        const match = run.name.match(/Render \[cloud-export-(.+?)\]/);
+        let channel = 'unknown';
+        if (match) channel = match[1];
+        
+        // Only keep the most recent run for each channel
+        if (!pipelineStatus[channel]) {
+          pipelineStatus[channel] = {
+            status: run.status,
+            conclusion: run.conclusion,
+            url: run.html_url,
+            createdAt: run.created_at
+          };
+        }
+      }
+    }
+
+    res.json({ success: true, status: pipelineStatus });
+  } catch (err) {
+    console.error('Pipeline Status Error:', err.response?.data || err.message);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
 
 
 const OUTPUT_DIR = path.join(__dirname, 'output');
@@ -1197,9 +1298,7 @@ app.get('/api/render', async (req, res) => {
 // Helper to stream/proxy the audio from YouTube's CDN to the client
 async function proxyAudioStream(directUrl, req, res) {
   try {
-    const headers = {
-      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
-    };
+    const headers = {};
 
     if (req.headers.range) {
       headers['Range'] = req.headers.range;
@@ -1210,7 +1309,8 @@ async function proxyAudioStream(directUrl, req, res) {
       url: directUrl,
       responseType: 'stream',
       headers: headers,
-      timeout: 15000
+      timeout: 15000,
+      validateStatus: (status) => status >= 200 && status < 400
     });
 
     res.setHeader('Content-Type', streamResponse.headers['content-type'] || 'audio/webm');
@@ -1248,7 +1348,7 @@ app.get('/api/stream/:videoId', async (req, res) => {
   try {
     if (directUrlCache.has(videoId)) {
       console.log(`[Stream] Cache hit for direct URL: ${videoId}`);
-      return res.redirect(directUrlCache.get(videoId));
+      return proxyAudioStream(directUrlCache.get(videoId), req, res);
     }
 
     console.log(`[Stream] Fetching direct stream URL for: ${videoId}`);
@@ -1274,7 +1374,7 @@ app.get('/api/stream/:videoId', async (req, res) => {
             console.log(`[Stream] Fallback SUCCESS with ${altId}!`);
             directUrlCache.set(videoId, directUrl); // Cache under original requested ID
             setTimeout(() => directUrlCache.delete(videoId), 4 * 60 * 60 * 1000);
-            return res.redirect(directUrl);
+            return proxyAudioStream(directUrl, req, res);
           }
         }
         
@@ -1286,10 +1386,56 @@ app.get('/api/stream/:videoId', async (req, res) => {
     
     directUrlCache.set(videoId, directUrl);
     setTimeout(() => directUrlCache.delete(videoId), 4 * 60 * 60 * 1000);
-    return res.redirect(directUrl);
+    return proxyAudioStream(directUrl, req, res);
   } catch (err) {
     console.error('[Stream] Error:', err.message);
     if (!res.headersSent) res.status(500).send('Stream error: ' + err.message);
+  }
+});
+
+app.get('/api/prepare-stream/:videoId', async (req, res) => {
+  const videoId = req.params.videoId.replace(/[^a-zA-Z0-9_-]/g, '');
+  const title = req.query.title;
+  const artist = req.query.artist;
+  if (!videoId) return res.status(400).json({ success: false, error: 'Bad videoId' });
+
+  try {
+    if (directUrlCache.has(videoId)) {
+      return res.json({ success: true, cached: true });
+    }
+
+    console.log(`[Prepare Stream] Fetching direct stream URL for: ${videoId}`);
+    let directUrl = await getDirectAudioUrl(`https://www.youtube.com/watch?v=${videoId}`);
+    
+    if (!directUrl) {
+      console.log(`[Prepare Stream] Primary URL extraction failed for ${videoId}.`);
+      if (title && artist) {
+        console.log(`[Prepare Stream] Auto-fallback: Searching standard YouTube for "${title} ${artist}"...`);
+        const results = await searchYoutube(`${title} ${artist} audio`);
+        for (let i = 0; i < Math.min(results.length, 2); i++) {
+          const altId = results[i].id;
+          if (altId === videoId) continue;
+          console.log(`[Prepare Stream] Fallback trying: ${altId} (${results[i].title})`);
+          directUrl = await getDirectAudioUrl(`https://www.youtube.com/watch?v=${altId}`);
+          if (directUrl) {
+            console.log(`[Prepare Stream] Fallback SUCCESS with ${altId}!`);
+            directUrlCache.set(videoId, directUrl); 
+            setTimeout(() => directUrlCache.delete(videoId), 4 * 60 * 60 * 1000);
+            return res.json({ success: true, fallback: true });
+          }
+        }
+        return res.status(500).json({ success: false, error: 'All fallbacks failed' });
+      } else {
+        return res.status(500).json({ success: false, error: 'Extraction failed' });
+      }
+    }
+    
+    directUrlCache.set(videoId, directUrl);
+    setTimeout(() => directUrlCache.delete(videoId), 4 * 60 * 60 * 1000);
+    return res.json({ success: true });
+  } catch (err) {
+    console.error('[Prepare Stream] Error:', err.message);
+    if (!res.headersSent) res.status(500).json({ success: false, error: err.message });
   }
 });
 

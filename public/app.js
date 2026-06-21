@@ -272,9 +272,23 @@ function initAudio(videoId) {
   const params = new URLSearchParams();
   if (S.track && S.track.title) params.append('title', S.track.title);
   if (S.track && S.track.artist) params.append('artist', S.track.artist);
-  audio.src = `/api/stream/${videoId}?${params.toString()}`;
-  audio.load();
-  updatePlayerUIElements();
+  
+  fetch(`/api/prepare-stream/${videoId}?${params.toString()}`)
+    .then(res => res.json())
+    .then(data => {
+      if (data.success) {
+        audio.src = `/api/stream/${videoId}?${params.toString()}`;
+        audio.load();
+        updatePlayerUIElements();
+      } else {
+        throw new Error(data.error || 'Failed to prepare stream');
+      }
+    })
+    .catch(e => {
+      console.error('Prepare stream error:', e);
+      // Trigger the standard audio error handler
+      audio.dispatchEvent(new Event('error'));
+    });
 }
 
 function updatePlayerUIElements() {
@@ -3139,6 +3153,92 @@ async function fetchDailyStatus() {
   } catch (e) {}
 }
 
+async function fetchPipelineStatus() {
+  try {
+    const res = await fetch('/api/pipeline-status');
+    const data = await res.json();
+    if (!data.success || !data.status) return;
+
+    // We have elements like #pipe-pop, #pipe-hiphop, etc.
+    const channels = ['pop', 'hiphop', 'hindi', 'dhh', 'kpop', 'unknown'];
+    
+    channels.forEach(channel => {
+      const el = document.getElementById(`pipe-${channel}`);
+      if (!el) return;
+      
+      const dot = el.querySelector('.dot');
+      if (!dot) return;
+
+      const runInfo = data.status[channel];
+      if (!runInfo) {
+        // No runs found for this channel
+        dot.style.background = '#6b7280'; // Gray
+        dot.style.boxShadow = 'none';
+        dot.style.animation = 'none';
+        el.title = 'Pipeline: No recent runs';
+        return;
+      }
+
+      if (runInfo.status === 'in_progress' || runInfo.status === 'queued') {
+        dot.style.background = '#eab308'; // Yellow
+        dot.style.boxShadow = '0 0 8px #eab308';
+        dot.style.animation = 'pulse 1.5s ease-in-out infinite';
+        el.title = `Pipeline: ${runInfo.status}`;
+      } else if (runInfo.status === 'completed') {
+        if (runInfo.conclusion === 'success') {
+          dot.style.background = '#10b981'; // Green
+          dot.style.boxShadow = '0 0 8px #10b981';
+          dot.style.animation = 'none';
+          el.title = `Pipeline: Success`;
+        } else {
+          dot.style.background = '#ef4444'; // Red
+          dot.style.boxShadow = '0 0 8px #ef4444';
+          dot.style.animation = 'none';
+          el.title = `Pipeline: ${runInfo.conclusion}`;
+        }
+      }
+    });
+  } catch (e) {}
+}
+
+async function fetchGithubStatus() {
+  try {
+    const res = await fetch('/api/github-status');
+    const data = await res.json();
+    const dot = document.querySelector('.brand-dot');
+    const brandName = document.querySelector('.brand-name');
+    if (!dot) return;
+
+    if (data.status === 'in_progress' || data.status === 'queued') {
+      dot.style.background = '#eab308'; // Yellow
+      dot.style.boxShadow = '0 0 8px #eab308';
+      dot.style.animation = 'pulse 1.5s ease-in-out infinite';
+      dot.title = `Pipeline: ${data.status}`;
+      if(brandName) brandName.title = `Pipeline: ${data.status}`;
+    } else if (data.status === 'completed') {
+      if (data.conclusion === 'success') {
+        dot.style.background = '#10b981'; // Green
+        dot.style.boxShadow = '0 0 8px #10b981';
+        dot.style.animation = 'none';
+        dot.title = `Pipeline: Success`;
+        if(brandName) brandName.title = `Pipeline: Success`;
+      } else {
+        dot.style.background = '#ef4444'; // Red
+        dot.style.boxShadow = '0 0 8px #ef4444';
+        dot.style.animation = 'none';
+        dot.title = `Pipeline: Failed (${data.conclusion})`;
+        if(brandName) brandName.title = `Pipeline: Failed (${data.conclusion})`;
+      }
+    } else {
+      dot.style.background = 'var(--text-3)'; // Gray out when idle
+      dot.style.boxShadow = 'none';
+      dot.style.animation = 'none';
+      dot.title = 'Pipeline: Idle';
+      if(brandName) brandName.title = 'Pipeline: Idle';
+    }
+  } catch (e) {}
+}
+
 // --- Schedule Indicator ---
 async function updateSchedulePreview(channel) {
   const ind = document.getElementById('schedule-indicator');
@@ -3279,3 +3379,10 @@ if (previewCanvas) {
 updateYouTubeChannelNames();
 fetchQuota();
 fetchDailyStatus();
+
+fetchGithubStatus();
+setInterval(fetchGithubStatus, 10000);
+
+fetchPipelineStatus();
+setInterval(fetchPipelineStatus, 15000);
+

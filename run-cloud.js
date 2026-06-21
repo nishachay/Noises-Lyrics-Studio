@@ -1,7 +1,6 @@
 const fs = require('fs');
 const path = require('path');
 const { renderVideo } = require('./video_renderer');
-const ytAuth = require('./youtube_auth');
 
 async function main() {
   const projectPath = process.argv[2];
@@ -18,8 +17,12 @@ async function main() {
   if (project.youtubeClientId && project.youtubeClientSecret) {
     const envPath = path.join(__dirname, '.env');
     fs.writeFileSync(envPath, `YOUTUBE_CLIENT_ID=${project.youtubeClientId}\nYOUTUBE_CLIENT_SECRET=${project.youtubeClientSecret}\n`);
+    process.env.YOUTUBE_CLIENT_ID = project.youtubeClientId;
+    process.env.YOUTUBE_CLIENT_SECRET = project.youtubeClientSecret;
     console.log('[Cloud] Extracted OAuth credentials from payload.');
   }
+
+  const ytAuth = require('./youtube_auth');
 
   if (project.channel && project.channel !== 'local' && project.channelTokenJson) {
     const tokensDir = path.join(__dirname, 'tokens');
