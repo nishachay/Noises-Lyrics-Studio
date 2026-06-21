@@ -1248,7 +1248,7 @@ app.get('/api/stream/:videoId', async (req, res) => {
   try {
     if (directUrlCache.has(videoId)) {
       console.log(`[Stream] Cache hit for direct URL: ${videoId}`);
-      return proxyAudioStream(directUrlCache.get(videoId), req, res);
+      return res.redirect(directUrlCache.get(videoId));
     }
 
     console.log(`[Stream] Fetching direct stream URL for: ${videoId}`);
@@ -1274,7 +1274,7 @@ app.get('/api/stream/:videoId', async (req, res) => {
             console.log(`[Stream] Fallback SUCCESS with ${altId}!`);
             directUrlCache.set(videoId, directUrl); // Cache under original requested ID
             setTimeout(() => directUrlCache.delete(videoId), 4 * 60 * 60 * 1000);
-            return proxyAudioStream(directUrl, req, res);
+            return res.redirect(directUrl);
           }
         }
         
@@ -1286,7 +1286,7 @@ app.get('/api/stream/:videoId', async (req, res) => {
     
     directUrlCache.set(videoId, directUrl);
     setTimeout(() => directUrlCache.delete(videoId), 4 * 60 * 60 * 1000);
-    return proxyAudioStream(directUrl, req, res);
+    return res.redirect(directUrl);
   } catch (err) {
     console.error('[Stream] Error:', err.message);
     if (!res.headersSent) res.status(500).send('Stream error: ' + err.message);
