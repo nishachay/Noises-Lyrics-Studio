@@ -865,7 +865,7 @@ app.post('/api/resolve-song', async (req, res) => {
     if (ytResult && ytResult.length > 0) {
       let bestScore = Infinity;
       for (const y of ytResult) {
-        const score = scoreYoutubeResult(y, targetTitle, targetArtist, duration);
+        const score = scoreYoutubeResult(y, title, artist, duration);
         if (score < bestScore) {
           bestScore = score;
           bestYt = y;
