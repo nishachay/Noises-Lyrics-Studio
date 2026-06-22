@@ -644,14 +644,14 @@ function generateThumbnail(coverImg, colors, title, artist, font, alignment, wra
   drawBackground(ctx, W, H, coverImg, colors, 10.0, 0.0);
 
   // 2. Draw centered Album Cover Art
-  const artSz = Math.round(H * 0.55); // Increased for high quality!
+  const artSz = Math.round(H * 0.65); // Maximized for better mobile visibility
   const radius = Math.round(artSz * 0.06);
 
   const ax = Math.round((W - artSz) / 2);
-  const titleSz = Math.round(H * 0.090); // Much bigger title
-  const artistSz = Math.round(H * 0.040); // Bigger artist
-  const gap1 = Math.round(H * 0.05);
-  const gap2 = Math.round(H * 0.02);
+  const titleSz = Math.round(H * 0.110); // Extremely large title for readability
+  const artistSz = Math.round(H * 0.055); // Large artist text
+  const gap1 = Math.round(H * 0.06);
+  const gap2 = Math.round(H * 0.03);
 
   // Set the font to measure title
   ctx.font = `bold ${titleSz}px "Plus Jakarta Sans", "Noto Sans Devanagari", "Noto Sans KR"`;
@@ -675,7 +675,7 @@ function generateThumbnail(coverImg, colors, title, artist, font, alignment, wra
   // If there are too many lines or it's very long, shrink font size
   let finalTitleSz = titleSz;
   if (titleLines.length > 2) {
-    finalTitleSz = Math.round(H * 0.061);
+    finalTitleSz = Math.round(H * 0.080);
     ctx.font = `bold ${finalTitleSz}px "Plus Jakarta Sans", "Noto Sans Devanagari", "Noto Sans KR"`;
     titleLines.length = 0;
     currentLine = '';

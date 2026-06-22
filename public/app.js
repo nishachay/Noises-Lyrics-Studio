@@ -3118,7 +3118,7 @@ async function publishToYouTube(channel) {
       statusEl.innerText = `Error: ${data.error}`;
     } else {
       statusEl.style.color = 'var(--accent)';
-      statusEl.innerHTML = `Success! <a href="${data.editUrl}" target="_blank" style="color:var(--accent); text-decoration:underline;">Review & Publish Video Γåù</a>`;
+      statusEl.innerHTML = `Success! <a href="${data.editUrl}" target="_blank" style="color:var(--accent); text-decoration:underline;">Review & Publish Video &rarr;</a>`;
     }
   } catch (err) {
     statusEl.style.color = '#ef4444';
