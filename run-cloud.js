@@ -36,10 +36,38 @@ async function main() {
 
   console.log(`[Cloud] Starting render for: ${project.songTitle} by ${project.songArtist}`);
 
+  // Download artwork if available
+  const { downloadArtwork } = require('./yt_dlp_helper');
+  let artworkUrl = project.artworkUrl;
+  
+  if (!artworkUrl && project.videoUrl && project.videoUrl.includes('youtube.com/watch?v=')) {
+    const vidId = project.videoUrl.split('v=')[1]?.split('&')[0];
+    if (vidId) artworkUrl = `https://i.ytimg.com/vi/${vidId}/maxresdefault.jpg`;
+  }
+  
+  let downloadedArtworkPath = null;
+  if (artworkUrl) {
+    console.log('[Cloud] Downloading artwork from:', artworkUrl);
+    downloadedArtworkPath = await downloadArtwork(artworkUrl, project.id || 'cloud_render');
+    
+    // Fallback to hqdefault if maxresdefault fails (often maxres doesn't exist)
+    if (!downloadedArtworkPath && artworkUrl.includes('maxresdefault.jpg')) {
+      console.log('[Cloud] maxresdefault failed, trying hqdefault...');
+      artworkUrl = artworkUrl.replace('maxresdefault.jpg', 'hqdefault.jpg');
+      downloadedArtworkPath = await downloadArtwork(artworkUrl, project.id || 'cloud_render');
+    }
+    
+    if (downloadedArtworkPath) {
+      console.log('[Cloud] Artwork downloaded successfully to:', downloadedArtworkPath);
+    } else {
+      console.log('[Cloud] Failed to download artwork, will proceed without it.');
+    }
+  }
+
   // 1. Render Video
   await renderVideo({
     audioPath: audioPath,
-    artworkPath: null, // We'll rely on generated background for now or download it if needed
+    artworkPath: downloadedArtworkPath, // We'll rely on generated background for now or download it if needed
     lyrics: project.lyrics,
     outputPath: outputPath,
     duration: project.duration || 180,
@@ -71,7 +99,7 @@ async function main() {
     const thumbBuffer = await generateThumbnailBuffer({
       title: project.songTitle,
       artist: project.songArtist,
-      artworkUrl: project.videoUrl, // Or local image if we had one
+      artworkUrl: downloadedArtworkPath, // Use downloaded artwork instead of youtube video URL
       theme: project.outAlign,
       logoPath: path.join(__dirname, 'public', 'logo.png')
     });
@@ -93,7 +121,19 @@ async function main() {
   const finalDescription = `🎵 ${project.songArtist} - ${project.songTitle} (Lyrics Video)\n\n${project.videoUrl}\n\n${lyricLines}\n\n${tagsText}${seoBlock}${disclaimer}`;
   
   const fallbackTags = `${project.songArtist}, ${project.songTitle}, Lyrics, Pop, Music`;
-  const finalTags = seoKeywords.length > 0 ? seoKeywords.concat(fallbackTags.split(', ')).join(', ') : fallbackTags;
+  const rawFinalTags = seoKeywords.length > 0 ? seoKeywords.concat(fallbackTags.split(', ')) : fallbackTags.split(', ');
+  
+  // Enforce YouTube's 500-character total tags limit
+  const finalTagsArray = [];
+  let totalLen = 0;
+  for (const t of rawFinalTags) {
+    const tTrim = t.trim();
+    if (!tTrim) continue;
+    if (totalLen + tTrim.length + 1 <= 500) {
+      finalTagsArray.push(tTrim);
+      totalLen += tTrim.length + 1;
+    }
+  }
 
   // 4. Upload to YouTube
   if (project.channel && project.channel !== 'local') {
@@ -109,7 +149,7 @@ async function main() {
         thumbnailPath: fs.existsSync(thumbnailPath) ? thumbnailPath : null, 
         title: finalTitle,
         description: finalDescription,
-        tags: finalTags.split(',').map(t => t.trim()),
+        tags: finalTagsArray,
         publishAtOverride: project.publishAt
       });
       console.log('[Cloud] YouTube Upload Success! Edit URL:', editUrl);

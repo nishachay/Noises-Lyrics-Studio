@@ -489,17 +489,24 @@ function drawLyricsPanel(ctx, W, H, time, wrappedLyrics, font, alignment, durati
     ctx.font = fontStr;
     ctx.globalAlpha = opacity * layoutAlpha * opacityMult;
     
+    // Outer intense glow
     ctx.shadowColor = glowColor;
-    ctx.shadowBlur = 15;
+    ctx.shadowBlur = 40 * scale;
     ctx.shadowOffsetY = 0;
     ctx.fillStyle = primaryColor;
     ctx.fillText(text, 0, y);
 
+    // Medium glow
+    ctx.shadowBlur = 20 * scale;
+    ctx.fillText(text, 0, y);
+
+    // Tight shadow for readability
     ctx.shadowColor = 'rgba(0, 0, 0, 0.8)';
-    ctx.shadowBlur = 10;
+    ctx.shadowBlur = 8 * scale;
     ctx.shadowOffsetY = 2 * scale;
     ctx.fillText(text, 0, y);
 
+    // Clean top layer
     ctx.shadowColor = 'transparent';
     ctx.fillText(text, 0, y);
   };

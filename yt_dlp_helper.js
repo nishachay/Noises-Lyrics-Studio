@@ -183,13 +183,23 @@ async function downloadArtwork(artworkUrl, id) {
     return dest;
   }
   try {
-    const res = await axios({ method: 'get', url: artworkUrl, responseType: 'stream', timeout: 10000 });
+    const res = await axios({ 
+      method: 'get', 
+      url: artworkUrl, 
+      responseType: 'stream', 
+      timeout: 10000,
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+      }
+    });
     const w   = fs.createWriteStream(dest);
     res.data.pipe(w);
     await new Promise((ok, fail) => { w.on('finish', ok); w.on('error', fail); });
-    if (fs.existsSync(dest) && fs.statSync(dest).size > 5000) {
+    if (fs.existsSync(dest) && fs.statSync(dest).size > 2000) {
       console.log(`[Artwork] Downloaded: ${dest}`);
       return dest;
+    } else {
+      console.warn(`[Artwork] File size too small, might be invalid: ${fs.statSync(dest).size} bytes`);
     }
   } catch (e) {
     console.warn('[Artwork] Download failed:', e.message);
