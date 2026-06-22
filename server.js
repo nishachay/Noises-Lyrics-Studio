@@ -1082,59 +1082,53 @@ app.get('/api/render', async (req, res) => {
 });
 
 // Helper to stream/proxy the audio from YouTube's CDN to the client
+async function proxyAudioStream(streamData, req, res, throwOn403 = false) {
+  try {
+    // Merge yt-dlp extracted headers with any standard ones needed
+    const customHeaders = streamData.headers || {};
+    const headers = { ...customHeaders };
+
+    if (req.headers.range) {
+      headers['Range'] = req.headers.range;
+    }
+
+    const streamResponse = await axios({
+      method: 'get',
+      url: streamData.url,
+      responseType: 'stream',
+      headers: headers,
+      timeout: 15000,
+      validateStatus: (status) => status >= 200 && status < 400
+    });
+
+    res.setHeader('Content-Type', streamResponse.headers['content-type'] || 'audio/webm');
+    res.setHeader('Accept-Ranges', 'bytes');
+
+    if (streamResponse.headers['content-range']) {
+      res.setHeader('Content-Range', streamResponse.headers['content-range']);
+    }
+    if (streamResponse.headers['content-length']) {
+      res.setHeader('Content-Length', streamResponse.headers['content-length']);
+    }
+
+    res.status(streamResponse.status || 200);
+    streamResponse.data.pipe(res);
+  } catch (err) {
+    console.error('[Stream Proxy] Error:', err.message);
+    if (throwOn403 && err.response && err.response.status === 403) {
+      throw err;
+    }
+    if (!res.headersSent) {
+      res.status(500).send('Streaming error: ' + err.message);
+    }
+  }
+}
+
 // ══════════════════════════════════════════════════════════════
 // GET /api/stream/:videoId
-// Streams audio directly from yt-dlp to browser to bypass 403 blocks
+// Serves the downloaded audio file to the browser with Range support.
 // ══════════════════════════════════════════════════════════════
-function streamYtdlpDirect(videoId, req, res) {
-  return new Promise((resolve, reject) => {
-    const url = `https://www.youtube.com/watch?v=${videoId}`;
-    const { spawn } = require('child_process');
-    const path = require('path');
-    const YTDLP = path.join(__dirname, 'bin', 'yt-dlp.exe');
-    const args = [
-      '--js-runtimes', 'node',
-      '--no-warnings',
-      '--no-playlist',
-      '--extractor-args', 'youtube:player_client=ios,android,web',
-      '-f', 'bestaudio[ext=m4a]/bestaudio/best',
-      '-o', '-',
-      url
-    ];
-
-    const child = spawn(YTDLP, args);
-    let headersSent = false;
-    let fallbackTriggered = false;
-
-    child.stdout.once('data', (chunk) => {
-      if (fallbackTriggered) return;
-      headersSent = true;
-      res.setHeader('Content-Type', 'audio/mp4');
-      res.setHeader('Transfer-Encoding', 'chunked');
-      res.write(chunk);
-      child.stdout.pipe(res);
-      resolve(true); // successfully started streaming
-    });
-
-    child.stderr.on('data', (d) => {
-      const msg = d.toString();
-      if (msg.includes('ERROR:')) {
-        console.error(`[yt-dlp err] ${msg.trim()}`);
-      }
-    });
-
-    child.on('close', (code) => {
-      if (!headersSent && !fallbackTriggered) {
-        fallbackTriggered = true;
-        resolve(false); // failed to stream (likely blocked or deleted)
-      }
-    });
-
-    req.on('close', () => {
-      child.kill('SIGKILL');
-    });
-  });
-}
+const directUrlCache = new Map();
 
 app.get('/api/stream/:videoId', async (req, res) => {
   const videoId = req.params.videoId.replace(/[^a-zA-Z0-9_-]/g, '');
@@ -1143,31 +1137,46 @@ app.get('/api/stream/:videoId', async (req, res) => {
   if (!videoId) return res.status(400).send('Bad videoId');
 
   try {
-    console.log(`[Stream] Direct piping yt-dlp to client for: ${videoId}`);
-    const success = await streamYtdlpDirect(videoId, req, res);
+    if (directUrlCache.has(videoId)) {
+      console.log(`[Stream] Cache hit for direct stream data: ${videoId}`);
+      return proxyAudioStream(directUrlCache.get(videoId), req, res);
+    }
 
-    if (!success) {
-      console.log(`[Stream] Primary stream failed for ${videoId}.`);
+    console.log(`[Stream] Fetching direct stream data for: ${videoId}`);
+    let streamData = await getDirectAudioUrl(`https://www.youtube.com/watch?v=${videoId}`);
+    
+    if (!streamData || !streamData.url) {
+      console.log(`[Stream] Primary stream extraction failed for ${videoId}.`);
+      
       if (title && artist) {
-        console.log(`[Stream] Auto-fallback: Searching YouTube for "${title} ${artist}"...`);
+        console.log(`[Stream] Auto-fallback: Searching standard YouTube for "${title} ${artist}"...`);
         const results = await searchYoutube(`${title} ${artist} audio`);
         
+        // Try top 2 alternative results
         for (let i = 0; i < Math.min(results.length, 2); i++) {
           const altId = results[i].id;
           if (altId === videoId) continue;
           
           console.log(`[Stream] Fallback trying: ${altId} (${results[i].title})`);
-          const altSuccess = await streamYtdlpDirect(altId, req, res);
-          if (altSuccess) {
+          streamData = await getDirectAudioUrl(`https://www.youtube.com/watch?v=${altId}`);
+          
+          if (streamData && streamData.url) {
             console.log(`[Stream] Fallback SUCCESS with ${altId}!`);
-            return;
+            directUrlCache.set(videoId, streamData); // Cache under original requested ID
+            setTimeout(() => directUrlCache.delete(videoId), 4 * 60 * 60 * 1000);
+            return proxyAudioStream(streamData, req, res);
           }
         }
-        if (!res.headersSent) res.status(500).send('Could not extract direct stream URL and all fallbacks failed.');
+        
+        return res.status(500).send('Could not extract direct stream URL and all fallbacks failed.');
       } else {
-        if (!res.headersSent) res.status(500).send('Could not extract direct stream URL');
+        return res.status(500).send('Could not extract direct stream URL');
       }
     }
+    
+    directUrlCache.set(videoId, streamData);
+    setTimeout(() => directUrlCache.delete(videoId), 4 * 60 * 60 * 1000);
+    return proxyAudioStream(streamData, req, res);
   } catch (err) {
     console.error('[Stream] Error:', err.message);
     if (!res.headersSent) res.status(500).send('Stream error: ' + err.message);

@@ -249,29 +249,45 @@ async function getDirectAudioUrl(url) {
   await ensureYtdlp();
   const baseArgs = [
     '-f', 'bestaudio[ext=m4a]/bestaudio/best',
-    '-g',
+    '--dump-json',
     url
   ];
 
+  const parseOutput = (raw) => {
+    try {
+      const parsed = JSON.parse(raw);
+      if (parsed.url && parsed.http_headers) {
+        return { url: parsed.url, headers: parsed.http_headers };
+      }
+    } catch (e) {
+      // Ignored
+    }
+    return null;
+  };
+
   try {
     const raw = await spawnYtdlpSingle(baseArgs);
-    return raw.trim().split('\n')[0];
+    const result = parseOutput(raw);
+    if (result) return result;
   } catch (e) {
     console.warn('[YouTube] getDirectAudioUrl failed, trying Chrome cookies...');
     try {
       const raw = await spawnYtdlpSingle(['--cookies-from-browser', 'chrome', ...baseArgs]);
-      return raw.trim().split('\n')[0];
+      const result = parseOutput(raw);
+      if (result) return result;
     } catch (e2) {
       console.warn('[YouTube] getDirectAudioUrl Chrome fallback failed, trying Edge cookies...');
       try {
         const raw = await spawnYtdlpSingle(['--cookies-from-browser', 'edge', ...baseArgs]);
-        return raw.trim().split('\n')[0];
+        const result = parseOutput(raw);
+        if (result) return result;
       } catch (e3) {
         console.error('[YouTube] getDirectAudioUrl all attempts failed:', e3.message);
         return null;
       }
     }
   }
+  return null;
 }
 
 // ── GET VIDEO INFO (for custom URLs) ─────────────────────────────────────────
