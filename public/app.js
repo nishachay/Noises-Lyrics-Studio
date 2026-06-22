@@ -594,7 +594,7 @@ function drawWatermark(W, H, t) {
 
 // ΓöÇΓöÇ Draw floating ΓÖ¬ musical notes ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 function drawInterludeDots(cx, cy, t) {
-  const notes = ['ΓÖ¬', 'ΓÖ½', 'ΓÖ¬'];
+  const notes = ['\u266A', '\u266B', '\u266A'];
   const R = 7, GAP = 30;
   const totalW = 2 * R * 3 + GAP * 2;
   const startX = cx - totalW / 2 + R;
@@ -610,12 +610,8 @@ function drawInterludeDots(cx, cy, t) {
     const yOffset = Math.sin(ph) * 8;
     const al = 0.35 + 0.65 * (0.5 + 0.5 * Math.sin(ph));
     
-    ctx.beginPath();
-    ctx.arc(startX + i * (R * 2 + GAP), cy + yOffset, R, 0, Math.PI * 2);
     ctx.fillStyle = `rgba(255,255,255,${al})`;
-    ctx.shadowColor = `rgba(255,255,255,${al})`;
-    ctx.shadowBlur = 10;
-    ctx.fill();
+    ctx.fillText(notes[i], startX + i * (R * 2 + GAP), cy + yOffset);
   }
   ctx.restore();
 }
