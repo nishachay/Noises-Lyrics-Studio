@@ -1085,57 +1085,28 @@ app.get('/api/render', async (req, res) => {
 
 // ══════════════════════════════════════════════════════════════
 // GET /api/stream/:videoId
-// Redirects the browser to the direct stream URL to bypass 403s natively
+// Serves the completely downloaded audio file statically to the browser
 // ══════════════════════════════════════════════════════════════
-const directUrlCache = new Map();
-
 app.get('/api/stream/:videoId', async (req, res) => {
   const videoId = req.params.videoId.replace(/[^a-zA-Z0-9_-]/g, '');
-  const title = req.query.title;
-  const artist = req.query.artist;
   if (!videoId) return res.status(400).send('Bad videoId');
 
   try {
-    if (directUrlCache.has(videoId)) {
-      console.log(`[Stream] Cache hit for direct URL: ${videoId}`);
-      return res.redirect(directUrlCache.get(videoId));
-    }
-
-    console.log(`[Stream] Fetching direct stream URL for: ${videoId}`);
-    let directUrl = await getDirectAudioUrl(`https://www.youtube.com/watch?v=${videoId}`);
-    
-    if (!directUrl) {
-      console.log(`[Stream] Primary URL extraction failed for ${videoId}.`);
-      
-      if (title && artist) {
-        console.log(`[Stream] Auto-fallback: Searching standard YouTube for "${title} ${artist}"...`);
-        const results = await searchYoutube(`${title} ${artist} audio`);
-        
-        // Try top 2 alternative results
-        for (let i = 0; i < Math.min(results.length, 2); i++) {
-          const altId = results[i].id;
-          if (altId === videoId) continue;
-          
-          console.log(`[Stream] Fallback trying: ${altId} (${results[i].title})`);
-          directUrl = await getDirectAudioUrl(`https://www.youtube.com/watch?v=${altId}`);
-          
-          if (directUrl) {
-            console.log(`[Stream] Fallback SUCCESS with ${altId}!`);
-            directUrlCache.set(videoId, directUrl); // Cache under original requested ID
-            setTimeout(() => directUrlCache.delete(videoId), 4 * 60 * 60 * 1000);
-            return res.redirect(directUrl);
-          }
-        }
-        
-        return res.status(500).send('Could not extract direct stream URL and all fallbacks failed.');
-      } else {
-        return res.status(500).send('Could not extract direct stream URL');
-      }
+    const cachedPath = directUrlCache.get(videoId);
+    const fs = require('fs');
+    if (cachedPath && fs.existsSync(cachedPath)) {
+      console.log(`[Stream] Serving natively downloaded file from cache: ${cachedPath}`);
+      return res.sendFile(cachedPath);
     }
     
-    directUrlCache.set(videoId, directUrl);
-    setTimeout(() => directUrlCache.delete(videoId), 4 * 60 * 60 * 1000);
-    return res.redirect(directUrl);
+    // If it missed the prepare-stream cache, download it on the fly
+    const directPath = await downloadAudio(videoId, `https://www.youtube.com/watch?v=${videoId}`);
+    if (directPath && fs.existsSync(directPath)) {
+      console.log(`[Stream] Serving natively downloaded file on-the-fly: ${directPath}`);
+      return res.sendFile(directPath);
+    }
+    
+    return res.status(500).send('Audio file could not be downloaded to disk.');
   } catch (err) {
     console.error('[Stream] Error:', err.message);
     if (!res.headersSent) res.status(500).send('Stream error: ' + err.message);
@@ -1144,7 +1115,7 @@ app.get('/api/stream/:videoId', async (req, res) => {
 
 // ══════════════════════════════════════════════════════════════
 // GET /api/prepare-stream/:videoId
-// Pre-warms the stream URL cache before the audio tag requests it
+// Downloads the full audio file to disk instantly via yt-dlp
 // ══════════════════════════════════════════════════════════════
 app.get('/api/prepare-stream/:videoId', async (req, res) => {
   const videoId = req.params.videoId.replace(/[^a-zA-Z0-9_-]/g, '');
@@ -1153,15 +1124,16 @@ app.get('/api/prepare-stream/:videoId', async (req, res) => {
   if (!videoId) return res.status(400).json({ success: false, error: 'Bad videoId' });
 
   try {
-    if (directUrlCache.has(videoId)) {
+    const fs = require('fs');
+    if (directUrlCache.has(videoId) && fs.existsSync(directUrlCache.get(videoId))) {
       return res.json({ success: true, cached: true });
     }
 
-    console.log(`[Prepare Stream] Fetching direct stream URL for: ${videoId}`);
-    let directUrl = await getDirectAudioUrl(`https://www.youtube.com/watch?v=${videoId}`);
+    console.log(`[Prepare Stream] Triggering native disk download for: ${videoId}`);
+    let audioPath = await downloadAudio(videoId, `https://www.youtube.com/watch?v=${videoId}`);
     
-    if (!directUrl) {
-      console.log(`[Prepare Stream] Primary URL extraction failed for ${videoId}.`);
+    if (!audioPath || !fs.existsSync(audioPath)) {
+      console.log(`[Prepare Stream] Primary download failed for ${videoId}.`);
       if (title && artist) {
         console.log(`[Prepare Stream] Auto-fallback: Searching standard YouTube for "${title} ${artist}"...`);
         const results = await searchYoutube(`${title} ${artist} audio`);
@@ -1169,21 +1141,21 @@ app.get('/api/prepare-stream/:videoId', async (req, res) => {
           const altId = results[i].id;
           if (altId === videoId) continue;
           console.log(`[Prepare Stream] Fallback trying: ${altId} (${results[i].title})`);
-          directUrl = await getDirectAudioUrl(`https://www.youtube.com/watch?v=${altId}`);
-          if (directUrl) {
+          const altPath = await downloadAudio(altId, `https://www.youtube.com/watch?v=${altId}`);
+          if (altPath && fs.existsSync(altPath)) {
             console.log(`[Prepare Stream] Fallback SUCCESS with ${altId}!`);
-            directUrlCache.set(videoId, directUrl); 
+            directUrlCache.set(videoId, altPath); 
             setTimeout(() => directUrlCache.delete(videoId), 4 * 60 * 60 * 1000);
             return res.json({ success: true, fallback: true });
           }
         }
-        return res.status(500).json({ success: false, error: 'All fallbacks failed' });
+        return res.status(500).json({ success: false, error: 'All fallback downloads failed' });
       } else {
-        return res.status(500).json({ success: false, error: 'Extraction failed' });
+        return res.status(500).json({ success: false, error: 'Download failed' });
       }
     }
     
-    directUrlCache.set(videoId, directUrl);
+    directUrlCache.set(videoId, audioPath);
     setTimeout(() => directUrlCache.delete(videoId), 4 * 60 * 60 * 1000);
     return res.json({ success: true });
   } catch (err) {
