@@ -1513,7 +1513,7 @@ function renderMetadataResults(results) {
       <img src="${artUrl}" class="result-art" alt="Cover">
       <div class="result-text">
         <div class="result-name">${esc(item.title)}</div>
-        <div class="result-artist">${esc(item.artist)} ΓÇó ${esc(item.album)}</div>
+        <div class="result-artist">${esc(item.artist)} &bull; ${esc(item.album)}</div>
       </div>
       <div class="result-dur">${formatDur(item.duration)}</div>
     `;
