@@ -183,7 +183,7 @@ function getNextPublishTime(channelLabel, dryRun = false) {
     const lastScheduled = new Date(scheduleState[channelLabel]);
     if (lastScheduled >= targetDate) {
       targetDate = new Date(lastScheduled);
-      targetDate.setMinutes(targetDate.getMinutes() + 30); // Space out by 30 minutes on the same day
+      targetDate.setDate(targetDate.getDate() + 1);
     }
   }
 

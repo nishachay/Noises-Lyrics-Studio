@@ -312,6 +312,11 @@ function updatePlayerUIElements() {
   }
 
   updateSyncHighlight(S.videoTime);
+
+  const btnPreviewThumb = document.getElementById('btn-preview-thumb');
+  if (S.track && btnPreviewThumb) {
+    btnPreviewThumb.disabled = false;
+  }
 }
 
 function seekTo(t) {
@@ -3249,12 +3254,7 @@ if (btnPreviewThumb) {
 }
 
 // --- Enable Buttons when Track is Ready ---
-const originalSyncStateChange = window.syncStateChange || function(){};
-window.syncStateChange = function() {
-  if (S.track && btnPreviewThumb) {
-    btnPreviewThumb.disabled = false;
-  }
-};
+// Moved btnPreviewThumb logic to updatePlayerUIElements()
 
 // --- Visual Canvas Indicator Helper ---
 let indicatorTimeout;
