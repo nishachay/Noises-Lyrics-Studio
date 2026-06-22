@@ -1,0 +1,1 @@
+const fs = require('fs'); let code = fs.readFileSync('server.js', 'utf8'); code = code.replace('app.get(\'/api/stream/:videoId\', async (req, res) => {', 'const directUrlCache = new Map();\\n\\napp.get(\'/api/stream/:videoId\', async (req, res) => {'); fs.writeFileSync('server.js', code); console.log('fixed directUrlCache');

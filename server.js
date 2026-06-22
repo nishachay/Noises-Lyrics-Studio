@@ -1087,6 +1087,8 @@ app.get('/api/render', async (req, res) => {
 // GET /api/stream/:videoId
 // Serves the completely downloaded audio file statically to the browser
 // ══════════════════════════════════════════════════════════════
+const directUrlCache = new Map();
+
 app.get('/api/stream/:videoId', async (req, res) => {
   const videoId = req.params.videoId.replace(/[^a-zA-Z0-9_-]/g, '');
   if (!videoId) return res.status(400).send('Bad videoId');
