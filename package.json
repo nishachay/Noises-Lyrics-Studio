@@ -1,6 +1,6 @@
 {
   "name": "noises-lyrics-studio",
-  "version": "6.0.0",
+  "version": "7.0.8",
   "description": "Lyric video generator and publishing tool",
   "main": "server.js",
   "scripts": {
