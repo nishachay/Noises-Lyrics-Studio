@@ -1143,6 +1143,56 @@ app.get('/api/stream/:videoId', async (req, res) => {
 });
 
 // ══════════════════════════════════════════════════════════════
+// GET /api/prepare-stream/:videoId
+// Pre-warms the stream URL cache before the audio tag requests it
+// ══════════════════════════════════════════════════════════════
+app.get('/api/prepare-stream/:videoId', async (req, res) => {
+  const videoId = req.params.videoId.replace(/[^a-zA-Z0-9_-]/g, '');
+  const title = req.query.title;
+  const artist = req.query.artist;
+  if (!videoId) return res.status(400).json({ success: false, error: 'Bad videoId' });
+
+  try {
+    if (directUrlCache.has(videoId)) {
+      return res.json({ success: true, cached: true });
+    }
+
+    console.log(`[Prepare Stream] Fetching direct stream URL for: ${videoId}`);
+    let directUrl = await getDirectAudioUrl(`https://www.youtube.com/watch?v=${videoId}`);
+    
+    if (!directUrl) {
+      console.log(`[Prepare Stream] Primary URL extraction failed for ${videoId}.`);
+      if (title && artist) {
+        console.log(`[Prepare Stream] Auto-fallback: Searching standard YouTube for "${title} ${artist}"...`);
+        const results = await searchYoutube(`${title} ${artist} audio`);
+        for (let i = 0; i < Math.min(results.length, 2); i++) {
+          const altId = results[i].id;
+          if (altId === videoId) continue;
+          console.log(`[Prepare Stream] Fallback trying: ${altId} (${results[i].title})`);
+          directUrl = await getDirectAudioUrl(`https://www.youtube.com/watch?v=${altId}`);
+          if (directUrl) {
+            console.log(`[Prepare Stream] Fallback SUCCESS with ${altId}!`);
+            directUrlCache.set(videoId, directUrl); 
+            setTimeout(() => directUrlCache.delete(videoId), 4 * 60 * 60 * 1000);
+            return res.json({ success: true, fallback: true });
+          }
+        }
+        return res.status(500).json({ success: false, error: 'All fallbacks failed' });
+      } else {
+        return res.status(500).json({ success: false, error: 'Extraction failed' });
+      }
+    }
+    
+    directUrlCache.set(videoId, directUrl);
+    setTimeout(() => directUrlCache.delete(videoId), 4 * 60 * 60 * 1000);
+    return res.json({ success: true });
+  } catch (err) {
+    console.error('[Prepare Stream] Error:', err.message);
+    if (!res.headersSent) res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// ══════════════════════════════════════════════════════════════
 // GET /api/proxy
 // Proxies external images with CORS headers
 // ══════════════════════════════════════════════════════════════
