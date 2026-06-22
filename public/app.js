@@ -2887,7 +2887,7 @@ function renderLyricsResults(results) {
     const metaHtml = `
       <div class="result-text">
         <div class="result-title">${r.trackName} <span style="color:#666; font-size: 11px;">(${formatDur(r.duration)})</span></div>
-        <div class="result-artist">${r.artistName} ΓÇó ${r.albumName}</div>
+        <div class="result-artist">${r.artistName} &bull; ${r.albumName}</div>
       </div>
     `;
     
@@ -3142,7 +3142,7 @@ async function updateYouTubeChannelNames() {
     for (const [ch, info] of Object.entries(status)) {
       const btn = document.getElementById(`btn-yt-${ch}`);
       if (btn && info.authenticated && info.name) {
-        btn.innerHTML = `Γû╢ ${info.name}`;
+        btn.innerHTML = `&#9654; ${info.name}`;
         btn.title = `Authenticated as: ${info.name}`;
       }
     }
