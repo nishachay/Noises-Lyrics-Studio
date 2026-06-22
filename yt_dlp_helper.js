@@ -27,9 +27,9 @@ async function ensureYtdlp() {
     }
     return;
   }
-  console.log('[yt-dlp] Downloading binary from nightly branch...');
-  const res = await axios({ method: 'get', responseType: 'stream', 
-    url: 'https://github.com/yt-dlp/yt-dlp-nightly-builds/releases/latest/download/yt-dlp.exe' });
+  console.log('[yt-dlp] Downloading binary...');
+  const res = await axios({ method: 'get', responseType: 'stream',
+    url: 'https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp.exe' });
   await new Promise((ok, fail) => {
     const w = fs.createWriteStream(YTDLP);
     res.data.pipe(w);
@@ -61,13 +61,13 @@ function spawnYtdlp(args) {
 }
 
 function spawnYtdlpSingle(args) {
-  // Add PoToken and iOS player client args to bypass YouTube's heavy throttling (the 50kB/s bug) and 403 blocks
+  // Add PoToken and iOS player client args to bypass YouTube's heavy throttling (the 50kB/s bug)
   const extras = [
     '--js-runtimes', 'node', 
     '--no-warnings', 
     '--no-playlist',
-    '--concurrent-fragments', '4', // Speeds up segmented downloads
-    '--extractor-args', 'youtube:player_client=ios,android,web' // Bypasses the 403 block by spoofing mobile API clients
+    '--extractor-args', 'youtube:player_client=ios,web', // Bypasses slow downloads
+    '--concurrent-fragments', '4' // Speeds up segmented downloads
   ];
   return spawnYtdlp([...extras, ...args]);
 }
@@ -183,23 +183,13 @@ async function downloadArtwork(artworkUrl, id) {
     return dest;
   }
   try {
-    const res = await axios({ 
-      method: 'get', 
-      url: artworkUrl, 
-      responseType: 'stream', 
-      timeout: 10000,
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
-      }
-    });
+    const res = await axios({ method: 'get', url: artworkUrl, responseType: 'stream', timeout: 10000 });
     const w   = fs.createWriteStream(dest);
     res.data.pipe(w);
     await new Promise((ok, fail) => { w.on('finish', ok); w.on('error', fail); });
-    if (fs.existsSync(dest) && fs.statSync(dest).size > 2000) {
+    if (fs.existsSync(dest) && fs.statSync(dest).size > 5000) {
       console.log(`[Artwork] Downloaded: ${dest}`);
       return dest;
-    } else {
-      console.warn(`[Artwork] File size too small, might be invalid: ${fs.statSync(dest).size} bytes`);
     }
   } catch (e) {
     console.warn('[Artwork] Download failed:', e.message);
@@ -249,45 +239,29 @@ async function getDirectAudioUrl(url) {
   await ensureYtdlp();
   const baseArgs = [
     '-f', 'bestaudio[ext=m4a]/bestaudio/best',
-    '--dump-json',
+    '-g',
     url
   ];
 
-  const parseOutput = (raw) => {
-    try {
-      const parsed = JSON.parse(raw);
-      if (parsed.url && parsed.http_headers) {
-        return { url: parsed.url, headers: parsed.http_headers };
-      }
-    } catch (e) {
-      // Ignored
-    }
-    return null;
-  };
-
   try {
     const raw = await spawnYtdlpSingle(baseArgs);
-    const result = parseOutput(raw);
-    if (result) return result;
+    return raw.trim().split('\n')[0];
   } catch (e) {
     console.warn('[YouTube] getDirectAudioUrl failed, trying Chrome cookies...');
     try {
       const raw = await spawnYtdlpSingle(['--cookies-from-browser', 'chrome', ...baseArgs]);
-      const result = parseOutput(raw);
-      if (result) return result;
+      return raw.trim().split('\n')[0];
     } catch (e2) {
       console.warn('[YouTube] getDirectAudioUrl Chrome fallback failed, trying Edge cookies...');
       try {
         const raw = await spawnYtdlpSingle(['--cookies-from-browser', 'edge', ...baseArgs]);
-        const result = parseOutput(raw);
-        if (result) return result;
+        return raw.trim().split('\n')[0];
       } catch (e3) {
         console.error('[YouTube] getDirectAudioUrl all attempts failed:', e3.message);
         return null;
       }
     }
   }
-  return null;
 }
 
 // ── GET VIDEO INFO (for custom URLs) ─────────────────────────────────────────

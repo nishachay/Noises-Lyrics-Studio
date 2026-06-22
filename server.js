@@ -1081,52 +1081,11 @@ app.get('/api/render', async (req, res) => {
   }
 });
 
-// Helper to stream/proxy the audio from YouTube's CDN to the client
-async function proxyAudioStream(streamData, req, res, throwOn403 = false) {
-  try {
-    // Merge yt-dlp extracted headers with any standard ones needed
-    const customHeaders = streamData.headers || {};
-    const headers = { ...customHeaders };
-
-    if (req.headers.range) {
-      headers['Range'] = req.headers.range;
-    }
-
-    const streamResponse = await axios({
-      method: 'get',
-      url: streamData.url,
-      responseType: 'stream',
-      headers: headers,
-      timeout: 15000,
-      validateStatus: (status) => status >= 200 && status < 400
-    });
-
-    res.setHeader('Content-Type', streamResponse.headers['content-type'] || 'audio/webm');
-    res.setHeader('Accept-Ranges', 'bytes');
-
-    if (streamResponse.headers['content-range']) {
-      res.setHeader('Content-Range', streamResponse.headers['content-range']);
-    }
-    if (streamResponse.headers['content-length']) {
-      res.setHeader('Content-Length', streamResponse.headers['content-length']);
-    }
-
-    res.status(streamResponse.status || 200);
-    streamResponse.data.pipe(res);
-  } catch (err) {
-    console.error('[Stream Proxy] Error:', err.message);
-    if (throwOn403 && err.response && err.response.status === 403) {
-      throw err;
-    }
-    if (!res.headersSent) {
-      res.status(500).send('Streaming error: ' + err.message);
-    }
-  }
-}
+// proxyAudioStream removed in favor of native browser redirect
 
 // ══════════════════════════════════════════════════════════════
 // GET /api/stream/:videoId
-// Serves the downloaded audio file to the browser with Range support.
+// Redirects the browser to the direct stream URL to bypass 403s natively
 // ══════════════════════════════════════════════════════════════
 const directUrlCache = new Map();
 
@@ -1138,15 +1097,15 @@ app.get('/api/stream/:videoId', async (req, res) => {
 
   try {
     if (directUrlCache.has(videoId)) {
-      console.log(`[Stream] Cache hit for direct stream data: ${videoId}`);
-      return proxyAudioStream(directUrlCache.get(videoId), req, res);
+      console.log(`[Stream] Cache hit for direct URL: ${videoId}`);
+      return res.redirect(directUrlCache.get(videoId));
     }
 
-    console.log(`[Stream] Fetching direct stream data for: ${videoId}`);
-    let streamData = await getDirectAudioUrl(`https://www.youtube.com/watch?v=${videoId}`);
+    console.log(`[Stream] Fetching direct stream URL for: ${videoId}`);
+    let directUrl = await getDirectAudioUrl(`https://www.youtube.com/watch?v=${videoId}`);
     
-    if (!streamData || !streamData.url) {
-      console.log(`[Stream] Primary stream extraction failed for ${videoId}.`);
+    if (!directUrl) {
+      console.log(`[Stream] Primary URL extraction failed for ${videoId}.`);
       
       if (title && artist) {
         console.log(`[Stream] Auto-fallback: Searching standard YouTube for "${title} ${artist}"...`);
@@ -1158,13 +1117,13 @@ app.get('/api/stream/:videoId', async (req, res) => {
           if (altId === videoId) continue;
           
           console.log(`[Stream] Fallback trying: ${altId} (${results[i].title})`);
-          streamData = await getDirectAudioUrl(`https://www.youtube.com/watch?v=${altId}`);
+          directUrl = await getDirectAudioUrl(`https://www.youtube.com/watch?v=${altId}`);
           
-          if (streamData && streamData.url) {
+          if (directUrl) {
             console.log(`[Stream] Fallback SUCCESS with ${altId}!`);
-            directUrlCache.set(videoId, streamData); // Cache under original requested ID
+            directUrlCache.set(videoId, directUrl); // Cache under original requested ID
             setTimeout(() => directUrlCache.delete(videoId), 4 * 60 * 60 * 1000);
-            return proxyAudioStream(streamData, req, res);
+            return res.redirect(directUrl);
           }
         }
         
@@ -1174,9 +1133,9 @@ app.get('/api/stream/:videoId', async (req, res) => {
       }
     }
     
-    directUrlCache.set(videoId, streamData);
+    directUrlCache.set(videoId, directUrl);
     setTimeout(() => directUrlCache.delete(videoId), 4 * 60 * 60 * 1000);
-    return proxyAudioStream(streamData, req, res);
+    return res.redirect(directUrl);
   } catch (err) {
     console.error('[Stream] Error:', err.message);
     if (!res.headersSent) res.status(500).send('Stream error: ' + err.message);
