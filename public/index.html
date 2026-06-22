@@ -485,49 +485,13 @@
         </div>
       </div>
 
-      <!-- Destination Selection -->
-      <div>
-        <div style="font-size: 11px; font-weight: 600; color: var(--text-2); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px;">2. Destination</div>
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px;">
-          <label style="display: flex; align-items: center; gap: 8px; background: var(--surface-2); padding: 10px 12px; border-radius: 6px; border: 1px solid var(--border); cursor: pointer; transition: background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.05)'" onmouseout="this.style.background='var(--surface-2)'">
-            <input type="radio" name="export-dest" value="local" checked style="accent-color: var(--accent); width: 14px; height: 14px; cursor: pointer;">
-            <div style="font-size: 12px; color: #fff; font-weight: 500;">Local Download</div>
-          </label>
-          <label style="display: flex; align-items: center; gap: 8px; background: var(--surface-2); padding: 10px 12px; border-radius: 6px; border: 1px solid var(--border); cursor: pointer; transition: background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.05)'" onmouseout="this.style.background='var(--surface-2)'">
-            <input type="radio" name="export-dest" value="pop" style="accent-color: var(--accent); width: 14px; height: 14px; cursor: pointer;">
-            <div style="font-size: 12px; color: #fff; font-weight: 500;">▶ Noises Music</div>
-          </label>
-          <label style="display: flex; align-items: center; gap: 8px; background: var(--surface-2); padding: 10px 12px; border-radius: 6px; border: 1px solid var(--border); cursor: pointer; transition: background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.05)'" onmouseout="this.style.background='var(--surface-2)'">
-            <input type="radio" name="export-dest" value="hiphop" style="accent-color: var(--accent); width: 14px; height: 14px; cursor: pointer;">
-            <div style="font-size: 12px; color: #fff; font-weight: 500;">▶ Noises HipHop</div>
-          </label>
-          <label style="display: flex; align-items: center; gap: 8px; background: var(--surface-2); padding: 10px 12px; border-radius: 6px; border: 1px solid var(--border); cursor: pointer; transition: background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.05)'" onmouseout="this.style.background='var(--surface-2)'">
-            <input type="radio" name="export-dest" value="hindi" style="accent-color: var(--accent); width: 14px; height: 14px; cursor: pointer;">
-            <div style="font-size: 12px; color: #fff; font-weight: 500;">▶ Noises Geet</div>
-          </label>
-          <label style="display: flex; align-items: center; gap: 8px; background: var(--surface-2); padding: 10px 12px; border-radius: 6px; border: 1px solid var(--border); cursor: pointer; transition: background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.05)'" onmouseout="this.style.background='var(--surface-2)'">
-            <input type="radio" name="export-dest" value="dhh" style="accent-color: var(--accent); width: 14px; height: 14px; cursor: pointer;">
-            <div style="font-size: 12px; color: #fff; font-weight: 500;">▶ Noises DHH</div>
-          </label>
-          <label style="display: flex; align-items: center; gap: 8px; background: var(--surface-2); padding: 10px 12px; border-radius: 6px; border: 1px solid var(--border); cursor: pointer; transition: background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.05)'" onmouseout="this.style.background='var(--surface-2)'">
-            <input type="radio" name="export-dest" value="kpop" style="accent-color: var(--accent); width: 14px; height: 14px; cursor: pointer;">
-            <div style="font-size: 12px; color: #fff; font-weight: 500;">▶ Noises KPop</div>
-          </label>
-        </div>
-      </div>
-
       <!-- Action Buttons -->
       <div>
-        <div style="font-size: 11px; font-weight: 600; color: var(--text-2); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px;">3. Render & Publish</div>
+        <div style="font-size: 11px; font-weight: 600; color: var(--text-2); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px;">2. Render Options</div>
         <div style="display: flex; flex-direction: column; gap: 6px;">
           <button id="btn-compile" class="btn-compile" disabled style="width: 100%; justify-content: center; height: 40px; font-size: 13px;" title="Export Full Video locally on your PC">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right:6px;"><polygon points="5 3 19 12 5 21 5 3"/></svg>
             Export Full Video (Local)
-          </button>
-
-          <button id="btn-cloud-export" class="btn-compile" disabled style="width: 100%; justify-content: center; height: 40px; font-size: 13px; background: #0066cc;" title="Export quietly in the cloud via GitHub Actions">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right:6px;"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"></path></svg>
-            Cloud Export (Background)
           </button>
           
           <div style="display: flex; gap: 6px;">

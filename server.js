@@ -172,231 +172,6 @@ app.post('/api/youtube-upload', async (req, res) => {
 // ----------------------------------------------------
 // GITHUB ACTIONS STATUS
 // ----------------------------------------------------
-app.get('/api/github-status', async (req, res) => {
-  try {
-    let githubPat = '';
-    try {
-      githubPat = fs.readFileSync(path.join(__dirname, 'github_token.txt'), 'utf8').trim();
-    } catch (e) {
-      return res.json({ status: 'unknown', error: 'No token' });
-    }
-
-    let repoName = 'Nishachay/Noises-Lyrics-Studio';
-    try {
-      const { execSync } = require('child_process');
-      const origin = execSync('git remote get-url origin').toString().trim();
-      const match = origin.match(/github\.com[/:](.+?)\.git$/);
-      if (match) repoName = match[1];
-    } catch (e) { }
-
-    const response = await axios.get(`https://api.github.com/repos/${repoName}/actions/runs?event=repository_dispatch&per_page=1`, {
-      headers: {
-        'Accept': 'application/vnd.github.v3+json',
-        'Authorization': `token ${githubPat}`,
-        'User-Agent': 'Noises-Studio-App'
-      }
-    });
-
-    if (response.data && response.data.workflow_runs && response.data.workflow_runs.length > 0) {
-      const run = response.data.workflow_runs[0];
-      res.json({
-        status: run.status,
-        conclusion: run.conclusion,
-        html_url: run.html_url,
-        updated_at: run.updated_at
-      });
-    } else {
-      res.json({ status: 'unknown', error: 'No runs found' });
-    }
-  } catch (err) {
-    res.json({ status: 'unknown', error: err.message });
-  }
-});
-
-// ----------------------------------------------------
-// CLOUD EXPORT ENDPOINT (Trigger GitHub Actions)
-// ----------------------------------------------------
-app.post('/api/cloud-export', upload.single('audio'), async (req, res) => {
-  try {
-    let githubPat = '';
-    try {
-      githubPat = fs.readFileSync(path.join(__dirname, 'github_token.txt'), 'utf8').trim();
-    } catch (e) {
-      return res.status(400).json({ error: 'Missing github_token.txt file. Please create it and paste your GitHub Personal Access Token.' });
-    }
-
-    const projectData = JSON.parse(req.body.project || '{}');
-    
-    let finalAudioPath = req.file ? req.file.path : null;
-    if (!finalAudioPath) {
-      if (projectData.customAudioPath && fs.existsSync(path.resolve(projectData.customAudioPath))) {
-        finalAudioPath = path.resolve(projectData.customAudioPath);
-      } else if (projectData.id && projectData.videoUrl) {
-        console.log('[Cloud Export] Downloading audio from YouTube before queuing...');
-        finalAudioPath = await downloadAudio(projectData.id, projectData.videoUrl);
-      }
-    }
-
-    if (!finalAudioPath) return res.status(400).json({ error: 'No audio file could be obtained' });
-
-    
-    // Inject local YouTube credentials so the user doesn't need to configure GitHub Secrets manually
-    try {
-      projectData.youtubeClientId = process.env.YOUTUBE_CLIENT_ID || '';
-      projectData.youtubeClientSecret = process.env.YOUTUBE_CLIENT_SECRET || '';
-      if (projectData.channel && projectData.channel !== 'local') {
-        const tokenPath = path.join(__dirname, 'tokens', `${projectData.channel}.json`);
-        if (fs.existsSync(tokenPath)) {
-          projectData.channelTokenJson = fs.readFileSync(tokenPath, 'utf8');
-        }
-        
-        // CRITICAL FIX: Calculate the exact schedule time locally on the PC, where the persistent 
-        // schedule.json lives. Lock this date in so the cloud worker blindly follows it.
-        const ytAuth = require('./youtube_auth');
-        projectData.publishAt = ytAuth.getNextPublishTime(projectData.channel);
-      }
-    } catch (err) {
-      console.warn('[Cloud Export] Could not bundle credentials or schedule:', err.message);
-    }
-
-    // Write project.json temporarily
-    const tempProject = path.join(__dirname, 'temp', `project_${Date.now()}.json`);
-    fs.writeFileSync(tempProject, JSON.stringify(projectData, null, 2));
-
-    // Helper to upload to ephemeral cloud storage
-    const uploadToCloud = async (filePath) => {
-      try {
-        const form = new FormData();
-        form.append('file', fs.createReadStream(filePath));
-        const res = await axios.post('https://file.io', form, {
-          headers: form.getHeaders(),
-          maxBodyLength: Infinity
-        });
-        if (res.data && res.data.success && res.data.link) {
-          return res.data.link;
-        }
-      } catch (e) {
-        console.warn('[Cloud Export] file.io failed, trying fallback...', e.message);
-      }
-
-      // Fallback to tmpfiles.org
-      try {
-        const form = new FormData();
-        form.append('file', fs.createReadStream(filePath));
-        const res = await axios.post('https://tmpfiles.org/api/v1/upload', form, {
-          headers: form.getHeaders(),
-          maxBodyLength: Infinity
-        });
-        if (res.data && res.data.data && res.data.data.url) {
-          return res.data.data.url.replace('tmpfiles.org/', 'tmpfiles.org/dl/');
-        }
-      } catch (e) {
-        console.warn('[Cloud Export] tmpfiles.org failed.', e.message);
-      }
-
-      throw new Error('Failed to upload payload to cloud storage. Please try again later.');
-    };
-
-    console.log('[Cloud Export] Uploading assets to temporary cloud storage...');
-    const [audioUrl, jsonUrl] = await Promise.all([
-      uploadToCloud(finalAudioPath),
-      uploadToCloud(tempProject)
-    ]);
-
-    console.log('[Cloud Export] Triggering GitHub Actions Workflow...');
-    
-    // Get repo name dynamically
-    let repoName = 'Nishachay/Noises-Lyrics-Studio';
-    try {
-      const { execSync } = require('child_process');
-      const origin = execSync('git remote get-url origin').toString().trim();
-      const match = origin.match(/github\.com[/:](.+?)\.git$/);
-      if (match) repoName = match[1];
-    } catch (e) { }
-
-    await axios.post(`https://api.github.com/repos/${repoName}/dispatches`, {
-      event_type: `cloud-export-${projectData.channel || 'unknown'}`,
-      client_payload: { audioUrl, jsonUrl }
-    }, {
-      headers: {
-        'Accept': 'application/vnd.github.v3+json',
-        'Authorization': `token ${githubPat}`,
-        'User-Agent': 'Noises-Studio-App'
-      }
-    });
-
-    res.json({ success: true, message: 'Cloud Render successfully queued!' });
-
-    // Cleanup local temp if it was a direct upload (not youtube cached)
-    setTimeout(() => {
-      if (req.file && fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
-      if (fs.existsSync(tempProject)) fs.unlinkSync(tempProject);
-    }, 1000);
-
-  } catch (err) {
-    console.error('Cloud Export Error:', err.response?.data || err.message);
-    res.status(500).json({ error: err.response?.data?.message || err.message });
-  }
-});
-
-// ----------------------------------------------------
-// PIPELINE STATUS ENDPOINT
-// ----------------------------------------------------
-app.get('/api/pipeline-status', async (req, res) => {
-  try {
-    let githubPat = '';
-    try {
-      githubPat = fs.readFileSync(path.join(__dirname, 'github_token.txt'), 'utf8').trim();
-    } catch (e) {
-      return res.json({ success: false, error: 'missing_token' });
-    }
-
-    let repoName = 'Nishachay/Noises-Lyrics-Studio';
-    try {
-      const { execSync } = require('child_process');
-      const origin = execSync('git remote get-url origin').toString().trim();
-      const match = origin.match(/github\.com[/:](.+?)\.git$/);
-      if (match) repoName = match[1];
-    } catch (e) { }
-
-    const response = await axios.get(`https://api.github.com/repos/${repoName}/actions/runs?per_page=15`, {
-      headers: {
-        'Accept': 'application/vnd.github.v3+json',
-        'Authorization': `token ${githubPat}`,
-        'User-Agent': 'Noises-Studio-App'
-      }
-    });
-
-    const runs = response.data.workflow_runs || [];
-    
-    // We only care about runs that have our custom name: "Render [cloud-export-<channel>]"
-    // However, GitHub Actions might take a moment to update the name, so we also check event: repository_dispatch
-    const pipelineStatus = {};
-    for (const run of runs) {
-      if (run.event === 'repository_dispatch') {
-        const match = run.name.match(/Render \[cloud-export-(.+?)\]/);
-        let channel = 'unknown';
-        if (match) channel = match[1];
-        
-        // Only keep the most recent run for each channel
-        if (!pipelineStatus[channel]) {
-          pipelineStatus[channel] = {
-            status: run.status,
-            conclusion: run.conclusion,
-            url: run.html_url,
-            createdAt: run.created_at
-          };
-        }
-      }
-    }
-
-    res.json({ success: true, status: pipelineStatus });
-  } catch (err) {
-    console.error('Pipeline Status Error:', err.response?.data || err.message);
-    res.status(500).json({ success: false, error: err.message });
-  }
-});
-
 
 const OUTPUT_DIR = path.join(__dirname, 'output');
 const TEMP_DIR   = path.join(__dirname, 'temp');
@@ -579,13 +354,21 @@ async function fetchLyricsList(title, artist) {
 // Score YouTube videos to find the cleanest, most official audio
 function scoreYoutubeResult(y, targetTitle, targetArtist, targetDur) {
   let score = 0;
+  let durDiff = 0;
   if (targetDur) {
-    score += Math.abs(y.duration - targetDur) * 2;
+    durDiff = Math.abs(y.duration - targetDur);
+    score += durDiff * 2;
   }
   const channel = (y.uploader || '').toLowerCase();
   const title = (y.title || '').toLowerCase();
+  
   if (channel.includes('topic') || channel.includes('auto-generated')) {
-    score -= 1000; // HUGE bonus for official Topic / Auto-generated audio
+    // HUGE bonus for official Topic audio, BUT ONLY if duration is a reasonable match
+    if (durDiff <= 15) {
+      score -= 1000; 
+    } else {
+      score -= 50; // minor bonus if duration is way off, to let accurate music videos win
+    }
   }
   if (channel.includes('vevo') || title.includes('official audio') || title.includes('official stream')) {
     score -= 15;
@@ -993,6 +776,7 @@ app.post('/api/resolve-song', async (req, res) => {
       youtubeId: bestYt?.id || null,
       youtubeUrl: bestYt?.webpage_url || null,
       youtubeTitle: bestYt?.title || null,
+      youtubeDuration: bestYt?.duration || duration
     };
 
     // Step 2: Fetch LRCLIB lyrics using the guaranteed clean iTunes title and artist
@@ -1296,9 +1080,13 @@ app.get('/api/render', async (req, res) => {
 });
 
 // Helper to stream/proxy the audio from YouTube's CDN to the client
-async function proxyAudioStream(directUrl, req, res) {
+async function proxyAudioStream(directUrl, req, res, throwOn403 = false) {
   try {
-    const headers = {};
+    const headers = {
+      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+      'Referer': 'https://www.youtube.com/',
+      'Origin': 'https://www.youtube.com'
+    };
 
     if (req.headers.range) {
       headers['Range'] = req.headers.range;
@@ -1327,6 +1115,9 @@ async function proxyAudioStream(directUrl, req, res) {
     streamResponse.data.pipe(res);
   } catch (err) {
     console.error('[Stream Proxy] Error:', err.message);
+    if (throwOn403 && err.response && err.response.status === 403) {
+      throw err;
+    }
     if (!res.headersSent) {
       res.status(500).send('Streaming error: ' + err.message);
     }
@@ -1335,58 +1126,18 @@ async function proxyAudioStream(directUrl, req, res) {
 
 // ══════════════════════════════════════════════════════════════
 // GET /api/stream/:videoId
-// Proxies direct YouTube audio stream URL through the server to bypass 403 blocks.
+// Serves the downloaded audio file to the browser with Range support.
 // ══════════════════════════════════════════════════════════════
-const directUrlCache = new Map();
-
 app.get('/api/stream/:videoId', async (req, res) => {
   const videoId = req.params.videoId.replace(/[^a-zA-Z0-9_-]/g, '');
-  const title = req.query.title;
-  const artist = req.query.artist;
   if (!videoId) return res.status(400).send('Bad videoId');
 
   try {
-    if (directUrlCache.has(videoId)) {
-      console.log(`[Stream] Cache hit for direct URL: ${videoId}`);
-      return proxyAudioStream(directUrlCache.get(videoId), req, res);
+    const audioPath = await downloadAudio(videoId, `https://www.youtube.com/watch?v=${videoId}`);
+    if (!audioPath) {
+      return res.status(500).send('Could not download audio stream');
     }
-
-    console.log(`[Stream] Fetching direct stream URL for: ${videoId}`);
-    let directUrl = await getDirectAudioUrl(`https://www.youtube.com/watch?v=${videoId}`);
-    
-    if (!directUrl) {
-      console.log(`[Stream] Primary URL extraction failed for ${videoId}.`);
-      
-      if (title && artist) {
-        console.log(`[Stream] Auto-fallback: Searching standard YouTube for "${title} ${artist}"...`);
-        const results = await searchYoutube(`${title} ${artist} audio`);
-        let fallbackSuccess = false;
-        
-        // Try top 2 alternative results
-        for (let i = 0; i < Math.min(results.length, 2); i++) {
-          const altId = results[i].id;
-          if (altId === videoId) continue;
-          
-          console.log(`[Stream] Fallback trying: ${altId} (${results[i].title})`);
-          directUrl = await getDirectAudioUrl(`https://www.youtube.com/watch?v=${altId}`);
-          
-          if (directUrl) {
-            console.log(`[Stream] Fallback SUCCESS with ${altId}!`);
-            directUrlCache.set(videoId, directUrl); // Cache under original requested ID
-            setTimeout(() => directUrlCache.delete(videoId), 4 * 60 * 60 * 1000);
-            return proxyAudioStream(directUrl, req, res);
-          }
-        }
-        
-        return res.status(500).send('Could not extract direct stream URL and all fallbacks failed.');
-      } else {
-        return res.status(500).send('Could not extract direct stream URL');
-      }
-    }
-    
-    directUrlCache.set(videoId, directUrl);
-    setTimeout(() => directUrlCache.delete(videoId), 4 * 60 * 60 * 1000);
-    return proxyAudioStream(directUrl, req, res);
+    return res.sendFile(path.resolve(audioPath));
   } catch (err) {
     console.error('[Stream] Error:', err.message);
     if (!res.headersSent) res.status(500).send('Stream error: ' + err.message);
@@ -1395,44 +1146,18 @@ app.get('/api/stream/:videoId', async (req, res) => {
 
 app.get('/api/prepare-stream/:videoId', async (req, res) => {
   const videoId = req.params.videoId.replace(/[^a-zA-Z0-9_-]/g, '');
-  const title = req.query.title;
-  const artist = req.query.artist;
   if (!videoId) return res.status(400).json({ success: false, error: 'Bad videoId' });
 
   try {
-    if (directUrlCache.has(videoId)) {
-      return res.json({ success: true, cached: true });
-    }
-
-    console.log(`[Prepare Stream] Fetching direct stream URL for: ${videoId}`);
-    let directUrl = await getDirectAudioUrl(`https://www.youtube.com/watch?v=${videoId}`);
+    console.log(`[Prepare Stream] Pre-downloading audio for: ${videoId}`);
+    const audioPath = await downloadAudio(videoId, `https://www.youtube.com/watch?v=${videoId}`);
     
-    if (!directUrl) {
-      console.log(`[Prepare Stream] Primary URL extraction failed for ${videoId}.`);
-      if (title && artist) {
-        console.log(`[Prepare Stream] Auto-fallback: Searching standard YouTube for "${title} ${artist}"...`);
-        const results = await searchYoutube(`${title} ${artist} audio`);
-        for (let i = 0; i < Math.min(results.length, 2); i++) {
-          const altId = results[i].id;
-          if (altId === videoId) continue;
-          console.log(`[Prepare Stream] Fallback trying: ${altId} (${results[i].title})`);
-          directUrl = await getDirectAudioUrl(`https://www.youtube.com/watch?v=${altId}`);
-          if (directUrl) {
-            console.log(`[Prepare Stream] Fallback SUCCESS with ${altId}!`);
-            directUrlCache.set(videoId, directUrl); 
-            setTimeout(() => directUrlCache.delete(videoId), 4 * 60 * 60 * 1000);
-            return res.json({ success: true, fallback: true });
-          }
-        }
-        return res.status(500).json({ success: false, error: 'All fallbacks failed' });
-      } else {
-        return res.status(500).json({ success: false, error: 'Extraction failed' });
-      }
+    if (!audioPath) {
+      console.log(`[Prepare Stream] Primary download failed for ${videoId}.`);
+      return res.status(500).json({ success: false, error: 'Download failed' });
     }
     
-    directUrlCache.set(videoId, directUrl);
-    setTimeout(() => directUrlCache.delete(videoId), 4 * 60 * 60 * 1000);
-    return res.json({ success: true });
+    return res.json({ success: true, cached: true });
   } catch (err) {
     console.error('[Prepare Stream] Error:', err.message);
     if (!res.headersSent) res.status(500).json({ success: false, error: err.message });
@@ -1443,6 +1168,30 @@ app.get('/api/prepare-stream/:videoId', async (req, res) => {
 // GET /api/proxy
 // Proxies external images with CORS headers
 // ══════════════════════════════════════════════════════════════
+app.get('/api/proxy', async (req, res) => {
+  try {
+    const url = req.query.url;
+    if (!url) return res.status(400).send('No URL provided');
+    
+    const response = await axios({
+      method: 'GET',
+      url: url,
+      responseType: 'stream',
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+      }
+    });
+    
+    res.set('Access-Control-Allow-Origin', '*');
+    res.set('Content-Type', response.headers['content-type']);
+    res.set('Cache-Control', 'public, max-age=31536000');
+    
+    response.data.pipe(res);
+  } catch (err) {
+    console.error('[Proxy] Error fetching image:', err.message);
+    res.status(500).send('Error proxying image');
+  }
+});
 // ══════════════════════════════════════════════════════════════
 // POST /api/upload-audio
 // Manually upload a local audio file to bypass YouTube blocks
@@ -1571,3 +1320,4 @@ ensureFonts().then(() => {
     console.log('═'.repeat(52));
   });
 });
+
