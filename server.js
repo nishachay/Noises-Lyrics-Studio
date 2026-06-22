@@ -364,7 +364,7 @@ function scoreYoutubeResult(y, targetTitle, targetArtist, targetDur) {
   
   if (channel.includes('topic') || channel.includes('auto-generated')) {
     // HUGE bonus for official Topic audio, BUT ONLY if duration is a reasonable match
-    if (durDiff <= 15) {
+    if (!targetDur || durDiff <= 15) {
       score -= 1000; 
     } else {
       score -= 50; // minor bonus if duration is way off, to let accurate music videos win
@@ -444,7 +444,8 @@ app.get('/api/trending', async (req, res) => {
       return {
         title: t.name || t.title || 'Unknown Title',
         artist: t.artist || t.subtitle || 'Unknown Artist',
-        artworkUrl: playlistArtwork // Use playlist cover as fallback since tracks lack individual art
+        artworkUrl: playlistArtwork, // Use playlist cover as fallback since tracks lack individual art
+        duration: t.duration ? Math.round(t.duration / 1000) : (t.duration_ms ? Math.round(t.duration_ms / 1000) : 0)
       };
     });
 
@@ -486,7 +487,8 @@ app.get('/api/itunes-trending', async (req, res) => {
       return {
         title: entry['im:name'].label || 'Unknown Title',
         artist: entry['im:artist'].label || 'Unknown Artist',
-        artworkUrl: artworkUrl
+        artworkUrl: artworkUrl,
+        duration: 0
       };
     });
     
@@ -705,8 +707,8 @@ app.get('/api/search-metadata', async (req, res) => {
 // ══════════════════════════════════════════════════════════════
 app.post('/api/resolve-song', async (req, res) => {
   const { title, artist, duration, album, artworkUrl } = req.body;
-  if (!title || !artist || !duration) {
-    return res.status(400).json({ error: 'Missing required metadata (title, artist, duration)' });
+  if (!title || !artist) {
+    return res.status(400).json({ error: 'Missing required metadata (title, artist)' });
   }
 
   const query = `${title} ${artist}`;

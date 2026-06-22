@@ -1344,7 +1344,11 @@ async function autoLoadAndPlay(query) {
     
     // 1. Resolve Song (fetches lyrics)
     if (text) text.textContent = 'Fetching lyrics & metadata...';
-    await resolveSong(item);
+    const success = await resolveSong(item);
+    if (!success) {
+      if (overlay) overlay.classList.add('hidden');
+      return;
+    }
     
     // 2. Audio is already initialized inside resolveSong
     if (text) text.textContent = 'Connecting to audio stream...';
@@ -1532,7 +1536,11 @@ function renderMetadataResults(results) {
         text.textContent = 'Fetching lyrics & metadata...';
       }
       
-      await resolveSong(item);
+      const success = await resolveSong(item);
+      if (!success) {
+        if (overlay) overlay.classList.add('hidden');
+        return;
+      }
       
       if (text) text.textContent = 'Connecting to audio stream...';
       audio.play().catch(() => {});
@@ -1644,12 +1652,14 @@ async function resolveSong(metadata) {
     if (btnShort) btnShort.disabled = false;
     if (btnSlideshow) btnSlideshow.disabled = false;
     lyricsSource.disabled = false;
+    return true;
 
   } catch (err) {
     console.error('[Resolve]', err.message);
     resolving = false;
     lyricsSource.innerHTML = `<option>Resolve failed: ${err.message}</option>`;
     alert(`Could not load song: ${err.message}`);
+    return false;
   }
 }
 
@@ -3101,6 +3111,7 @@ if (previewCanvas) {
 updateYouTubeChannelNames();
 fetchQuota();
 fetchDailyStatus();
+
 
 
 
