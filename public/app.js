@@ -1,5 +1,5 @@
 /**
- * NOISES STUDIO — app.js v4.0
+ * NOISES STUDIO ΓÇö app.js v4.0
  * First-principles rebuild. Clean architecture.
  * 
  * Sections:
@@ -18,9 +18,9 @@
 
 'use strict';
 
-// ═══════════════════════════════════════════════════════════════════
+// ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
 // 1. STATE
-// ═══════════════════════════════════════════════════════════════════
+// ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
 
 const FONT = 'Plus Jakarta Sans, Noto Sans Devanagari';
 
@@ -61,9 +61,9 @@ const S = {
   lastFrameTime: 0,
 };
 
-// ═══════════════════════════════════════════════════════════════════
+// ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
 // 2. DOM REFERENCES
-// ═══════════════════════════════════════════════════════════════════
+// ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
 
 const $ = id => document.getElementById(id);
 
@@ -160,9 +160,9 @@ const selectRes   = $('select-res');
 const selectFps   = $('select-fps');
 const selectAlign = $('select-align');
 
-// ═══════════════════════════════════════════════════════════════════
+// ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
 // 3. AUDIO ENGINE
-// ═══════════════════════════════════════════════════════════════════
+// ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
 
 let audio = null;           // Native <audio> element
 let scrubbing = false;
@@ -253,7 +253,7 @@ function initAudio(videoId) {
 
   if (audio.dataset.videoId === videoId) return;
 
-  // New track — reset and load
+  // New track ΓÇö reset and load
   audio.pause();
   audio.removeAttribute('src');
   audio.load();
@@ -326,9 +326,9 @@ function getCurrentTime() {
   return S.track ? S.videoTime : 0;
 }
 
-// ═══════════════════════════════════════════════════════════════════
+// ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
 // 4. CANVAS ENGINE
-// ═══════════════════════════════════════════════════════════════════
+// ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
 
 let rafId = null;
 
@@ -341,7 +341,7 @@ logoImg.src = 'logo_white.png';
 let blobCanvas = null;        // Offscreen canvas for color blobs
 let blobCtx = null;
 
-// Wrap cache — prevents repeated measureText calls
+// Wrap cache ΓÇö prevents repeated measureText calls
 const wrapCache = new Map();
 
 function startCanvasLoop() {
@@ -357,7 +357,7 @@ function stopCanvasLoop() {
   if (rafId) { cancelAnimationFrame(rafId); rafId = null; }
 }
 
-// ── Draw blur background source from album art ────────────────────
+// ΓöÇΓöÇ Draw blur background source from album art ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 function prepareBlurSource(img) {
   // 32x18 gives a super soft, premium gradient blur on stretch
   blurCanvas = document.createElement('canvas');
@@ -376,7 +376,7 @@ function prepareBlurSource(img) {
   bx.drawImage(img, sx, sy, sw, sh, 0, 0, 32, 18);
 }
 
-// ── Extract dominant colors from album art ───────────────────────
+// ΓöÇΓöÇ Extract dominant colors from album art ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 function extractColors(img) {
   try {
     const tmp = document.createElement('canvas');
@@ -397,7 +397,7 @@ function extractColors(img) {
   } catch(e) { colorData = null; }
 }
 
-// ── Load artwork image ────────────────────────────────────────────
+// ΓöÇΓöÇ Load artwork image ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 function loadArtwork(url) {
   if (!url) { artImg = null; blurCanvas = null; colorData = null; return; }
   const img = new Image();
@@ -410,7 +410,7 @@ function loadArtwork(url) {
   img.src = `/api/proxy?url=${encodeURIComponent(url)}`;
 }
 
-// ── Draw background (Apple Music style blurred art) ────
+// ΓöÇΓöÇ Draw background (Apple Music style blurred art) ΓöÇΓöÇΓöÇΓöÇ
 function drawBackground(W, H, t) {
   if (blurCanvas) {
     ctx.save();
@@ -473,7 +473,7 @@ function drawBackground(W, H, t) {
   ctx.fillRect(0, 0, W, H);
 }
 
-// ── Draw song info watermark (top-left) ───────────────────────────
+// ΓöÇΓöÇ Draw song info watermark (top-left) ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 function drawSongInfo(W, H) {
   if (!S.track) return;
   const songTime = getCurrentTime();
@@ -545,7 +545,7 @@ function drawSongInfo(W, H) {
   ctx.restore();
 }
 
-// ── Draw progress bar (bottom) ────────────────────────────────────
+// ΓöÇΓöÇ Draw progress bar (bottom) ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 function drawProgressBar(W, H, songTime) {
   const dur = S.track ? S.track.duration : 0;
   if (!dur) return;
@@ -562,7 +562,7 @@ function drawProgressBar(W, H, songTime) {
   ctx.fillRect(0, barY, W * pct, barH);
 }
 
-// ── Watermark (bottom-left) ───────────────────────────────────────
+// ΓöÇΓöÇ Watermark (bottom-left) ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 function drawWatermark(W, H, t) {
   if (!logoImg || !logoImg.complete) return;
   ctx.save();
@@ -592,9 +592,9 @@ function drawWatermark(W, H, t) {
   ctx.restore();
 }
 
-// ── Draw floating ♪ musical notes ─────────────────────────────
+// ΓöÇΓöÇ Draw floating ΓÖ¬ musical notes ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 function drawInterludeDots(cx, cy, t) {
-  const notes = ['♪', '♫', '♪'];
+  const notes = ['ΓÖ¬', 'ΓÖ½', 'ΓÖ¬'];
   const R = 7, GAP = 30;
   const totalW = 2 * R * 3 + GAP * 2;
   const startX = cx - totalW / 2 + R;
@@ -620,7 +620,7 @@ function drawInterludeDots(cx, cy, t) {
   ctx.restore();
 }
 
-// ── Text wrapping helper ──────────────────────────────────────────
+// ΓöÇΓöÇ Text wrapping helper ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 function wrapText(text, maxW, font) {
   const key = `${text}|${maxW}|${font}`;
   if (wrapCache.has(key)) return wrapCache.get(key);
@@ -641,7 +641,7 @@ function wrapText(text, maxW, font) {
 
 let precomputedLyrics = [];
 
-// ── Precompute wrapped lyrics and layout coordinates ──────────────
+// ΓöÇΓöÇ Precompute wrapped lyrics and layout coordinates ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 function precomputeLyricsLayout(W, H, alignment) {
   // Sort a copy chronologically for rendering, keeping S.lyrics in its natural text order
   const lyrics = [...S.lyrics].sort((a, b) => (a.time || 0) - (b.time || 0));
@@ -721,7 +721,7 @@ function precomputeLyricsLayout(W, H, alignment) {
   precomputedLyrics.medianGap = validGaps.length > 0 ? validGaps[Math.floor(validGaps.length / 2)] : 5.0;
 }
 
-// ── Left Split Screen Layout (Watermark Cover Art + Player) ─────────
+// ΓöÇΓöÇ Left Split Screen Layout (Watermark Cover Art + Player) ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 function drawLeftSplitLayout(W, H, songTime) {
   if (!S.track) return;
   const dur = S.track.duration || 0;
@@ -949,7 +949,7 @@ function drawLyrics(W, H, songTime) {
 }
 
 
-// ── Empty state canvas (no track loaded) ─────────────────────────
+// ΓöÇΓöÇ Empty state canvas (no track loaded) ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 function drawEmptyState(W, H, t) {
   // Dark base
   ctx.fillStyle = '#0a0a0b';
@@ -1015,7 +1015,7 @@ function drawEmptyState(W, H, t) {
   ctx.restore();
 }
 
-// ── Loading state canvas (resolving track) ────────────────────────
+// ΓöÇΓöÇ Loading state canvas (resolving track) ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 function drawLoadingState(W, H, t) {
   // Background
   if (blurCanvas) {
@@ -1057,7 +1057,7 @@ function drawLoadingState(W, H, t) {
   ctx.restore();
 }
 
-// ── Main frame ────────────────────────────────────────────────────
+// ΓöÇΓöÇ Main frame ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 let resolving = false;
 
 function drawIntroLayout(W, H, now) {
@@ -1237,9 +1237,9 @@ function drawFrame() {
   drawWatermark(W, H, now);
 }
 
-// ═══════════════════════════════════════════════════════════════════
+// ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
 // 5. SEARCH ENGINE
-// ═══════════════════════════════════════════════════════════════════
+// ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
 
 let searchTimer = null;
 
@@ -1266,9 +1266,9 @@ function showSuggestions() {
   S.searchHighlight = -1;
 }
 
-// ═══════════════════════════════════════════════════════════════════
+// ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
 // TRENDING MODAL & AUTO-LOAD LOGIC
-// ═══════════════════════════════════════════════════════════════════
+// ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
 const trendingModal = document.getElementById('trending-modal');
 const btnTrending = document.getElementById('btn-trending');
 const btnTrendingClose = document.getElementById('btn-trending-close');
@@ -1288,9 +1288,9 @@ if (btnTrendingClose && trendingModal) {
   });
 }
 
-// ═══════════════════════════════════════════════════════════════════
+// ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
 // PUBLISH MODAL LOGIC
-// ═══════════════════════════════════════════════════════════════════
+// ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
 const publishModal = document.getElementById('publish-modal');
 const btnPublishModal = document.getElementById('btn-publish-modal');
 const btnPublishClose = document.getElementById('btn-publish-close');
@@ -1344,11 +1344,7 @@ async function autoLoadAndPlay(query) {
     
     // 1. Resolve Song (fetches lyrics)
     if (text) text.textContent = 'Fetching lyrics & metadata...';
-    const success = await resolveSong(item);
-    if (!success) {
-      if (overlay) overlay.classList.add('hidden');
-      return;
-    }
+    await resolveSong(item);
     
     // 2. Audio is already initialized inside resolveSong
     if (text) text.textContent = 'Connecting to audio stream...';
@@ -1521,7 +1517,7 @@ function renderMetadataResults(results) {
       <img src="${artUrl}" class="result-art" alt="Cover">
       <div class="result-text">
         <div class="result-name">${esc(item.title)}</div>
-        <div class="result-artist">${esc(item.artist)} • ${esc(item.album)}</div>
+        <div class="result-artist">${esc(item.artist)} ΓÇó ${esc(item.album)}</div>
       </div>
       <div class="result-dur">${formatDur(item.duration)}</div>
     `;
@@ -1536,11 +1532,7 @@ function renderMetadataResults(results) {
         text.textContent = 'Fetching lyrics & metadata...';
       }
       
-      const success = await resolveSong(item);
-      if (!success) {
-        if (overlay) overlay.classList.add('hidden');
-        return;
-      }
+      await resolveSong(item);
       
       if (text) text.textContent = 'Connecting to audio stream...';
       audio.play().catch(() => {});
@@ -1672,9 +1664,9 @@ function matchSkeleton(show) {
   }
 }
 
-// ═══════════════════════════════════════════════════════════════════
+// ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
 // 6. LYRICS ENGINE
-// ═══════════════════════════════════════════════════════════════════
+// ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
 
 function parseLRC(lrc) {
   if (!lrc) return [];
@@ -1755,7 +1747,7 @@ function populateLyricsSource() {
   if (!S.lyricsRecords.length) {
     const o = document.createElement('option');
     o.value = 'none';
-    o.textContent = 'No lyrics found — paste manually in Edit Raw';
+    o.textContent = 'No lyrics found ΓÇö paste manually in Edit Raw';
     lyricsSource.appendChild(o);
     return;
   }
@@ -1782,13 +1774,13 @@ function populateLyricsSource() {
     const type = r.syncedLyrics ? 'Synced' : r.plainLyrics ? 'Plain' : 'Instr';
     const targetDur = S.track.youtubeDuration || S.track.duration || 0;
     const diff = r.duration ? ` (${Math.abs(r.duration - targetDur)}s diff)` : '';
-    o.textContent = `[${type}] ${r.trackName || r.artistName || '—'}${diff}`;
+    o.textContent = `[${type}] ${r.trackName || r.artistName || 'ΓÇö'}${diff}`;
     lyricsSource.appendChild(o);
   });
 
   const custom = document.createElement('option');
   custom.value = 'custom';
-  custom.textContent = '✎ Paste Custom Lyrics';
+  custom.textContent = 'Γ£Ä Paste Custom Lyrics';
   lyricsSource.appendChild(custom);
 }
 
@@ -1835,9 +1827,9 @@ function loadLyricsByIdx(idx) {
   if (r) loadLyricsRecord(r);
 }
 
-// ═══════════════════════════════════════════════════════════════════
+// ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
 // 7. SYNC UI
-// ═══════════════════════════════════════════════════════════════════
+// ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
 
 function renderLyricsList() {
   lyricsList.innerHTML = '';
@@ -2121,7 +2113,7 @@ function stampLine(idx) {
   saveProjectState();
 }
 
-// ── Tap sync mode ─────────────────────────────────────────────────
+// ΓöÇΓöÇ Tap sync mode ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 function enterTapMode() {
   S.tapMode = true;
   S.tapIdx  = 0;
@@ -2185,7 +2177,7 @@ function resetTimings() {
   saveProjectState();
 }
 
-// ── Project State Autosave & Restore ────────────────────────────────
+// ΓöÇΓöÇ Project State Autosave & Restore ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 function saveProjectState() {
   if (!S.track || !S.track.youtubeId) return;
   const state = {
@@ -2249,9 +2241,9 @@ function loadProjectState() {
 }
 
 
-// ═══════════════════════════════════════════════════════════════════
+// ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
 // 8. TRACK INFO EDITORS
-// ═══════════════════════════════════════════════════════════════════
+// ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
 
 editTitle.addEventListener('input', () => {
   if (S.track) {
@@ -2269,9 +2261,9 @@ editArtist.addEventListener('input', () => {
   }
 });
 
-// ═══════════════════════════════════════════════════════════════════
+// ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
 // 9. PLAYER UI
-// ═══════════════════════════════════════════════════════════════════
+// ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
 
 function togglePlay() {
   if (!audio || !S.audioReady || !S.track) return;
@@ -2352,9 +2344,9 @@ scrubber.addEventListener('input', () => {
   updateSyncHighlight(S.videoTime - 3);
 });
 
-// ═══════════════════════════════════════════════════════════════════
+// ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
 // 9. COMPILATION
-// ═══════════════════════════════════════════════════════════════════
+// ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
 
 let lastPct = 0;
 
@@ -2463,7 +2455,7 @@ function showDone(msg) {
   const ytTags = document.getElementById('yt-tags');
   if (ytTags) ytTags.value = msg.youtubeTags || '';
 
-  doneSub.textContent = `${S.track.artist} · ${S.track.title}`;
+  doneSub.textContent = `${S.track.artist} ┬╖ ${S.track.title}`;
 
   // Load thumbnail preview
   donePreviewImage.classList.remove('loaded');
@@ -2490,9 +2482,9 @@ function showDone(msg) {
   }
 }
 
-// ═══════════════════════════════════════════════════════════════════
+// ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
 // 10. EVENT LISTENERS
-// ═══════════════════════════════════════════════════════════════════
+// ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
 
 // View routing
 function showView(name) {
@@ -2571,18 +2563,241 @@ btnCompile.addEventListener('click', () => {
   startCompile();
 });
 
+const btnCloudExport = document.getElementById('btn-cloud-export');
+if (btnCloudExport) {
+  btnCloudExport.addEventListener('click', async () => {
+    if (!S.track || !S.lyrics.length) return;
+    
+    const channelSelect = document.querySelector('input[name="export-dest"]:checked');
+    if (!channelSelect || channelSelect.value === 'local') {
+      // Local selected, will not upload to YouTube
+    }
+
+    const pubModal = document.getElementById('publish-modal');
+    if (pubModal) pubModal.classList.add('hidden');
+
+    showView('progress');
+    progLog.innerHTML = '';
+    setProgress(5, 'Preparing payload for cloud...');
+    progTitle.textContent  = S.track.title + ' (Cloud Render)';
+    progArtist.textContent = S.track.artist;
+    if (S.track.artworkUrl) { progArt.src = S.track.artworkUrl; progArt.style.display = 'block'; }
+    else progArt.style.display = 'none';
+
+    try {
+      const formData = new FormData();
+      
+      const projectData = {
+        id: S.track.youtubeId || S.track.id || 'song',
+        videoUrl: `https://www.youtube.com/watch?v=${S.track.youtubeId || S.track.id || ''}`,
+        artworkUrl: S.track.artworkUrl,
+        songTitle: S.track.title,
+        songArtist: S.track.artist,
+        duration: S.track.duration,
+        lyrics: S.lyrics,
+        offset: S.syncOffset,
+        outRes: document.getElementById('select-res').value,
+        outFps: parseInt(document.getElementById('select-fps').value, 10),
+        outAlign: document.getElementById('select-align').value,
+        isShort: false, // Cloud Export does not currently support the 'short' override via UI toggle
+        shortStartTime: 0,
+        customAudioPath: S.track.customAudioPath,
+        channel: channelSelect ? channelSelect.value : 'local',
+        seoKeywords: Array.from(document.querySelectorAll('#tag-list .tag')).map(t => t.textContent.replace('├ù','').trim())
+      };
+
+      formData.append('project', JSON.stringify(projectData));
+
+      lastPct = 0; // Reset progress bar state
+      setProgress(20, 'Uploading audio & payload to cloud...');
+      
+      const res = await fetch('/api/cloud-export', {
+        method: 'POST',
+        body: formData
+      });
+      
+      const data = await res.json();
+      
+      if (data.success) {
+        setProgress(100, 'Cloud Render Queued!');
+        logLine('Video successfully queued in GitHub Actions!', 'ok');
+        logLine('You can safely close this app or start another project.', 'ok');
+      } else {
+        throw new Error(data.error || 'Unknown error');
+      }
+    } catch (e) {
+      logLine(`ERROR: ${e.message}`, 'error');
+      setProgress(20, 'Cloud Export Failed.');
+    }
+  });
+}
+
+if (btnShort) {
+  btnShort.addEventListener('mouseenter', () => {
+    S.previewingShort = true;
+    if (audio) updateSyncHighlight(audio.currentTime, true);
+  });
+  
+  btnShort.addEventListener('mouseleave', () => {
+    S.previewingShort = false;
+    if (audio) updateSyncHighlight(audio.currentTime, true);
+  });
+
+  btnShort.addEventListener('click', () => {
+    if (!S.track || !S.lyrics.length) return;
+    // Get the current audio time and find the nearest lyric time to start from
+    let startTime = 0;
+    if (audio) {
+      startTime = audio.currentTime;
+      // Optionally find nearest lyric line timestamp that has already passed or is close
+      const passedLines = S.lyrics.filter(l => l.time <= audio.currentTime);
+      if (passedLines.length) startTime = passedLines[passedLines.length - 1].time;
+    }
+    startCompile(true, startTime);
+  });
+}
+
+if (btnSlideshow) {
+  btnSlideshow.addEventListener('click', () => {
+    if (!S.track || !S.lyrics.length) return;
+    const checked = Array.from(document.querySelectorAll('.lyric-cb'))
+      .map((cb, idx) => cb.checked ? idx : -1)
+      .filter(idx => idx !== -1);
+    
+    if (checked.length === 0) {
+      alert("Please check the boxes next to the lyrics you want to include in the slideshow!");
+      return;
+    }
+    
+    window.slideshowIndices = checked;
+    startCompile(false, 0, true);
+  });
+}
+
+btnTranslate.addEventListener('click', async () => {
+  if (!S.lyrics || S.lyrics.length === 0) return;
+  btnTranslate.disabled = true;
+  btnTranslate.textContent = 'Translating...';
+  try {
+    const lines = S.lyrics.map(l => l.text);
+    const textBlob = lines.join('\n');
+    const res = await fetch('/api/translate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text: textBlob, lines: lines })
+    });
+    
+    if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+    const data = await res.json();
+    
+    if (data.translatedText !== undefined) {
+      // New backend format
+      const translations = data.translatedText.split('\n');
+      translations.forEach((t, i) => {
+        if (S.lyrics[i]) S.lyrics[i].translation = t.trim();
+      });
+    } else if (data.translations && Array.isArray(data.translations)) {
+      // Old backend format (fallback if server hasn't been restarted)
+      data.translations.forEach((t, i) => {
+        if (S.lyrics[i]) S.lyrics[i].translation = t.trim();
+      });
+    }
+    renderLyricsList();
+    precomputeLyricsLayout(canvas.width, canvas.height, selectAlign.value);
+  } catch (err) {
+    alert('Translation error: ' + err.message);
+  } finally {
+    btnTranslate.disabled = false;
+    btnTranslate.textContent = 'Auto-Translate';
+  }
+});
+
+if (btnClearTrans) {
+  btnClearTrans.addEventListener('click', () => {
+    if (!S.lyrics || S.lyrics.length === 0) return;
+    if (confirm("Are you sure you want to remove all translated lyrics?")) {
+      S.lyrics.forEach(l => delete l.translation);
+      renderLyricsList();
+      precomputeLyricsLayout(canvas.width, canvas.height, selectAlign.value);
+    }
+  });
+}
+
+// Editor apply
+btnApply.addEventListener('click', () => {
+  const text = lyricsEditor.value.trim();
+  if (!text) { setLyrics([], 'none', ''); return; }
+  if (/(?:\[\d{1,2}:\d{2}|\b\d{1,2}:\d{2}\b)/.test(text)) {
+    setLyrics(parseLRC(text), 'synced', text);
+  } else if (S.track) {
+    setLyrics(spreadPlain(text, S.track.duration), 'plain', text);
+  }
+});
+
+// Sync offset
+syncOffsetEl.addEventListener('input', () => {
+  const v = parseFloat(syncOffsetEl.value);
+  S.syncOffset = v;
+  offsetLabel.textContent = `${v >= 0 ? '+' : ''}${v.toFixed(1)}s`;
+  
+  // Immediately update the lyrics highlight in the sync tab
+  const curTime = audio ? audio.currentTime : S.videoTime;
+  updateSyncHighlight(curTime, true);
+  
+  // Re-render the canvas if paused to reflect the new offset
+  if (!S.isPlaying) {
+    drawFrame(curTime);
+  }
+  
+  saveProjectState();
+});
+
+// Alignment change recomputes lyrics layout
+selectAlign.addEventListener('change', () => {
+  localStorage.setItem('noises_lyric_setting_align', selectAlign.value);
+  if (S.track) {
+    precomputeLyricsLayout(canvas.width, canvas.height, selectAlign.value);
+    saveProjectState();
+  }
+});
 
 
+// Cancel render
+btnCancel.addEventListener('click', () => {
+  if (activeSSE) activeSSE.close();
+  showView('studio');
+  startCanvasLoop();
+});
+
+// Done ΓåÆ again
+btnAgain.addEventListener('click', () => {
+  // Just show the studio again! Don't nuke the loaded song.
+  showView('studio');
+});
+
+// Copy buttons
+document.querySelectorAll('.btn-copy').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const el = document.getElementById(btn.dataset.target);
+    if (!el) return;
+    navigator.clipboard.writeText(el.value).then(() => {
+      const orig = btn.textContent;
+      btn.textContent = 'Copied!';
+      btn.classList.add('copied');
+      setTimeout(() => { btn.textContent = orig; btn.classList.remove('copied'); }, 2000);
+    });
+  });
+});
 
 // Keyboard global
 document.addEventListener('keydown', e => {
-  // Ctrl+K → open search
+  // Ctrl+K ΓåÆ open search
   if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
     e.preventDefault();
     openSearch();
     return;
   }
-  // Spacebar → tap sync (when in tap mode and not in input)
+  // Spacebar ΓåÆ tap sync (when in tap mode and not in input)
   if (e.code === 'Space' && S.tapMode) {
     const tag = document.activeElement?.tagName;
     if (tag !== 'INPUT' && tag !== 'TEXTAREA' && tag !== 'SELECT') {
@@ -2592,13 +2807,13 @@ document.addEventListener('keydown', e => {
   }
 });
 
-// ═══════════════════════════════════════════════════════════════════
+// ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
 // QUICK SEARCH ENDPOINT (Removed - Unified Search Restored)
-// ═══════════════════════════════════════════════════════════════════
+// ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
 
-// ═══════════════════════════════════════════════════════════════════
+// ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
 // MANUAL LRCLIB SEARCH
-// ═══════════════════════════════════════════════════════════════════
+// ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
 
 let lyricsSearchTimeout;
 let manualLyricsResults = [];
@@ -2676,7 +2891,7 @@ function renderLyricsResults(results) {
     const metaHtml = `
       <div class="result-text">
         <div class="result-title">${r.trackName} <span style="color:#666; font-size: 11px;">(${formatDur(r.duration)})</span></div>
-        <div class="result-artist">${r.artistName} • ${r.albumName}</div>
+        <div class="result-artist">${r.artistName} ΓÇó ${r.albumName}</div>
       </div>
     `;
     
@@ -2772,9 +2987,9 @@ modalLyricsQuery.addEventListener('keydown', e => {
   }
 });
 
-// ═══════════════════════════════════════════════════════════════════
+// ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
 // 11. INIT & Local Audio
-// ═══════════════════════════════════════════════════════════════════
+// ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
 const btnLocalAudio = document.getElementById('btn-local-audio');
 const btnErrorUploadAudio = document.getElementById('btn-error-upload-audio');
 const localAudioUpload = document.getElementById('local-audio-upload');
@@ -2842,9 +3057,9 @@ if (localAudioUpload) {
   });
 }
 
-// ════════════════════════════════════════════════════════════════════════════
+// ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
 // YOUTUBE AUTO-PUBLISH
-// ════════════════════════════════════════════════════════════════════════════
+// ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
 async function publishToYouTube(channel) {
   const statusEl = document.getElementById('yt-publish-status');
   const videoBtn = document.getElementById('btn-dl-video');
@@ -2907,7 +3122,7 @@ async function publishToYouTube(channel) {
       statusEl.innerText = `Error: ${data.error}`;
     } else {
       statusEl.style.color = 'var(--accent)';
-      statusEl.innerHTML = `Success! <a href="${data.editUrl}" target="_blank" style="color:var(--accent); text-decoration:underline;">Review & Publish Video ↗</a>`;
+      statusEl.innerHTML = `Success! <a href="${data.editUrl}" target="_blank" style="color:var(--accent); text-decoration:underline;">Review & Publish Video Γåù</a>`;
     }
   } catch (err) {
     statusEl.style.color = '#ef4444';
@@ -2931,7 +3146,7 @@ async function updateYouTubeChannelNames() {
     for (const [ch, info] of Object.entries(status)) {
       const btn = document.getElementById(`btn-yt-${ch}`);
       if (btn && info.authenticated && info.name) {
-        btn.innerHTML = `▶ ${info.name}`;
+        btn.innerHTML = `Γû╢ ${info.name}`;
         btn.title = `Authenticated as: ${info.name}`;
       }
     }
@@ -2970,6 +3185,10 @@ async function fetchDailyStatus() {
     });
   } catch (e) {}
 }
+
+
+
+
 
 // --- Schedule Indicator ---
 async function updateSchedulePreview(channel) {
@@ -3111,9 +3330,6 @@ if (previewCanvas) {
 updateYouTubeChannelNames();
 fetchQuota();
 fetchDailyStatus();
-
-
-
 
 
 
