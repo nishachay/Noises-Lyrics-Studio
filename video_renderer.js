@@ -138,7 +138,7 @@ function drawBackground(ctx, w, h, coverImg, colors, time, amp) {
   }
 
   // Smart darkening overlay for readability
-  let baseAlpha = 0.4;
+  let baseAlpha = 0.55; // Increased default darkening to match browser perceptual rendering
   if (colors) {
     const getLuma = (c) => 0.299*c[0] + 0.587*c[1] + 0.114*c[2];
     const avgLuma = (getLuma(colors.tl) + getLuma(colors.tr) + getLuma(colors.bl) + getLuma(colors.br) + getLuma(colors.c)) / 5;
@@ -171,8 +171,12 @@ function drawInterludeDots(ctx, x, y, time) {
     const yOffset = Math.sin(ph) * 8;
     const al = 0.35 + 0.65 * (0.5 + 0.5 * Math.sin(ph));
     
+    ctx.beginPath();
+    ctx.arc(startX + i * (R * 2 + GAP), y + yOffset, R, 0, Math.PI * 2);
     ctx.fillStyle = `rgba(255,255,255,${al})`;
-    ctx.fillText(notes[i], startX + i * (R * 2 + GAP), y + yOffset);
+    ctx.shadowColor = `rgba(255,255,255,${al})`;
+    ctx.shadowBlur = 10;
+    ctx.fill();
   }
   ctx.restore();
 }
@@ -491,18 +495,14 @@ function drawLyricsPanel(ctx, W, H, time, wrappedLyrics, font, alignment, durati
     
     // Outer intense glow
     ctx.shadowColor = glowColor;
-    ctx.shadowBlur = 40 * scale;
+    ctx.shadowBlur = 35 * scale;
     ctx.shadowOffsetY = 0;
     ctx.fillStyle = primaryColor;
     ctx.fillText(text, 0, y);
 
-    // Medium glow
-    ctx.shadowBlur = 20 * scale;
-    ctx.fillText(text, 0, y);
-
     // Tight shadow for readability
     ctx.shadowColor = 'rgba(0, 0, 0, 0.8)';
-    ctx.shadowBlur = 8 * scale;
+    ctx.shadowBlur = 6 * scale;
     ctx.shadowOffsetY = 2 * scale;
     ctx.fillText(text, 0, y);
 

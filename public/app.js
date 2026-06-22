@@ -255,6 +255,8 @@ function initAudio(videoId) {
 
   // New track — reset and load
   audio.pause();
+  audio.removeAttribute('src');
+  audio.load();
   audio.dataset.videoId = videoId;
   S.audioReady = false;
   S.audioDuration = 0;
@@ -608,8 +610,12 @@ function drawInterludeDots(cx, cy, t) {
     const yOffset = Math.sin(ph) * 8;
     const al = 0.35 + 0.65 * (0.5 + 0.5 * Math.sin(ph));
     
+    ctx.beginPath();
+    ctx.arc(startX + i * (R * 2 + GAP), cy + yOffset, R, 0, Math.PI * 2);
     ctx.fillStyle = `rgba(255,255,255,${al})`;
-    ctx.fillText(notes[i], startX + i * (R * 2 + GAP), cy + yOffset);
+    ctx.shadowColor = `rgba(255,255,255,${al})`;
+    ctx.shadowBlur = 10;
+    ctx.fill();
   }
   ctx.restore();
 }
@@ -905,14 +911,16 @@ function drawLyrics(W, H, songTime) {
     ctx.font = fontStr;
     ctx.globalAlpha = opacity * layoutAlpha * opacityMult;
     
+    // Outer intense glow
     ctx.shadowColor = glowColor;
-    ctx.shadowBlur = 15;
+    ctx.shadowBlur = 35;
     ctx.shadowOffsetY = 0;
     ctx.fillStyle = primaryColor;
     ctx.fillText(text, 0, y);
 
+    // Tight shadow for readability
     ctx.shadowColor = 'rgba(0, 0, 0, 0.8)';
-    ctx.shadowBlur = 10;
+    ctx.shadowBlur = 6;
     ctx.shadowOffsetY = 2;
     ctx.fillText(text, 0, y);
 
@@ -1745,8 +1753,16 @@ function populateLyricsSource() {
   S.lyricsRecords.sort((a, b) => {
     if (a.syncedLyrics && !b.syncedLyrics) return -1;
     if (!a.syncedLyrics && b.syncedLyrics) return 1;
-    const durA = Math.abs((a.duration || 0) - (S.track.duration || 0));
-    const durB = Math.abs((b.duration || 0) - (S.track.duration || 0));
+    
+    // Smart Heuristic: Prioritize exact Album Name matches (worth a 10-second duration grace)
+    const trackAlbum = (S.track.albumName || '').toLowerCase();
+    const albumBonusA = trackAlbum && (a.albumName || '').toLowerCase() === trackAlbum ? 10 : 0;
+    const albumBonusB = trackAlbum && (b.albumName || '').toLowerCase() === trackAlbum ? 10 : 0;
+
+    const targetDur = S.track.youtubeDuration || S.track.duration || 0;
+    const durA = Math.abs((a.duration || 0) - targetDur) - albumBonusA;
+    const durB = Math.abs((b.duration || 0) - targetDur) - albumBonusB;
+    
     return durA - durB;
   });
 
@@ -1754,7 +1770,8 @@ function populateLyricsSource() {
     const o = document.createElement('option');
     o.value = i;
     const type = r.syncedLyrics ? 'Synced' : r.plainLyrics ? 'Plain' : 'Instr';
-    const diff = r.duration ? ` (${Math.abs(r.duration - (S.track.duration || 0))}s diff)` : '';
+    const targetDur = S.track.youtubeDuration || S.track.duration || 0;
+    const diff = r.duration ? ` (${Math.abs(r.duration - targetDur)}s diff)` : '';
     o.textContent = `[${type}] ${r.trackName || r.artistName || '—'}${diff}`;
     lyricsSource.appendChild(o);
   });
@@ -2571,6 +2588,7 @@ if (btnCloudExport) {
       const projectData = {
         id: S.track.youtubeId || S.track.id || 'song',
         videoUrl: `https://www.youtube.com/watch?v=${S.track.youtubeId || S.track.id || ''}`,
+        artworkUrl: S.track.artworkUrl,
         songTitle: S.track.title,
         songArtist: S.track.artist,
         duration: S.track.duration,
@@ -2579,6 +2597,8 @@ if (btnCloudExport) {
         outRes: document.getElementById('select-res').value,
         outFps: parseInt(document.getElementById('select-fps').value, 10),
         outAlign: document.getElementById('select-align').value,
+        isShort: false, // Cloud Export does not currently support the 'short' override via UI toggle
+        shortStartTime: 0,
         customAudioPath: S.track.customAudioPath,
         channel: channelSelect ? channelSelect.value : 'local',
         seoKeywords: Array.from(document.querySelectorAll('#tag-list .tag')).map(t => t.textContent.replace('×','').trim())
@@ -3063,7 +3083,18 @@ async function publishToYouTube(channel) {
 
   const title = titleEl.value;
   const description = descEl.value;
-  const tags = tagsEl.value.split(',').map(t => t.trim());
+  const rawTags = tagsEl.value.split(',').map(t => t.trim());
+  
+  // Enforce YouTube's 500-character total tags limit
+  const tags = [];
+  let totalLen = 0;
+  for (const t of rawTags) {
+    if (!t) continue;
+    if (totalLen + t.length + 1 <= 500) {
+      tags.push(t);
+      totalLen += t.length + 1;
+    }
+  }
 
   statusEl.style.display = 'block';
   statusEl.style.color = 'var(--text-1)';
