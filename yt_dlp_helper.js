@@ -27,9 +27,9 @@ async function ensureYtdlp() {
     }
     return;
   }
-  console.log('[yt-dlp] Downloading binary...');
-  const res = await axios({ method: 'get', responseType: 'stream',
-    url: 'https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp.exe' });
+  console.log('[yt-dlp] Downloading binary from nightly branch...');
+  const res = await axios({ method: 'get', responseType: 'stream', 
+    url: 'https://github.com/yt-dlp/yt-dlp-nightly-builds/releases/latest/download/yt-dlp.exe' });
   await new Promise((ok, fail) => {
     const w = fs.createWriteStream(YTDLP);
     res.data.pipe(w);
@@ -61,13 +61,13 @@ function spawnYtdlp(args) {
 }
 
 function spawnYtdlpSingle(args) {
-  // Add PoToken and iOS player client args to bypass YouTube's heavy throttling (the 50kB/s bug)
+  // Add PoToken and iOS player client args to bypass YouTube's heavy throttling (the 50kB/s bug) and 403 blocks
   const extras = [
     '--js-runtimes', 'node', 
     '--no-warnings', 
     '--no-playlist',
-    '--extractor-args', 'youtube:player_client=ios,web', // Bypasses slow downloads
-    '--concurrent-fragments', '4' // Speeds up segmented downloads
+    '--concurrent-fragments', '4', // Speeds up segmented downloads
+    '--extractor-args', 'youtube:player_client=ios,android,web' // Bypasses the 403 block by spoofing mobile API clients
   ];
   return spawnYtdlp([...extras, ...args]);
 }
