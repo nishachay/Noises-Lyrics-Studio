@@ -644,14 +644,14 @@ function generateThumbnail(coverImg, colors, title, artist, font, alignment, wra
   drawBackground(ctx, W, H, coverImg, colors, 10.0, 0.0);
 
   // 2. Draw centered Album Cover Art
-  const artSz = Math.round(H * 0.65); // Maximized for better mobile visibility
-  const radius = Math.round(artSz * 0.06);
+  const artSz = Math.round(H * 0.60); // Refined premium size
+  const radius = Math.round(artSz * 0.05);
 
   const ax = Math.round((W - artSz) / 2);
-  const titleSz = Math.round(H * 0.110); // Extremely large title for readability
-  const artistSz = Math.round(H * 0.055); // Large artist text
-  const gap1 = Math.round(H * 0.06);
-  const gap2 = Math.round(H * 0.03);
+  const titleSz = Math.round(H * 0.075); // Elegant title scale
+  const artistSz = Math.round(H * 0.040); // Balanced artist scale
+  const gap1 = Math.round(H * 0.05);
+  const gap2 = Math.round(H * 0.02);
 
   // Set the font to measure title
   ctx.font = `bold ${titleSz}px "Plus Jakarta Sans", "Noto Sans Devanagari", "Noto Sans KR"`;
@@ -675,7 +675,7 @@ function generateThumbnail(coverImg, colors, title, artist, font, alignment, wra
   // If there are too many lines or it's very long, shrink font size
   let finalTitleSz = titleSz;
   if (titleLines.length > 2) {
-    finalTitleSz = Math.round(H * 0.080);
+    finalTitleSz = Math.round(H * 0.060);
     ctx.font = `bold ${finalTitleSz}px "Plus Jakarta Sans", "Noto Sans Devanagari", "Noto Sans KR"`;
     titleLines.length = 0;
     currentLine = '';
@@ -751,8 +751,8 @@ function generateThumbnail(coverImg, colors, title, artist, font, alignment, wra
   }
 
   // Draw Artist Name
-  ctx.font = `${artistSz}px "Plus Jakarta Sans", "Noto Sans Devanagari", "Noto Sans KR"`;
-  ctx.fillStyle = 'rgba(255, 255, 255, 0.65)';
+  ctx.font = `500 ${artistSz}px "Plus Jakarta Sans", "Noto Sans Devanagari", "Noto Sans KR"`;
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.75)';
   ctx.shadowColor = 'rgba(0, 0, 0, 0.3)';
   ctx.shadowBlur = 4;
   ctx.shadowOffsetY = 1;
@@ -1268,6 +1268,19 @@ async function generateThumbnailBuffer({ title, artist, artworkUrl, theme, logoP
     logoImg = await loadImage(logoPath);
   }
   const colors = extractColors(coverImg);
+
+  // Generate _blurCanvas exactly like renderVideo for the background
+  _blurCanvas = createCanvas(32, 18);
+  const bx = _blurCanvas.getContext('2d');
+  const iW = coverImg.width || 1000;
+  const iH = coverImg.height || 1000;
+  const target = 32 / 18;
+  const ratio = iW / iH;
+  let sx=0, sy=0, sw=iW, sh=iH;
+  if (ratio > target) { sw = iH * target; sx = (iW - sw) / 2; }
+  else { sh = iW / target; sy = (iH - sh) / 2; }
+  bx.drawImage(coverImg, sx, sy, sw, sh, 0, 0, 32, 18);
+
   const alignment = theme === 'center' ? 'center' : 'left';
   const FONT = 'Plus Jakarta Sans';
   
