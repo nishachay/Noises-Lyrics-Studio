@@ -2562,8 +2562,7 @@ btnCompile.addEventListener('click', () => {
 });
 
 
-  });
-});
+
 
 // Keyboard global
 document.addEventListener('keydown', e => {
