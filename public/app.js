@@ -1048,11 +1048,11 @@ function drawIntroLayout(W, H, now) {
   ctx.save();
   ctx.globalAlpha = Math.max(0, Math.min(1, a));
 
-  // Draw centered Cover Art
-  const artSz = Math.round(H * 0.40);
-  const titleSz = Math.round(H * 0.045);
-  const artistSz = Math.round(titleSz * 0.68);
-  const totalH = artSz + 30 + titleSz + 10 + artistSz;
+  // Draw centered Cover Art (Render dimensions)
+  const artSz = Math.round(H * 0.55);
+  const titleSz = Math.round(H * 0.08);
+  const artistSz = Math.round(H * 0.038);
+  const totalH = artSz + 40 + titleSz + 15 + artistSz;
 
   const ax = Math.round((W - artSz) / 2);
   const ay = Math.round((H - totalH) / 2);
@@ -1091,7 +1091,7 @@ function drawIntroLayout(W, H, now) {
   const titleY = ay + artSz + 30;
 
   // Song Title
-  ctx.font = `800 ${titleSz}px ${FONT}, sans-serif`;
+  ctx.font = `bold ${titleSz}px ${FONT}, sans-serif`;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'top';
   ctx.fillStyle = '#ffffff';
@@ -1100,8 +1100,8 @@ function drawIntroLayout(W, H, now) {
   ctx.fillText(S.track.title || '', W / 2, titleY);
 
   // Artist Name
-  ctx.font = `600 ${artistSz}px ${FONT}, sans-serif`;
-  ctx.fillStyle = 'rgba(255, 255, 255, 0.85)';
+  ctx.font = `${artistSz}px ${FONT}, sans-serif`;
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.55)';
   ctx.fillText(S.track.artist || '', W / 2, titleY + titleSz + 10);
 
   ctx.restore();
