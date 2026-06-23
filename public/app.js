@@ -1,5 +1,5 @@
 /**
- * NOISES STUDIO — app.js v4.0
+ * NOISES STUDIO — app.js v7.0.15
  * First-principles rebuild. Clean architecture.
  * 
  * Sections:
