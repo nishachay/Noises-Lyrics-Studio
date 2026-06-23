@@ -43,6 +43,7 @@ const BL = {
   BG_OVERLAY:     0.60,
 };
 
+// ── Pre-baked noise canvas for film grain ────────────────────────────────────
 let _noise = null;
 function getNoiseCanvas() {
   if (_noise) return _noise;
@@ -58,19 +59,30 @@ function getNoiseCanvas() {
   return _noise;
 }
 
+// ── Pre-baked vignette canvas ────────────────────────────────────────────────
+let _vig = null;
 let _blurCanvas = null;
 let _blobCanvas = null;
 let _blobCtx = null;
 let _leftLayoutCache = null;
 let _albumPanelCache = null;
 let _introCache = null;
-
 function drawVignette(ctx, w, h) {
-  const vig = ctx.createRadialGradient(w/2, h/2, w*0.2, w/2, h/2, w*0.9);
-  vig.addColorStop(0, 'rgba(0,0,0,0)');
-  vig.addColorStop(1, 'rgba(0,0,0,0.4)');
-  ctx.fillStyle = vig;
-  ctx.fillRect(0, 0, w, h);
+  if (!_vig) {
+    _vig = createCanvas(480, 270);
+    const vc = _vig.getContext('2d');
+    const g  = vc.createRadialGradient(240, 135, 50, 240, 135, 280);
+    g.addColorStop(0,    'rgba(0,0,0,0)');
+    g.addColorStop(0.55, 'rgba(0,0,0,0.05)');
+    g.addColorStop(0.80, 'rgba(0,0,0,0.22)');
+    g.addColorStop(1,    'rgba(0,0,0,0.70)');
+    vc.fillStyle = g;
+    vc.fillRect(0, 0, 480, 270);
+  }
+  ctx.save();
+  ctx.imageSmoothingEnabled = true;
+  ctx.drawImage(_vig, 0, 0, w, h);
+  ctx.restore();
 }
 
 // ΓöÇΓöÇ Color extraction ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
@@ -277,7 +289,7 @@ function drawLeftSplitLayout(ctx, coverImg, title, artist, W, H, songTime, durat
     const artistSz = Math.round(titleSz * 0.68);
 
     cctx.save();
-    cctx.font = `800 ${titleSz}px "Plus Jakarta Sans", "Noto Sans Devanagari", "Noto Sans KR"`;
+    cctx.font = `bold ${titleSz}px "Plus Jakarta Sans", "Noto Sans Devanagari", "Noto Sans KR"`;
     cctx.textAlign = 'center';
     cctx.textBaseline = 'top';
     cctx.fillStyle = '#ffffff';
@@ -285,9 +297,8 @@ function drawLeftSplitLayout(ctx, coverImg, title, artist, W, H, songTime, durat
     cctx.shadowBlur = 4;
     cctx.fillText(title, textX, titleY);
 
-    // BUG FIX: Artist color was 0.55 in renderer, 0.85 in preview. Now matched.
     cctx.font = `600 ${artistSz}px "Plus Jakarta Sans", "Noto Sans Devanagari", "Noto Sans KR"`;
-    cctx.fillStyle = 'rgba(255, 255, 255, 0.85)';
+    cctx.fillStyle = 'rgba(255, 255, 255, 0.55)';
     cctx.fillText(artist, textX, titleY + titleSz + 8);
     cctx.restore();
   }
@@ -487,16 +498,10 @@ function drawLyricsPanel(ctx, W, H, time, wrappedLyrics, font, alignment, durati
   const top = -totalH / 2;
 
   if (!line._renderCache) {
-    // BUG FIX: Cache canvas width must match actual panel width, not full W.
-    // For left alignment, lyrics are centered at tx (W*0.48), so cache at full W
-    // but draw from x=0. This ensures left/center both work correctly.
     line._renderCache = createCanvas(W, totalH + 100);
     const cctx = line._renderCache.getContext('2d');
     const ccy = line._renderCache.height / 2;
-    // BUG FIX: ccx must match tx (the actual drawing x position)
-    // For 'center': tx = W/2, for 'left': tx = W*0.48
-    // We always build cache relative to tx so it renders at the right column
-    const ccx = tx; // was hardcoded W/2, breaking left-alignment
+    const ccx = W / 2;
 
     const drawShadowText = (text, y, fontStr, primaryColor, glowColor) => {
       cctx.font = fontStr;
@@ -521,7 +526,7 @@ function drawLyricsPanel(ctx, W, H, time, wrappedLyrics, font, alignment, durati
     let curY = ccy + top;
     segments.forEach((seg) => {
       curY += lh_act;
-      drawShadowText(seg, curY - lh_act + activeSz * 0.5, `800 ${activeSz}px "Plus Jakarta Sans", "Noto Sans Devanagari", "Noto Sans KR"`, '#ffffff', 'rgba(255, 255, 255, 0.8)');
+      drawShadowText(seg, curY - lh_act + activeSz * 0.5, `bold ${activeSz}px "Plus Jakarta Sans", "Noto Sans Devanagari", "Noto Sans KR"`, '#ffffff', 'rgba(255, 255, 255, 0.8)');
     });
 
     if (transSegments.length > 0) {
@@ -533,14 +538,10 @@ function drawLyricsPanel(ctx, W, H, time, wrappedLyrics, font, alignment, durati
     }
   }
 
-  // Draw cached lyrics image: translate to (0,0) of the main ctx then draw full W
   ctx.save();
   ctx.globalAlpha = opacity * layoutAlpha;
-  ctx.translate(-tx, -line._renderCache.height / 2);
-  ctx.drawImage(line._renderCache, 0, 0, W, line._renderCache.height,
-    (W - W * scale) / 2,
-    (line._renderCache.height - line._renderCache.height * scale) / 2,
-    W * scale, line._renderCache.height * scale);
+  ctx.translate(-W/2, -line._renderCache.height / 2);
+  ctx.drawImage(line._renderCache, 0, 0, W, line._renderCache.height, (W - W * scale) / 2, (line._renderCache.height - line._renderCache.height * scale) / 2, W * scale, line._renderCache.height * scale);
   ctx.restore();
   ctx.restore();
 }
@@ -575,25 +576,6 @@ function drawWatermark(ctx, w, h, time, logoImg) {
   ctx.drawImage(logoImg, lx, ly + floatY, drawW, drawH);
   ctx.restore();
 }
-
-// ΓöÇΓöÇ Draw progress bar (bottom) ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
-function drawProgressBar(ctx, w, h, songTime, duration) {
-  if (!duration) return;
-  const pct = Math.min(1, Math.max(0, songTime / duration));
-  const barH = 3;
-  const barY = h - barH;
-
-  ctx.save();
-  // Track
-  ctx.fillStyle = 'rgba(255,255,255,0.08)';
-  ctx.fillRect(0, barY, w, barH);
-
-  // Fill
-  ctx.fillStyle = '#10b981';
-  ctx.fillRect(0, barY, w * pct, barH);
-  ctx.restore();
-}
-
 // ΓöÇΓöÇ Audio amplitude envelope ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 function getAudioAmplitude(audioPath) {
   return new Promise(resolve => {
@@ -999,10 +981,9 @@ function renderVideo({
           if (!_introCache) {
             _introCache = createCanvas(W, H);
             const cctx = _introCache.getContext('2d');
-            // BUG FIX: Renderer used H*0.55, preview uses H*0.40. Now matched.
-            const titleSz = Math.round(H * 0.045);
-            const artistSz = Math.round(titleSz * 0.68);
-            const artSz = Math.round(H * 0.40);
+            const titleSz = Math.round(H * 0.08);
+            const artistSz = Math.round(H * 0.038);
+            const artSz = Math.round(H * 0.55);
 
             cctx.save();
             const totalH = artSz + 40 + titleSz + 15 + artistSz;
@@ -1045,7 +1026,7 @@ function renderVideo({
 
             const titleY = ay + artSz + 30;
 
-            cctx.font = `800 ${titleSz}px "Plus Jakarta Sans", "Noto Sans Devanagari", "Noto Sans KR"`;
+            cctx.font = `bold ${titleSz}px "Plus Jakarta Sans", "Noto Sans Devanagari", "Noto Sans KR"`;
             cctx.textAlign = 'center';
             cctx.textBaseline = 'top';
             cctx.fillStyle = '#ffffff';
@@ -1053,9 +1034,8 @@ function renderVideo({
             cctx.shadowBlur = 4;
             cctx.fillText(songTitle, W / 2, titleY);
 
-            // BUG FIX: Intro artist color was 0.55, preview is 0.85. Now matched.
-            cctx.font = `600 ${artistSz}px "Plus Jakarta Sans", "Noto Sans Devanagari", "Noto Sans KR"`;
-            cctx.fillStyle = 'rgba(255, 255, 255, 0.85)';
+            cctx.font = `${artistSz}px "Plus Jakarta Sans", "Noto Sans Devanagari", "Noto Sans KR"`;
+            cctx.fillStyle = 'rgba(255, 255, 255, 0.55)';
             cctx.fillText(songArtist, W / 2, titleY + titleSz + 10);
             cctx.restore();
           }
@@ -1319,4 +1299,4 @@ module.exports = {
   getAudioAmplitude,
   detectAudioStart,
   renderSlideshow
-};
+};

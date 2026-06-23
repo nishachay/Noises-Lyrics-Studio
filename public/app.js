@@ -550,23 +550,6 @@ function drawSongInfo(W, H) {
   ctx.restore();
 }
 
-// ΓöÇΓöÇ Draw progress bar (bottom) ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
-function drawProgressBar(W, H, songTime) {
-  const dur = S.track ? S.track.duration : 0;
-  if (!dur) return;
-  const pct = Math.min(1, Math.max(0, songTime / dur));
-  const barH = 3;
-  const barY = H - barH;
-
-  // Track
-  ctx.fillStyle = 'rgba(255,255,255,0.08)';
-  ctx.fillRect(0, barY, W, barH);
-
-  // Fill
-  ctx.fillStyle = '#10b981';
-  ctx.fillRect(0, barY, W * pct, barH);
-}
-
 // ΓöÇΓöÇ Watermark (bottom-left) ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 function drawWatermark(W, H, t) {
   if (!logoImg || !logoImg.complete) return;
@@ -1234,6 +1217,27 @@ function drawFrame() {
 
   // Draw floating logo watermark everywhere!
   drawWatermark(W, H, now);
+
+  // Film grain — matches renderer for accurate preview
+  ctx.save();
+  const _fgSize = 128;
+  const _fgCanvas = document.createElement('canvas');
+  _fgCanvas.width = _fgSize; _fgCanvas.height = _fgSize;
+  const _fgCtx = _fgCanvas.getContext('2d');
+  const _fgData = _fgCtx.createImageData(_fgSize, _fgSize);
+  for (let i = 0; i < _fgData.data.length; i += 4) {
+    const v = Math.floor(Math.random() * 255);
+    _fgData.data[i] = _fgData.data[i+1] = _fgData.data[i+2] = v;
+    _fgData.data[i+3] = 8;
+  }
+  _fgCtx.putImageData(_fgData, 0, 0);
+  const _fgPat = ctx.createPattern(_fgCanvas, 'repeat');
+  ctx.fillStyle = _fgPat;
+  const _ox = Math.floor(Math.random() * _fgSize);
+  const _oy = Math.floor(Math.random() * _fgSize);
+  ctx.translate(_ox, _oy);
+  ctx.fillRect(-_ox, -_oy, W, H);
+  ctx.restore();
 }
 
 // ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
