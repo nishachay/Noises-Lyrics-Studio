@@ -137,13 +137,13 @@ function drawBackground(ctx, w, h, coverImg, colors, time, amp) {
     ctx.fillRect(0, 0, w, h);
   }
 
-  // Smart darkening overlay for readability (boosted to match browser preview)
-  let baseAlpha = 0.55;
+  // Smart darkening overlay for readability
+  let baseAlpha = 0.4;
   if (colors) {
     const getLuma = (c) => 0.299*c[0] + 0.587*c[1] + 0.114*c[2];
     const avgLuma = (getLuma(colors.tl) + getLuma(colors.tr) + getLuma(colors.bl) + getLuma(colors.br) + getLuma(colors.c)) / 5;
-    if (avgLuma > 80) {
-      baseAlpha += Math.min(0.25, ((avgLuma - 80) / 175) * 0.25);
+    if (avgLuma > 100) {
+      baseAlpha += Math.min(0.35, ((avgLuma - 100) / 155) * 0.35);
     }
   }
 
@@ -529,9 +529,19 @@ function drawWatermark(ctx, w, h, time, logoImg) {
   ctx.save();
   
   const margin = Math.round(Math.min(w, h) * 0.05);
-  const lgSz   = Math.round(Math.min(w, h) * 0.13);
-  const lx     = margin;
-  const ly     = h - margin - lgSz;
+  
+  // Constrain width to 10% of screen width, or height to 5% of screen height
+  const aspect = logoImg.width / logoImg.height;
+  let drawW = w * 0.10;
+  let drawH = drawW / aspect;
+  
+  if (drawH > h * 0.05) {
+    drawH = h * 0.05;
+    drawW = drawH * aspect;
+  }
+  
+  const lx = margin;
+  const ly = h - margin - drawH;
   
   // Floating offset using sine wave based on time
   const floatY = Math.sin(time * 2.0) * 3.5;
@@ -539,7 +549,7 @@ function drawWatermark(ctx, w, h, time, logoImg) {
   // 100% visible
   ctx.globalAlpha = 1.0;
   
-  ctx.drawImage(logoImg, lx, ly + floatY, lgSz, lgSz);
+  ctx.drawImage(logoImg, lx, ly + floatY, drawW, drawH);
   ctx.restore();
 }
 
@@ -627,13 +637,13 @@ function generateThumbnail(coverImg, colors, title, artist, font, alignment, wra
   drawBackground(ctx, W, H, coverImg, colors, 10.0, 0.0);
 
   // 2. Draw centered Album Cover Art
-  const artSz = Math.round(H * 0.39); // scales perfectly (e.g. 280 for 720p, 420 for 1080p)
+  const artSz = Math.round(H * 0.55); // Increased for high quality!
   const radius = Math.round(artSz * 0.06);
 
   const ax = Math.round((W - artSz) / 2);
-  const titleSz = Math.round(H * 0.072);
-  const artistSz = Math.round(H * 0.033);
-  const gap1 = Math.round(H * 0.06);
+  const titleSz = Math.round(H * 0.090); // Much bigger title
+  const artistSz = Math.round(H * 0.040); // Bigger artist
+  const gap1 = Math.round(H * 0.05);
   const gap2 = Math.round(H * 0.02);
 
   // Set the font to measure title
