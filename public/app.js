@@ -2454,7 +2454,7 @@ function showDone(msg) {
   const ytTags = document.getElementById('yt-tags');
   if (ytTags) ytTags.value = msg.youtubeTags || '';
 
-  doneSub.textContent = `${S.track.artist} ┬╖ ${S.track.title}`;
+  doneSub.textContent = `${S.track.artist} · ${S.track.title}`;
 
   // Load thumbnail preview
   donePreviewImage.classList.remove('loaded');
