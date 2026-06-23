@@ -1,5 +1,5 @@
 /**
- * NOISES STUDIO ΓÇö app.js v4.0
+ * NOISES STUDIO — app.js v4.0
  * First-principles rebuild. Clean architecture.
  * 
  * Sections:
@@ -253,7 +253,7 @@ function initAudio(videoId) {
 
   if (audio.dataset.videoId === videoId) return;
 
-  // New track ΓÇö reset and load
+  // New track — reset and load
   audio.pause();
   audio.removeAttribute('src');
   audio.load();
@@ -346,7 +346,7 @@ logoImg.src = 'logo_white.png';
 let blobCanvas = null;        // Offscreen canvas for color blobs
 let blobCtx = null;
 
-// Wrap cache ΓÇö prevents repeated measureText calls
+// Wrap cache — prevents repeated measureText calls
 const wrapCache = new Map();
 
 function startCanvasLoop() {
@@ -1746,7 +1746,7 @@ function populateLyricsSource() {
   if (!S.lyricsRecords.length) {
     const o = document.createElement('option');
     o.value = 'none';
-    o.textContent = 'No lyrics found ΓÇö paste manually in Edit Raw';
+    o.textContent = 'No lyrics found — paste manually in Edit Raw';
     lyricsSource.appendChild(o);
     return;
   }
@@ -1773,13 +1773,13 @@ function populateLyricsSource() {
     const type = r.syncedLyrics ? 'Synced' : r.plainLyrics ? 'Plain' : 'Instr';
     const targetDur = S.track.youtubeDuration || S.track.duration || 0;
     const diff = r.duration ? ` (${Math.abs(r.duration - targetDur)}s diff)` : '';
-    o.textContent = `[${type}] ${r.trackName || r.artistName || 'ΓÇö'}${diff}`;
+    o.textContent = `[${type}] ${r.trackName || r.artistName || '—'}${diff}`;
     lyricsSource.appendChild(o);
   });
 
   const custom = document.createElement('option');
   custom.value = 'custom';
-  custom.textContent = 'Γ£Ä Paste Custom Lyrics';
+  custom.textContent = '📝 Paste Custom Lyrics';
   lyricsSource.appendChild(custom);
 }
 
