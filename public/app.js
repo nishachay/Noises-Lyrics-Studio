@@ -599,7 +599,7 @@ function drawWatermark(W, H, t) {
 
 // ΓöÇΓöÇ Draw floating ΓÖ¬ musical notes ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 function drawInterludeDots(cx, cy, t) {
-  const notes = ['ΓÖ¬', 'ΓÖ½', 'ΓÖ¬'];
+  const notes = ['♪', '♫', '♪'];
   const R = 7, GAP = 30;
   const totalW = 2 * R * 3 + GAP * 2;
   const startX = cx - totalW / 2 + R;

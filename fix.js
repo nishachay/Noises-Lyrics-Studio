@@ -1,1 +1,1 @@
-const fs = require('fs'); let code = fs.readFileSync('server.js', 'utf8'); code = code.replace('app.get(\'/api/stream/:videoId\', async (req, res) => {', 'const directUrlCache = new Map();\\n\\napp.get(\'/api/stream/:videoId\', async (req, res) => {'); fs.writeFileSync('server.js', code); console.log('fixed directUrlCache');
+const fs = require('fs'); function f(p) { let c = fs.readFileSync(p, 'utf8'); c = c.replace(/const notes = \['.*?'\];/g, \const notes = ['?', '?', '?'];\); fs.writeFileSync(p, c, 'utf8'); } f('public/app.js'); f('video_renderer.js'); console.log('Done');

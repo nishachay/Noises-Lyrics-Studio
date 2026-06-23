@@ -156,7 +156,7 @@ function drawBackground(ctx, w, h, coverImg, colors, time, amp) {
 
 // ΓöÇΓöÇ Floating ΓÖ¬ musical notes ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 function drawInterludeDots(ctx, x, y, time) {
-  const notes = ['ΓÖ¬', 'ΓÖ½', 'ΓÖ¬'];
+  const notes = ['♪', '♫', '♪'];
   const R = 7, GAP = 30;
   const totalW = 2 * R * 3 + GAP * 2;
   const startX = x - totalW / 2 + R;
