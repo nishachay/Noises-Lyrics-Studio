@@ -64,6 +64,9 @@ let _vig = null;
 let _blurCanvas = null;
 let _blobCanvas = null;
 let _blobCtx = null;
+let _leftLayoutCache = null;
+let _albumPanelCache = null;
+let _introCache = null;
 function drawVignette(ctx, w, h) {
   if (!_vig) {
     _vig = createCanvas(480, 270);
@@ -795,6 +798,9 @@ function renderVideo({
       _blobCanvas = null;
       _blobCtx = null;
       _blurCanvas = null;
+      _leftLayoutCache = null;
+      _albumPanelCache = null;
+      _introCache = null;
 
       // ── Geometry ──────────────────────────────────────────────
       const W   = isShort ? (resolution === '1080' ? 1080 : 720) : (resolution === '1080' ? 1920 : 1280);
