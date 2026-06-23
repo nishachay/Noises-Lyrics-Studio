@@ -543,6 +543,7 @@ function drawLyricsPanel(ctx, W, H, time, wrappedLyrics, font, alignment, durati
   ctx.translate(-W/2, -line._renderCache.height / 2);
   ctx.drawImage(line._renderCache, 0, 0, W, line._renderCache.height, (W - W * scale) / 2, (line._renderCache.height - line._renderCache.height * scale) / 2, W * scale, line._renderCache.height * scale);
   ctx.restore();
+  ctx.restore();
 }
 
 
