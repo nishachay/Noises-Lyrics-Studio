@@ -644,13 +644,13 @@ function generateThumbnail(coverImg, colors, title, artist, font, alignment, wra
   drawBackground(ctx, W, H, coverImg, colors, 10.0, 0.0);
 
   // 2. Draw centered Album Cover Art
-  const artSz = Math.round(H * 0.60); // Refined premium size
-  const radius = Math.round(artSz * 0.05);
+  const artSz = Math.round(H * 0.39); // v4 classic: balanced art + text proportions
+  const radius = Math.round(artSz * 0.06);
 
   const ax = Math.round((W - artSz) / 2);
-  const titleSz = Math.round(H * 0.075); // Elegant title scale
-  const artistSz = Math.round(H * 0.040); // Balanced artist scale
-  const gap1 = Math.round(H * 0.05);
+  const titleSz = Math.round(H * 0.072);
+  const artistSz = Math.round(H * 0.033);
+  const gap1 = Math.round(H * 0.06);
   const gap2 = Math.round(H * 0.02);
 
   // Set the font to measure title
