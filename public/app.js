@@ -3209,8 +3209,15 @@ const btnPreviewThumb = document.getElementById('btn-preview-thumb');
 const thumbModal = document.getElementById('thumb-modal');
 const thumbImage = document.getElementById('thumb-image');
 const thumbLoading = document.getElementById('thumb-loading');
+const btnThumbDownload = document.getElementById('btn-thumb-download');
+
 document.getElementById('btn-thumb-modal-close')?.addEventListener('click', () => {
   thumbModal.classList.add('hidden');
+});
+
+// Click outside to close
+thumbModal?.addEventListener('click', (e) => {
+  if (e.target === thumbModal) thumbModal.classList.add('hidden');
 });
 
 if (btnPreviewThumb) {
@@ -3224,6 +3231,7 @@ if (btnPreviewThumb) {
     thumbModal.classList.remove('hidden');
     thumbImage.style.opacity = '0';
     thumbLoading.style.display = 'block';
+    if (btnThumbDownload) btnThumbDownload.style.display = 'none';
 
     try {
       const req = await fetch('/api/thumbnail-preview', {
@@ -3243,10 +3251,17 @@ if (btnPreviewThumb) {
       thumbImage.onload = () => {
         thumbLoading.style.display = 'none';
         thumbImage.style.opacity = '1';
+        // Show download button
+        if (btnThumbDownload) {
+          btnThumbDownload.href = url;
+          btnThumbDownload.download = `${S.track.artist} - ${S.track.title} Thumbnail.jpg`;
+          btnThumbDownload.style.display = 'flex';
+        }
       };
     } catch (e) {
-      alert('Error previewing thumbnail: ' + e.message);
+      thumbLoading.style.display = 'none';
       thumbModal.classList.add('hidden');
+      alert('Error previewing thumbnail: ' + e.message);
     }
   });
 }
