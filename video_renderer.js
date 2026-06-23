@@ -295,7 +295,7 @@ function drawLeftSplitLayout(ctx, coverImg, title, artist, W, H, songTime, durat
   ctx.fillText(title, textX, titleY);
 
   // Artist Name
-  ctx.font = `${artistSz}px "Plus Jakarta Sans", "Noto Sans Devanagari", "Noto Sans KR"`;
+  ctx.font = `600 ${artistSz}px "Plus Jakarta Sans", "Noto Sans Devanagari", "Noto Sans KR"`;
   ctx.fillStyle = 'rgba(255, 255, 255, 0.55)';
   ctx.fillText(artist, textX, titleY + titleSz + 8);
   ctx.restore();
@@ -641,8 +641,8 @@ function generateThumbnail(coverImg, colors, title, artist, font, alignment, wra
   const radius = Math.round(artSz * 0.06);
 
   const ax = Math.round((W - artSz) / 2);
-  const titleSz = Math.round(H * 0.090); // Much bigger title
-  const artistSz = Math.round(H * 0.040); // Bigger artist
+  const titleSz = Math.round(H * 0.095); // Much bigger title
+  const artistSz = Math.round(H * 0.048); // Bigger artist
   const gap1 = Math.round(H * 0.05);
   const gap2 = Math.round(H * 0.02);
 
@@ -744,8 +744,8 @@ function generateThumbnail(coverImg, colors, title, artist, font, alignment, wra
   }
 
   // Draw Artist Name
-  ctx.font = `${artistSz}px "Plus Jakarta Sans", "Noto Sans Devanagari", "Noto Sans KR"`;
-  ctx.fillStyle = 'rgba(255, 255, 255, 0.65)';
+  ctx.font = `600 ${artistSz}px "Plus Jakarta Sans", "Noto Sans Devanagari", "Noto Sans KR"`;
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.85)';
   ctx.shadowColor = 'rgba(0, 0, 0, 0.3)';
   ctx.shadowBlur = 4;
   ctx.shadowOffsetY = 1;

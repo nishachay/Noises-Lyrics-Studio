@@ -782,8 +782,8 @@ function drawLeftSplitLayout(W, H, songTime) {
   ctx.fillText(S.track.title || '', textX, titleY);
 
   // Artist Name
-  ctx.font = `500 ${artistSz}px ${FONT}, sans-serif`;
-  ctx.fillStyle = 'rgba(255, 255, 255, 0.55)';
+  ctx.font = `600 ${artistSz}px ${FONT}, sans-serif`;
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.85)';
   ctx.fillText(S.track.artist || '', textX, titleY + titleSz + 8);
   ctx.restore();
 
@@ -1117,8 +1117,8 @@ function drawIntroLayout(W, H, now) {
   ctx.fillText(S.track.title || '', W / 2, titleY);
 
   // Artist Name
-  ctx.font = `500 ${artistSz}px ${FONT}, sans-serif`;
-  ctx.fillStyle = 'rgba(255, 255, 255, 0.55)';
+  ctx.font = `600 ${artistSz}px ${FONT}, sans-serif`;
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.85)';
   ctx.fillText(S.track.artist || '', W / 2, titleY + titleSz + 10);
 
   ctx.restore();
@@ -1149,8 +1149,8 @@ function drawOutroLayout(W, H, now) {
   ctx.font = `800 ${titleSz}px ${FONT}, sans-serif`;
   ctx.fillText('THANKS FOR WATCHING', W / 2, ay);
   
-  ctx.fillStyle = 'rgba(255, 255, 255, 0.55)';
-  ctx.font = `500 ${artistSz}px ${FONT}, sans-serif`;
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.85)';
+  ctx.font = `600 ${artistSz}px ${FONT}, sans-serif`;
   ctx.fillText('LIKE, SHARE & SUBSCRIBE', W / 2, ay + titleSz + gap);
 
   ctx.restore();
