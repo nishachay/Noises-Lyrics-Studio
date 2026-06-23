@@ -573,19 +573,9 @@ function drawWatermark(W, H, t) {
   ctx.save();
   
   const margin = Math.round(Math.min(W, H) * 0.05);
-  
-  // Constrain width to 10% of screen width, or height to 5% of screen height
-  const aspect = logoImg.width / logoImg.height;
-  let drawW = W * 0.10;
-  let drawH = drawW / aspect;
-  
-  if (drawH > H * 0.05) {
-    drawH = H * 0.05;
-    drawW = drawH * aspect;
-  }
-  
-  const lx = margin;
-  const ly = H - margin - drawH;
+  const lgSz   = Math.round(Math.min(W, H) * 0.13);
+  const lx     = margin;
+  const ly     = H - margin - lgSz;
   
   // Floating offset using sine wave based on time (t)
   const floatY = Math.sin(t * 2.0) * 3.5;
@@ -593,13 +583,13 @@ function drawWatermark(W, H, t) {
   // 100% visible
   ctx.globalAlpha = 1.0;
   
-  ctx.drawImage(logoImg, lx, ly + floatY, drawW, drawH);
+  ctx.drawImage(logoImg, lx, ly + floatY, lgSz, lgSz);
   ctx.restore();
 }
 
 // ΓöÇΓöÇ Draw floating ΓÖ¬ musical notes ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 function drawInterludeDots(cx, cy, t) {
-  const notes = ['\u266A', '\u266B', '\u266A'];
+  const notes = ['ΓÖ¬', 'ΓÖ½', 'ΓÖ¬'];
   const R = 7, GAP = 30;
   const totalW = 2 * R * 3 + GAP * 2;
   const startX = cx - totalW / 2 + R;
@@ -644,8 +634,7 @@ let precomputedLyrics = [];
 
 // ΓöÇΓöÇ Precompute wrapped lyrics and layout coordinates ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 function precomputeLyricsLayout(W, H, alignment) {
-  // Sort a copy chronologically for rendering, keeping S.lyrics in its natural text order
-  const lyrics = [...S.lyrics].sort((a, b) => (a.time || 0) - (b.time || 0));
+  const lyrics = S.lyrics;
   if (!lyrics || !lyrics.length) {
     precomputedLyrics = [];
     return;
@@ -912,16 +901,14 @@ function drawLyrics(W, H, songTime) {
     ctx.font = fontStr;
     ctx.globalAlpha = opacity * layoutAlpha * opacityMult;
     
-    // Outer intense glow
     ctx.shadowColor = glowColor;
-    ctx.shadowBlur = 35;
+    ctx.shadowBlur = 15;
     ctx.shadowOffsetY = 0;
     ctx.fillStyle = primaryColor;
     ctx.fillText(text, 0, y);
 
-    // Tight shadow for readability
     ctx.shadowColor = 'rgba(0, 0, 0, 0.8)';
-    ctx.shadowBlur = 6;
+    ctx.shadowBlur = 10;
     ctx.shadowOffsetY = 2;
     ctx.fillText(text, 0, y);
 
@@ -956,45 +943,58 @@ function drawEmptyState(W, H, t) {
   ctx.fillStyle = '#0a0a0b';
   ctx.fillRect(0, 0, W, H);
 
-  // Subtle white glow
+  // Subtle emerald glow
   const gx = W * 0.5, gy = H * 0.5;
   const gr = Math.max(W, H) * 0.5;
   const g = ctx.createRadialGradient(gx, gy, 0, gx, gy, gr);
-  g.addColorStop(0, 'rgba(255,255,255,0.03)');
+  g.addColorStop(0, 'rgba(16,185,129,0.04)');
   g.addColorStop(1, 'rgba(0,0,0,0)');
   ctx.fillStyle = g;
   ctx.fillRect(0, 0, W, H);
 
-  // Draw floating logo in center
-  if (logoImg && logoImg.complete) {
-    const pulse = 1 + 0.015 * Math.sin(t * 1.5);
-    const aspect = logoImg.width / logoImg.height;
-    const lgSz = Math.round(H * 0.12) * pulse; // Height of logo
-    const drawW = lgSz * aspect;
-    const drawH = lgSz;
-    const floatY = Math.sin(t * 2.0) * 8;
-    
-    ctx.save();
-    ctx.globalAlpha = 0.9;
-    ctx.shadowColor = 'rgba(255,255,255,0.15)';
-    ctx.shadowBlur = 40 + 10 * Math.sin(t * 3);
-    ctx.drawImage(logoImg, (W - drawW) / 2, (H - drawH) / 2 + floatY - 30, drawW, drawH);
-    ctx.restore();
+  // Pulsing center dot
+  const pulse = 1 + 0.05 * Math.sin(t * 2.2);
+  ctx.save();
+  ctx.translate(W / 2, H / 2 - 38);
+
+  // Outer rings
+  for (let i = 0; i < 2; i++) {
+    const r = (60 + i * 32) * pulse;
+    ctx.strokeStyle = `rgba(16,185,129,${0.06 - i * 0.02})`;
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.arc(0, 0, r, 0, Math.PI * 2);
+    ctx.stroke();
   }
 
-  // Subtitle text
-  const msg = 'Ready to create.';
-  const sz = Math.round(H * 0.035);
-  const font = `500 ${sz}px ${FONT}, sans-serif`;
+  // Center emerald dot
+  ctx.shadowColor = '#10b981';
+  ctx.shadowBlur = 16 + 6 * Math.sin(t * 3);
+  ctx.fillStyle = '#10b981';
+  ctx.beginPath();
+  ctx.arc(0, 0, 7, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
+
+  // Demo lyric text
+  const demo = 'We don\'t make music, we make music beautiful.';
+  const sz = Math.round(H * 0.048);
+  const lw = W * 0.72;
+  const font = `700 ${sz}px ${FONT}, sans-serif`;
+  const demoLine = demo;
+  const segments = wrapText(demoLine, lw, font);
 
   ctx.save();
   ctx.font = font;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  ctx.fillStyle = 'rgba(255,255,255,0.4)';
-  ctx.shadowColor = 'rgba(255,255,255,0.1)';
-  ctx.shadowBlur = 10;
-  ctx.fillText(msg, W / 2, H / 2 + 80);
+  ctx.fillStyle = 'rgba(255,255,255,0.65)';
+  ctx.shadowColor = 'rgba(255,255,255,0.2)';
+  ctx.shadowBlur = 12;
+  const lh = sz * 1.38;
+  const totalH = segments.length * lh;
+  const startY = H / 2 + 30;
+  segments.forEach((s, i) => ctx.fillText(s, W / 2, startY - totalH / 2 + i * lh + sz * 0.5));
   ctx.restore();
 
   // Watermark

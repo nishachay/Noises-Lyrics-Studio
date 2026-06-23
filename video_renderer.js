@@ -82,7 +82,7 @@ function drawVignette(ctx, w, h) {
   ctx.restore();
 }
 
-// ── Color extraction ─────────────────────────────────────────────────────────
+// ΓöÇΓöÇ Color extraction ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 function extractColors(img) {
   const tmp = createCanvas(10, 10);
   const c   = tmp.getContext('2d');
@@ -95,7 +95,7 @@ function extractColors(img) {
   };
 }
 
-// ── Animated background (blurred album art + colour blobs) ──────────────────
+// ΓöÇΓöÇ Animated background (blurred album art + colour blobs) ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 function drawBackground(ctx, w, h, coverImg, colors, time, amp) {
   if (_blurCanvas) {
     ctx.save();
@@ -154,9 +154,9 @@ function drawBackground(ctx, w, h, coverImg, colors, time, amp) {
   drawVignette(ctx, w, h);
 }
 
-// ── Floating ♪ musical notes ───────────────────────────────────────────────────
+// ΓöÇΓöÇ Floating ΓÖ¬ musical notes ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 function drawInterludeDots(ctx, x, y, time) {
-  const notes = ['\u266A', '\u266B', '\u266A'];
+  const notes = ['ΓÖ¬', 'ΓÖ½', 'ΓÖ¬'];
   const R = 7, GAP = 30;
   const totalW = 2 * R * 3 + GAP * 2;
   const startX = x - totalW / 2 + R;
@@ -177,7 +177,7 @@ function drawInterludeDots(ctx, x, y, time) {
   ctx.restore();
 }
 
-// ── PRE-COMPUTE text wrapping and layout before render loop ─────────────────────
+// ΓöÇΓöÇ PRE-COMPUTE text wrapping and layout before render loop ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 function precomputeWrappedLyrics(ctx, lyrics, fontSpec, maxWidth, defaultActiveSz) {
   const wrapLine = (txt, fontStr) => {
     if (!txt) return [];
@@ -236,7 +236,7 @@ function precomputeWrappedLyrics(ctx, lyrics, fontSpec, maxWidth, defaultActiveS
   return precomputed;
 }
 
-// ── Left Split Screen Layout (Watermark Cover Art + Player) ─────────
+// ΓöÇΓöÇ Left Split Screen Layout (Watermark Cover Art + Player) ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 function drawLeftSplitLayout(ctx, coverImg, title, artist, W, H, songTime, duration, font) {
   const layoutAlpha = Math.max(0, Math.min(1, songTime) * Math.min(1, duration - songTime));
   ctx.save();
@@ -303,7 +303,7 @@ function drawLeftSplitLayout(ctx, coverImg, title, artist, W, H, songTime, durat
   ctx.restore();
 }
 
-// ── Album art + song info panel (Watermark corner card) ──────────────────────
+// ΓöÇΓöÇ Album art + song info panel (Watermark corner card) ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 function drawAlbumPanel(ctx, img, title, artist, W, H, font, songTime, duration) {
   const layoutAlpha = Math.max(0, Math.min(1, songTime) * Math.min(1, duration - songTime));
   ctx.save();
@@ -373,7 +373,7 @@ function drawAlbumPanel(ctx, img, title, artist, W, H, font, songTime, duration)
   ctx.restore();
 }
 
-// ── Scrolling Lyrics Panel ──────────────────────────────────────────────────
+// ΓöÇΓöÇ Scrolling Lyrics Panel ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 function drawLyricsPanel(ctx, W, H, time, wrappedLyrics, font, alignment, duration, defaultActiveSz) {
   // We use the activeSz embedded in the active line.
   
@@ -489,24 +489,17 @@ function drawLyricsPanel(ctx, W, H, time, wrappedLyrics, font, alignment, durati
     ctx.font = fontStr;
     ctx.globalAlpha = opacity * layoutAlpha * opacityMult;
     
-    // Outer intense glow
     ctx.shadowColor = glowColor;
-    ctx.shadowBlur = 40 * scale;
+    ctx.shadowBlur = 15;
     ctx.shadowOffsetY = 0;
     ctx.fillStyle = primaryColor;
     ctx.fillText(text, 0, y);
 
-    // Medium glow
-    ctx.shadowBlur = 20 * scale;
-    ctx.fillText(text, 0, y);
-
-    // Tight shadow for readability
     ctx.shadowColor = 'rgba(0, 0, 0, 0.8)';
-    ctx.shadowBlur = 8 * scale;
+    ctx.shadowBlur = 10;
     ctx.shadowOffsetY = 2 * scale;
     ctx.fillText(text, 0, y);
 
-    // Clean top layer
     ctx.shadowColor = 'transparent';
     ctx.fillText(text, 0, y);
   };
@@ -530,25 +523,15 @@ function drawLyricsPanel(ctx, W, H, time, wrappedLyrics, font, alignment, durati
   ctx.restore();
 }
 
-// ── Watermark ────────────────────────────────────────────────────────────────
+// ΓöÇΓöÇ Watermark ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 function drawWatermark(ctx, w, h, time, logoImg) {
   if (!logoImg) return;
   ctx.save();
   
   const margin = Math.round(Math.min(w, h) * 0.05);
-  
-  // Constrain width to 10% of screen width, or height to 5% of screen height
-  const aspect = logoImg.width / logoImg.height;
-  let drawW = w * 0.10;
-  let drawH = drawW / aspect;
-  
-  if (drawH > h * 0.05) {
-    drawH = h * 0.05;
-    drawW = drawH * aspect;
-  }
-  
-  const lx = margin;
-  const ly = h - margin - drawH;
+  const lgSz   = Math.round(Math.min(w, h) * 0.13);
+  const lx     = margin;
+  const ly     = h - margin - lgSz;
   
   // Floating offset using sine wave based on time
   const floatY = Math.sin(time * 2.0) * 3.5;
@@ -556,11 +539,11 @@ function drawWatermark(ctx, w, h, time, logoImg) {
   // 100% visible
   ctx.globalAlpha = 1.0;
   
-  ctx.drawImage(logoImg, lx, ly + floatY, drawW, drawH);
+  ctx.drawImage(logoImg, lx, ly + floatY, lgSz, lgSz);
   ctx.restore();
 }
 
-// ── Draw progress bar (bottom) ────────────────────────────────────
+// ΓöÇΓöÇ Draw progress bar (bottom) ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 function drawProgressBar(ctx, w, h, songTime, duration) {
   if (!duration) return;
   const pct = Math.min(1, Math.max(0, songTime / duration));
@@ -578,7 +561,7 @@ function drawProgressBar(ctx, w, h, songTime, duration) {
   ctx.restore();
 }
 
-// ── Audio amplitude envelope ─────────────────────────────────────────────────
+// ΓöÇΓöÇ Audio amplitude envelope ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 function getAudioAmplitude(audioPath) {
   return new Promise(resolve => {
     const p = spawn(ffmpegInstaller.path, [
@@ -596,7 +579,7 @@ function getAudioAmplitude(audioPath) {
   });
 }
 
-// ── Audio amplitude start detection ──────────────────────────────────────────
+// ΓöÇΓöÇ Audio amplitude start detection ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 function detectAudioStart(pcm) {
   if (!pcm || pcm.length === 0) return 0;
   const windowSize = 15; // 0.15s rolling window
@@ -613,7 +596,7 @@ function detectAudioStart(pcm) {
   return 0;
 }
 
-// ── SLIDESHOW RENDERER ─────────────────────────────────────────────────────────
+// ΓöÇΓöÇ SLIDESHOW RENDERER ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 
 function wrapText(ctx, text, fontSize, maxW, fontFam) {
   ctx.font = `bold ${Math.round(fontSize)}px "${fontFam}"`;
@@ -635,7 +618,7 @@ function wrapText(ctx, text, fontSize, maxW, fontFam) {
   return lines;
 }
 
-// ── THUMBNAIL ────────────────────────────────────────────────────────────────
+// ΓöÇΓöÇ THUMBNAIL ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 function generateThumbnail(coverImg, colors, title, artist, font, alignment, wrappedLyrics, duration, logoImg, W = 1280, H = 720) {
   const tc  = createCanvas(W, H);
   const ctx = tc.getContext('2d');
@@ -644,7 +627,7 @@ function generateThumbnail(coverImg, colors, title, artist, font, alignment, wra
   drawBackground(ctx, W, H, coverImg, colors, 10.0, 0.0);
 
   // 2. Draw centered Album Cover Art
-  const artSz = Math.round(H * 0.39); // v4 classic: balanced art + text proportions
+  const artSz = Math.round(H * 0.39); // scales perfectly (e.g. 280 for 720p, 420 for 1080p)
   const radius = Math.round(artSz * 0.06);
 
   const ax = Math.round((W - artSz) / 2);
@@ -675,7 +658,7 @@ function generateThumbnail(coverImg, colors, title, artist, font, alignment, wra
   // If there are too many lines or it's very long, shrink font size
   let finalTitleSz = titleSz;
   if (titleLines.length > 2) {
-    finalTitleSz = Math.round(H * 0.060);
+    finalTitleSz = Math.round(H * 0.061);
     ctx.font = `bold ${finalTitleSz}px "Plus Jakarta Sans", "Noto Sans Devanagari", "Noto Sans KR"`;
     titleLines.length = 0;
     currentLine = '';
@@ -751,8 +734,8 @@ function generateThumbnail(coverImg, colors, title, artist, font, alignment, wra
   }
 
   // Draw Artist Name
-  ctx.font = `500 ${artistSz}px "Plus Jakarta Sans", "Noto Sans Devanagari", "Noto Sans KR"`;
-  ctx.fillStyle = 'rgba(255, 255, 255, 0.75)';
+  ctx.font = `${artistSz}px "Plus Jakarta Sans", "Noto Sans Devanagari", "Noto Sans KR"`;
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.65)';
   ctx.shadowColor = 'rgba(0, 0, 0, 0.3)';
   ctx.shadowBlur = 4;
   ctx.shadowOffsetY = 1;
@@ -774,9 +757,9 @@ function generateThumbnail(coverImg, colors, title, artist, font, alignment, wra
   return tc.toBuffer('image/jpeg', { quality: 96 });
 }
 
-// ════════════════════════════════════════════════════════════════
+// ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
 // MAIN RENDER ENGINE
-// ════════════════════════════════════════════════════════════════
+// ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
 function renderVideo({
   audioPath,
   artworkPath,        // Square album art from iTunes (or null)
