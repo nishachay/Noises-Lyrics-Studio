@@ -242,139 +242,148 @@ function precomputeWrappedLyrics(ctx, lyrics, fontSpec, maxWidth, defaultActiveS
 // ΓöÇΓöÇ Left Split Screen Layout (Watermark Cover Art + Player) ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 function drawLeftSplitLayout(ctx, coverImg, title, artist, W, H, songTime, duration, font) {
   const layoutAlpha = Math.max(0, Math.min(1, songTime) * Math.min(1, duration - songTime));
-  ctx.save();
-  ctx.globalAlpha = layoutAlpha;
+  if (layoutAlpha <= 0) return;
 
-  const artSz = Math.round(H * 0.52);
-  const ax = Math.round(W * 0.225 - artSz / 2);
-  const ay = Math.round(H * 0.36 - artSz / 2);
+  if (!_leftLayoutCache) {
+    _leftLayoutCache = createCanvas(W, H);
+    const cctx = _leftLayoutCache.getContext('2d');
+    const artSz = Math.round(H * 0.52);
+    const ax = Math.round(W * 0.225 - artSz / 2);
+    const ay = Math.round(H * 0.36 - artSz / 2);
 
-  // Album cover with shadow and rounded corners
-  if (coverImg) {
-    ctx.save();
-    ctx.imageSmoothingEnabled = true;
-    ctx.imageSmoothingQuality = 'high';
-    ctx.shadowColor = 'rgba(0, 0, 0, 0.65)';
-    ctx.shadowBlur = 40;
-    ctx.shadowOffsetY = 12;
-    
-    ctx.beginPath();
-    ctx.roundRect(ax, ay, artSz, artSz, Math.round(artSz * 0.06));
-    ctx.clip();
-    ctx.drawImage(coverImg, ax, ay, artSz, artSz);
-    ctx.restore();
+    if (coverImg) {
+      cctx.save();
+      cctx.imageSmoothingEnabled = true;
+      cctx.imageSmoothingQuality = 'high';
+      cctx.shadowColor = 'rgba(0, 0, 0, 0.65)';
+      cctx.shadowBlur = 40;
+      cctx.shadowOffsetY = 12;
+      
+      cctx.beginPath();
+      cctx.roundRect(ax, ay, artSz, artSz, Math.round(artSz * 0.06));
+      cctx.clip();
+      cctx.drawImage(coverImg, ax, ay, artSz, artSz);
+      cctx.restore();
 
-    ctx.save();
-    ctx.beginPath();
-    ctx.roundRect(ax, ay, artSz, artSz, Math.round(artSz * 0.06));
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
-    ctx.lineWidth = 1.5;
-    ctx.stroke();
-    ctx.restore();
-  } else {
-    ctx.save();
-    ctx.fillStyle = '#111115';
-    ctx.shadowColor = 'rgba(0, 0, 0, 0.65)';
-    ctx.shadowBlur = 40;
-    ctx.beginPath();
-    ctx.roundRect(ax, ay, artSz, artSz, Math.round(artSz * 0.06));
-    ctx.fill();
-    ctx.restore();
+      cctx.save();
+      cctx.beginPath();
+      cctx.roundRect(ax, ay, artSz, artSz, Math.round(artSz * 0.06));
+      cctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
+      cctx.lineWidth = 1.5;
+      cctx.stroke();
+      cctx.restore();
+    } else {
+      cctx.save();
+      cctx.fillStyle = '#111115';
+      cctx.shadowColor = 'rgba(0, 0, 0, 0.65)';
+      cctx.shadowBlur = 40;
+      cctx.beginPath();
+      cctx.roundRect(ax, ay, artSz, artSz, Math.round(artSz * 0.06));
+      cctx.fill();
+      cctx.restore();
+    }
+
+    const textX = Math.round(W * 0.225);
+    const titleY = ay + artSz + 36;
+    const titleSz = Math.round(H * 0.042);
+    const artistSz = Math.round(titleSz * 0.68);
+
+    cctx.save();
+    cctx.font = `bold ${titleSz}px "Plus Jakarta Sans", "Noto Sans Devanagari", "Noto Sans KR"`;
+    cctx.textAlign = 'center';
+    cctx.textBaseline = 'top';
+    cctx.fillStyle = '#ffffff';
+    cctx.shadowColor = 'rgba(0, 0, 0, 0.4)';
+    cctx.shadowBlur = 4;
+    cctx.fillText(title, textX, titleY);
+
+    cctx.font = `600 ${artistSz}px "Plus Jakarta Sans", "Noto Sans Devanagari", "Noto Sans KR"`;
+    cctx.fillStyle = 'rgba(255, 255, 255, 0.55)';
+    cctx.fillText(artist, textX, titleY + titleSz + 8);
+    cctx.restore();
   }
 
-  const textX = Math.round(W * 0.225);
-  const titleY = ay + artSz + 36;
-  const titleSz = Math.round(H * 0.042);
-  const artistSz = Math.round(titleSz * 0.68);
-
-  // Song Title
   ctx.save();
-  ctx.font = `bold ${titleSz}px "Plus Jakarta Sans", "Noto Sans Devanagari", "Noto Sans KR"`;
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'top';
-  ctx.fillStyle = '#ffffff';
-  ctx.shadowColor = 'rgba(0, 0, 0, 0.4)';
-  ctx.shadowBlur = 4;
-  ctx.fillText(title, textX, titleY);
-
-  // Artist Name
-  ctx.font = `600 ${artistSz}px "Plus Jakarta Sans", "Noto Sans Devanagari", "Noto Sans KR"`;
-  ctx.fillStyle = 'rgba(255, 255, 255, 0.55)';
-  ctx.fillText(artist, textX, titleY + titleSz + 8);
-  ctx.restore();
-
+  ctx.globalAlpha = layoutAlpha;
+  ctx.drawImage(_leftLayoutCache, 0, 0);
   ctx.restore();
 }
+
 
 // ΓöÇΓöÇ Album art + song info panel (Watermark corner card) ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 function drawAlbumPanel(ctx, img, title, artist, W, H, font, songTime, duration) {
   const layoutAlpha = Math.max(0, Math.min(1, songTime) * Math.min(1, duration - songTime));
-  ctx.save();
-  ctx.globalAlpha = layoutAlpha;
+  if (layoutAlpha <= 0) return;
 
-  const margin = Math.round(Math.min(W, H) * 0.05);
-  const artSz  = Math.round(Math.min(W, H) * 0.095);
-  const ax = margin, ay = margin;
-  const radius = Math.round(artSz * 0.16);
+  if (!_albumPanelCache) {
+    _albumPanelCache = createCanvas(W, H);
+    const cctx = _albumPanelCache.getContext('2d');
+    const margin = Math.round(Math.min(W, H) * 0.05);
+    const artSz  = Math.round(Math.min(W, H) * 0.095);
+    const ax = margin, ay = margin;
+    const radius = Math.round(artSz * 0.16);
 
-  if (img) {
-    ctx.save();
-    ctx.imageSmoothingEnabled = true;
-    ctx.imageSmoothingQuality = 'high';
-    ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
-    ctx.shadowBlur = Math.round(artSz * 0.25);
-    ctx.shadowOffsetY = Math.round(artSz * 0.1);
+    if (img) {
+      cctx.save();
+      cctx.imageSmoothingEnabled = true;
+      cctx.imageSmoothingQuality = 'high';
+      cctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
+      cctx.shadowBlur = Math.round(artSz * 0.25);
+      cctx.shadowOffsetY = Math.round(artSz * 0.1);
+      
+      cctx.beginPath();
+      cctx.roundRect(ax, ay, artSz, artSz, radius);
+      cctx.clip();
+      cctx.drawImage(img, ax, ay, artSz, artSz);
+      cctx.restore();
+
+      cctx.save();
+      cctx.beginPath();
+      cctx.roundRect(ax, ay, artSz, artSz, radius);
+      cctx.strokeStyle = 'rgba(255, 255, 255, 0.12)';
+      cctx.lineWidth = 1;
+      cctx.stroke();
+      cctx.restore();
+    } else {
+      cctx.save();
+      cctx.fillStyle = '#111115';
+      cctx.beginPath();
+      cctx.roundRect(ax, ay, artSz, artSz, radius);
+      cctx.fill();
+      cctx.restore();
+    }
+
+    const tx = ax + artSz + Math.round(artSz * 0.28);
+    const tSz = Math.round(artSz * 0.32);
+    const aSz = Math.round(tSz * 0.72);
+    const gap = Math.round(tSz * 0.28);
     
-    ctx.beginPath();
-    ctx.roundRect(ax, ay, artSz, artSz, radius);
-    ctx.clip();
-    ctx.drawImage(img, ax, ay, artSz, artSz);
-    ctx.restore();
+    const totalTextH = tSz + gap + aSz;
+    const textCenterY = ay + artSz / 2;
+    const titleY = textCenterY - (totalTextH / 2) + (tSz / 2);
+    const artistY = titleY + (tSz / 2) + gap + (aSz / 2);
 
-    // Elegant inner border for realism
-    ctx.save();
-    ctx.beginPath();
-    ctx.roundRect(ax, ay, artSz, artSz, radius);
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.12)';
-    ctx.lineWidth = 1;
-    ctx.stroke();
-    ctx.restore();
-  } else {
-    ctx.save();
-    ctx.fillStyle = '#111115';
-    ctx.beginPath();
-    ctx.roundRect(ax, ay, artSz, artSz, radius);
-    ctx.fill();
-    ctx.restore();
+    cctx.save();
+    cctx.shadowBlur = 0;
+    cctx.textAlign = 'left';
+    cctx.textBaseline = 'middle';
+
+    cctx.font = `bold ${tSz}px "Plus Jakarta Sans", "Noto Sans Devanagari", "Noto Sans KR"`;
+    cctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
+    cctx.fillText(title, tx, titleY);
+
+    cctx.font = `${aSz}px "Plus Jakarta Sans", "Noto Sans Devanagari", "Noto Sans KR"`;
+    cctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
+    cctx.fillText(artist, tx, artistY);
+    cctx.restore();
   }
 
-  const tx = ax + artSz + Math.round(artSz * 0.28);
-  const tSz = Math.round(artSz * 0.32);
-  const aSz = Math.round(tSz * 0.72);
-  const gap = Math.round(tSz * 0.28);
-  
-  // Vertically center the text block relative to the cover art using middle baseline
-  const totalTextH = tSz + gap + aSz;
-  const textCenterY = ay + artSz / 2;
-  const titleY = textCenterY - (totalTextH / 2) + (tSz / 2);
-  const artistY = titleY + (tSz / 2) + gap + (aSz / 2);
-
   ctx.save();
-  ctx.shadowBlur = 0;
-  ctx.textAlign = 'left';
-  ctx.textBaseline = 'middle';
-
-  ctx.font = `bold ${tSz}px "Plus Jakarta Sans", "Noto Sans Devanagari", "Noto Sans KR"`;
-  ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
-  ctx.fillText(title, tx, titleY);
-
-  ctx.font = `${aSz}px "Plus Jakarta Sans", "Noto Sans Devanagari", "Noto Sans KR"`;
-  ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
-  ctx.fillText(artist, tx, artistY);
-  ctx.restore();
-
+  ctx.globalAlpha = layoutAlpha;
+  ctx.drawImage(_albumPanelCache, 0, 0);
   ctx.restore();
 }
+
 
 // ΓöÇΓöÇ Scrolling Lyrics Panel ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 function drawLyricsPanel(ctx, W, H, time, wrappedLyrics, font, alignment, duration, defaultActiveSz) {
@@ -488,43 +497,54 @@ function drawLyricsPanel(ctx, W, H, time, wrappedLyrics, font, alignment, durati
   }
   const top = -totalH / 2;
 
-  const drawTextWithShadows = (text, y, fontStr, primaryColor, glowColor, opacityMult) => {
-    ctx.font = fontStr;
-    ctx.globalAlpha = opacity * layoutAlpha * opacityMult;
-    
-    ctx.shadowColor = glowColor;
-    ctx.shadowBlur = 15;
-    ctx.shadowOffsetY = 0;
-    ctx.fillStyle = primaryColor;
-    ctx.fillText(text, 0, y);
+  if (!line._renderCache) {
+    line._renderCache = createCanvas(W, totalH + 100);
+    const cctx = line._renderCache.getContext('2d');
+    const ccy = line._renderCache.height / 2;
+    const ccx = W / 2;
 
-    ctx.shadowColor = 'rgba(0, 0, 0, 0.8)';
-    ctx.shadowBlur = 10;
-    ctx.shadowOffsetY = 2 * scale;
-    ctx.fillText(text, 0, y);
+    const drawShadowText = (text, y, fontStr, primaryColor, glowColor) => {
+      cctx.font = fontStr;
+      cctx.textAlign = textAlign;
+      cctx.textBaseline = 'middle';
+      
+      cctx.shadowColor = glowColor;
+      cctx.shadowBlur = 15;
+      cctx.shadowOffsetY = 0;
+      cctx.fillStyle = primaryColor;
+      cctx.fillText(text, ccx, y);
 
-    ctx.shadowColor = 'transparent';
-    ctx.fillText(text, 0, y);
-  };
+      cctx.shadowColor = 'rgba(0, 0, 0, 0.8)';
+      cctx.shadowBlur = 10;
+      cctx.shadowOffsetY = 2;
+      cctx.fillText(text, ccx, y);
 
-  let curY = top;
-  segments.forEach((seg) => {
-    curY += lh_act;
-    const wy = (curY - lh_act + activeSz * 0.5) * scale;
-    drawTextWithShadows(seg, wy, `bold ${activeSz * scale}px "Plus Jakarta Sans", "Noto Sans Devanagari", "Noto Sans KR"`, '#ffffff', 'rgba(255, 255, 255, 0.8)', 1.0);
-  });
+      cctx.shadowColor = 'transparent';
+      cctx.fillText(text, ccx, y);
+    };
 
-  if (transSegments.length > 0) {
-    curY += transGap;
-    transSegments.forEach((seg) => {
-      curY += lhTrans;
-      const wy = (curY - lhTrans + transSz * 0.5) * scale;
-      drawTextWithShadows(seg, wy, `600 ${transSz * scale}px "Plus Jakarta Sans", "Noto Sans Devanagari", "Noto Sans KR"`, '#ffffff', 'rgba(255, 255, 255, 0.6)', 0.90);
+    let curY = ccy + top;
+    segments.forEach((seg) => {
+      curY += lh_act;
+      drawShadowText(seg, curY - lh_act + activeSz * 0.5, `bold ${activeSz}px "Plus Jakarta Sans", "Noto Sans Devanagari", "Noto Sans KR"`, '#ffffff', 'rgba(255, 255, 255, 0.8)');
     });
+
+    if (transSegments.length > 0) {
+      curY += transGap;
+      transSegments.forEach((seg) => {
+        curY += lhTrans;
+        drawShadowText(seg, curY - lhTrans + transSz * 0.5, `600 ${transSz}px "Plus Jakarta Sans", "Noto Sans Devanagari", "Noto Sans KR"`, '#ffffff', 'rgba(255, 255, 255, 0.6)');
+      });
+    }
   }
 
+  ctx.save();
+  ctx.globalAlpha = opacity * layoutAlpha;
+  ctx.translate(-W/2, -line._renderCache.height / 2);
+  ctx.drawImage(line._renderCache, 0, 0, W, line._renderCache.height, (W - W * scale) / 2, (line._renderCache.height - line._renderCache.height * scale) / 2, W * scale, line._renderCache.height * scale);
   ctx.restore();
 }
+
 
 // ΓöÇΓöÇ Watermark ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 function drawWatermark(ctx, w, h, time, logoImg) {
@@ -976,67 +996,71 @@ function renderVideo({
           ctx.globalAlpha = Math.max(0, Math.min(1, a));
 
           // Fade in Intro Text
-          const titleSz = Math.round(H * 0.08);
-          const artistSz = Math.round(H * 0.038);
-          const artSz = Math.round(H * 0.55);
+          if (!_introCache) {
+            _introCache = createCanvas(W, H);
+            const cctx = _introCache.getContext('2d');
+            const titleSz = Math.round(H * 0.08);
+            const artistSz = Math.round(H * 0.038);
+            const artSz = Math.round(H * 0.55);
 
-          ctx.save();
-          const totalH = artSz + 40 + titleSz + 15 + artistSz;
+            cctx.save();
+            const totalH = artSz + 40 + titleSz + 15 + artistSz;
 
-          const ax = Math.round((W - artSz) / 2);
-          const ay = Math.round((H - totalH) / 2);
-          const radius = Math.round(artSz * 0.06);
+            const ax = Math.round((W - artSz) / 2);
+            const ay = Math.round((H - totalH) / 2);
+            const radius = Math.round(artSz * 0.06);
 
-          if (coverImg) {
-            ctx.save();
-            ctx.imageSmoothingEnabled = true;
-            ctx.imageSmoothingQuality = 'high';
-            ctx.shadowColor = 'rgba(0, 0, 0, 0.65)';
-            ctx.shadowBlur = 40;
-            ctx.shadowOffsetY = 12;
-            
-            ctx.beginPath();
-            ctx.roundRect(ax, ay, artSz, artSz, radius);
-            ctx.clip();
-            ctx.drawImage(coverImg, ax, ay, artSz, artSz);
-            ctx.restore();
+            if (coverImg) {
+              cctx.save();
+              cctx.imageSmoothingEnabled = true;
+              cctx.imageSmoothingQuality = 'high';
+              cctx.shadowColor = 'rgba(0, 0, 0, 0.65)';
+              cctx.shadowBlur = 40;
+              cctx.shadowOffsetY = 12;
+              
+              cctx.beginPath();
+              cctx.roundRect(ax, ay, artSz, artSz, radius);
+              cctx.clip();
+              cctx.drawImage(coverImg, ax, ay, artSz, artSz);
+              cctx.restore();
 
-            ctx.save();
-            ctx.beginPath();
-            ctx.roundRect(ax, ay, artSz, artSz, radius);
-            ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
-            ctx.lineWidth = 1.5;
-            ctx.stroke();
-            ctx.restore();
-          } else {
-            ctx.save();
-            ctx.fillStyle = '#111115';
-            ctx.shadowColor = 'rgba(0, 0, 0, 0.65)';
-            ctx.shadowBlur = 40;
-            ctx.beginPath();
-            ctx.roundRect(ax, ay, artSz, artSz, radius);
-            ctx.fill();
-            ctx.restore();
+              cctx.save();
+              cctx.beginPath();
+              cctx.roundRect(ax, ay, artSz, artSz, radius);
+              cctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
+              cctx.lineWidth = 1.5;
+              cctx.stroke();
+              cctx.restore();
+            } else {
+              cctx.save();
+              cctx.fillStyle = '#111115';
+              cctx.shadowColor = 'rgba(0, 0, 0, 0.65)';
+              cctx.shadowBlur = 40;
+              cctx.beginPath();
+              cctx.roundRect(ax, ay, artSz, artSz, radius);
+              cctx.fill();
+              cctx.restore();
+            }
+
+            const titleY = ay + artSz + 30;
+
+            cctx.font = `bold ${titleSz}px "Plus Jakarta Sans", "Noto Sans Devanagari", "Noto Sans KR"`;
+            cctx.textAlign = 'center';
+            cctx.textBaseline = 'top';
+            cctx.fillStyle = '#ffffff';
+            cctx.shadowColor = 'rgba(0, 0, 0, 0.4)';
+            cctx.shadowBlur = 4;
+            cctx.fillText(songTitle, W / 2, titleY);
+
+            cctx.font = `${artistSz}px "Plus Jakarta Sans", "Noto Sans Devanagari", "Noto Sans KR"`;
+            cctx.fillStyle = 'rgba(255, 255, 255, 0.55)';
+            cctx.fillText(songArtist, W / 2, titleY + titleSz + 10);
+            cctx.restore();
           }
-
-          const titleY = ay + artSz + 30;
-
-          // Song Title
-          ctx.font = `bold ${titleSz}px "Plus Jakarta Sans", "Noto Sans Devanagari", "Noto Sans KR"`;
-          ctx.textAlign = 'center';
-          ctx.textBaseline = 'top';
-          ctx.fillStyle = '#ffffff';
-          ctx.shadowColor = 'rgba(0, 0, 0, 0.4)';
-          ctx.shadowBlur = 4;
-          ctx.fillText(songTitle, W / 2, titleY);
-
-          // Artist Name
-          ctx.font = `${artistSz}px "Plus Jakarta Sans", "Noto Sans Devanagari", "Noto Sans KR"`;
-          ctx.fillStyle = 'rgba(255, 255, 255, 0.55)';
-          ctx.fillText(songArtist, W / 2, titleY + titleSz + 10);
-
+          ctx.drawImage(_introCache, 0, 0);
           ctx.restore();
 
+        
         // ── PLAYBACK ─────────────────────────────────────────────
         } else {
           if (alignment === 'left') {
