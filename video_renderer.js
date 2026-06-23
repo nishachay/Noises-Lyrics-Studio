@@ -137,13 +137,13 @@ function drawBackground(ctx, w, h, coverImg, colors, time, amp) {
     ctx.fillRect(0, 0, w, h);
   }
 
-  // Smart darkening overlay for readability
-  let baseAlpha = 0.4;
+  // Smart darkening overlay for readability (boosted to match browser preview)
+  let baseAlpha = 0.55;
   if (colors) {
     const getLuma = (c) => 0.299*c[0] + 0.587*c[1] + 0.114*c[2];
     const avgLuma = (getLuma(colors.tl) + getLuma(colors.tr) + getLuma(colors.bl) + getLuma(colors.br) + getLuma(colors.c)) / 5;
-    if (avgLuma > 100) {
-      baseAlpha += Math.min(0.35, ((avgLuma - 100) / 155) * 0.35);
+    if (avgLuma > 80) {
+      baseAlpha += Math.min(0.25, ((avgLuma - 80) / 175) * 0.25);
     }
   }
 
