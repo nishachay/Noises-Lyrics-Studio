@@ -1217,27 +1217,6 @@ function drawFrame() {
 
   // Draw floating logo watermark everywhere!
   drawWatermark(W, H, now);
-
-  // Film grain — matches renderer for accurate preview
-  ctx.save();
-  const _fgSize = 128;
-  const _fgCanvas = document.createElement('canvas');
-  _fgCanvas.width = _fgSize; _fgCanvas.height = _fgSize;
-  const _fgCtx = _fgCanvas.getContext('2d');
-  const _fgData = _fgCtx.createImageData(_fgSize, _fgSize);
-  for (let i = 0; i < _fgData.data.length; i += 4) {
-    const v = Math.floor(Math.random() * 255);
-    _fgData.data[i] = _fgData.data[i+1] = _fgData.data[i+2] = v;
-    _fgData.data[i+3] = 8;
-  }
-  _fgCtx.putImageData(_fgData, 0, 0);
-  const _fgPat = ctx.createPattern(_fgCanvas, 'repeat');
-  ctx.fillStyle = _fgPat;
-  const _ox = Math.floor(Math.random() * _fgSize);
-  const _oy = Math.floor(Math.random() * _fgSize);
-  ctx.translate(_ox, _oy);
-  ctx.fillRect(-_ox, -_oy, W, H);
-  ctx.restore();
 }
 
 // ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ

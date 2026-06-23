@@ -760,15 +760,6 @@ function generateThumbnail(coverImg, colors, title, artist, font, alignment, wra
   // Draw watermark logo in the corner (at static time = 0.0)
   drawWatermark(ctx, W, H, 0.0, logoImg);
 
-  // Film grain overlay
-  const nc  = getNoiseCanvas();
-  const pat = ctx.createPattern(nc, 'repeat');
-  ctx.save();
-  ctx.fillStyle = pat;
-  ctx.translate(24, 42);
-  ctx.fillRect(-24, -42, W + 24, H + 42);
-  ctx.restore();
-
   return tc.toBuffer('image/jpeg', { quality: 96 });
 }
 
@@ -1087,17 +1078,6 @@ function renderVideo({
 
         // Draw floating logo watermark everywhere!
         drawWatermark(ctx, W, H, now, logoImg);
-
-        // Film grain every frame
-        const nc  = getNoiseCanvas();
-        const pat = ctx.createPattern(nc, 'repeat');
-        ctx.save();
-        ctx.fillStyle = pat;
-        const ox = Math.floor(Math.random() * 128);
-        const oy = Math.floor(Math.random() * 128);
-        ctx.translate(ox, oy);
-        ctx.fillRect(-ox, -oy, W, H);
-        ctx.restore();
 
         await writeFrame(canvas.data());
 
