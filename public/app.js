@@ -52,6 +52,11 @@ const S = {
   audioReady: false,
   audioDuration: 0,
 
+  // YouTube captions cache
+  ytCaptionsLRC: null,
+  ytCaptionsList: null,
+  ytCaptionsSearching: false,
+
   // Lyrics scroll state
   currentScrollY: 0,
 
@@ -1551,6 +1556,10 @@ async function resolveSong(metadata) {
   lyricsSource.disabled = true;
   lyricsSource.innerHTML = '<option>Resolving Audio & Lyrics...</option>';
 
+  S.ytCaptionsLRC = null;
+  S.ytCaptionsList = null;
+  S.ytCaptionsSearching = false;
+
   try {
     const res = await fetch('/api/resolve-song', {
       method: 'POST',
@@ -1625,7 +1634,7 @@ async function resolveSong(metadata) {
     if (S.track.youtubeId) {
       initAudio(S.track.youtubeId);
       // Show YT Captions button now that we have a video ID
-      if (btnYtCaptions) btnYtCaptions.style.display = 'inline-flex';
+      if (btnYtCaptions) btnYtCaptions.style.display = 'inline-block';
     } else {
       if (btnYtCaptions) btnYtCaptions.style.display = 'none';
     }
@@ -1745,39 +1754,59 @@ function setLyrics(list, type, rawText) {
 
 function populateLyricsSource() {
   lyricsSource.innerHTML = '';
-  if (!S.lyricsRecords.length) {
+  
+  // 1. YouTube Auto-Captions if available
+  if (S.ytCaptionsList && S.ytCaptionsList.length) {
     const o = document.createElement('option');
-    o.value = 'none';
-    o.textContent = 'No lyrics found — paste manually in Edit Raw';
+    o.value = 'yt-captions';
+    o.textContent = `[Synced] YouTube Auto-Captions (${S.ytCaptionsList.length} lines)`;
     lyricsSource.appendChild(o);
-    return;
   }
 
-  S.lyricsRecords.sort((a, b) => {
-    if (a.syncedLyrics && !b.syncedLyrics) return -1;
-    if (!a.syncedLyrics && b.syncedLyrics) return 1;
-    
-    // Smart Heuristic: Prioritize exact Album Name matches (worth a 10-second duration grace)
-    const trackAlbum = (S.track.albumName || '').toLowerCase();
-    const albumBonusA = trackAlbum && (a.albumName || '').toLowerCase() === trackAlbum ? 10 : 0;
-    const albumBonusB = trackAlbum && (b.albumName || '').toLowerCase() === trackAlbum ? 10 : 0;
-
-    const targetDur = S.track.youtubeDuration || S.track.duration || 0;
-    const durA = Math.abs((a.duration || 0) - targetDur) - albumBonusA;
-    const durB = Math.abs((b.duration || 0) - targetDur) - albumBonusB;
-    
-    return durA - durB;
-  });
-
-  S.lyricsRecords.forEach((r, i) => {
+  // 2. YouTube Auto-Captions searching state
+  if (S.ytCaptionsSearching) {
     const o = document.createElement('option');
-    o.value = i;
-    const type = r.syncedLyrics ? 'Synced' : r.plainLyrics ? 'Plain' : 'Instr';
-    const targetDur = S.track.youtubeDuration || S.track.duration || 0;
-    const diff = r.duration ? ` (${Math.abs(r.duration - targetDur)}s diff)` : '';
-    o.textContent = `[${type}] ${r.trackName || r.artistName || '—'}${diff}`;
+    o.value = 'loading';
+    o.disabled = true;
+    o.textContent = '⏳ Searching YouTube captions…';
     lyricsSource.appendChild(o);
-  });
+  }
+
+  // 3. Lyrics records from LRCLIB
+  if (S.lyricsRecords && S.lyricsRecords.length) {
+    S.lyricsRecords.sort((a, b) => {
+      if (a.syncedLyrics && !b.syncedLyrics) return -1;
+      if (!a.syncedLyrics && b.syncedLyrics) return 1;
+      
+      const trackAlbum = (S.track.albumName || '').toLowerCase();
+      const albumBonusA = trackAlbum && (a.albumName || '').toLowerCase() === trackAlbum ? 10 : 0;
+      const albumBonusB = trackAlbum && (b.albumName || '').toLowerCase() === trackAlbum ? 10 : 0;
+
+      const targetDur = S.track.youtubeDuration || S.track.duration || 0;
+      const durA = Math.abs((a.duration || 0) - targetDur) - albumBonusA;
+      const durB = Math.abs((b.duration || 0) - targetDur) - albumBonusB;
+      
+      return durA - durB;
+    });
+
+    S.lyricsRecords.forEach((r, i) => {
+      const o = document.createElement('option');
+      o.value = i;
+      const type = r.syncedLyrics ? 'Synced' : r.plainLyrics ? 'Plain' : 'Instr';
+      const targetDur = S.track.youtubeDuration || S.track.duration || 0;
+      const diff = r.duration ? ` (${Math.abs(r.duration - targetDur)}s diff)` : '';
+      o.textContent = `[${type}] ${r.trackName || r.artistName || '—'}${diff}`;
+      lyricsSource.appendChild(o);
+    });
+  }
+
+  // 4. Fallback / Custom
+  if (!S.lyricsRecords.length && (!S.ytCaptionsList || !S.ytCaptionsList.length) && !S.ytCaptionsSearching) {
+    const o = document.createElement('option');
+    o.value = 'none';
+    o.textContent = 'No lyrics found — paste manually or use YT Captions';
+    lyricsSource.appendChild(o);
+  }
 
   const custom = document.createElement('option');
   custom.value = 'custom';
@@ -1830,6 +1859,12 @@ function loadLyricsRecord(r) {
 
 function loadLyricsByIdx(idx) {
   if (idx === 'custom') { setLyrics([], 'none', ''); return; }
+  if (idx === 'yt-captions') {
+    if (S.ytCaptionsList) {
+      setLyrics(S.ytCaptionsList, 'synced', S.ytCaptionsLRC);
+    }
+    return;
+  }
   const r = S.lyricsRecords[parseInt(idx, 10)];
   if (r) loadLyricsRecord(r);
 }
@@ -2207,7 +2242,9 @@ function saveProjectState() {
     syncOffset: S.syncOffset,
     lyricsSourceValue: lyricsSource.value,
     trackTitle: S.track.title,
-    trackArtist: S.track.artist
+    trackArtist: S.track.artist,
+    ytCaptionsLRC: S.ytCaptionsLRC || null,
+    ytCaptionsList: S.ytCaptionsList || null
   };
   localStorage.setItem(`noises_lyric_project_${S.track.youtubeId}`, JSON.stringify(state));
 }
@@ -2224,6 +2261,8 @@ function loadProjectState() {
     S.syncOffset = state.syncOffset || 0.0;
     if (state.trackTitle) S.track.title = state.trackTitle;
     if (state.trackArtist) S.track.artist = state.trackArtist;
+    S.ytCaptionsLRC = state.ytCaptionsLRC || null;
+    S.ytCaptionsList = state.ytCaptionsList || null;
     
     // Restore UI elements
     syncOffsetEl.value = S.syncOffset;
@@ -2798,16 +2837,24 @@ async function fetchAndApplyCaptions(opts = {}) {
   const videoId = S.track?.youtubeId;
   if (!videoId) return;
 
-  // Show status in editor so user knows what's happening
   const setStatus = (msg, cls = '') => {
     editorFormat.textContent = msg;
     editorFormat.className   = `editor-format${cls ? ' ' + cls : ''}`;
   };
 
-  if (btnYtCaptions) { btnYtCaptions.disabled = true; btnYtCaptions.textContent = '⏳ Searching…'; }
+  S.ytCaptionsSearching = true;
+  if (btnYtCaptions) {
+    btnYtCaptions.disabled = true;
+    btnYtCaptions.textContent = '⏳ Searching…';
+  }
+  
+  // Show in dropdown that we are searching
+  lyricsSource.disabled = true;
+  populateLyricsSource();
+  lyricsSource.value = 'loading';
   setStatus('🔍 Searching YouTube for captions…');
+
   if (auto) {
-    // Show placeholder message so user knows something is happening
     lyricsEditor.placeholder = 'Searching YouTube for captions… this may take 10–20 seconds.';
   }
 
@@ -2819,29 +2866,59 @@ async function fetchAndApplyCaptions(opts = {}) {
 
     if (!res.ok) throw new Error(data.error || 'No captions found');
 
-    // Load captions as plain text → ready for tap-sync
-    const lines = data.lyrics.map(l => l.text).join('\n');
-    lyricsEditor.value = lines;
-    lyricsEditor.placeholder = 'Paste LRC lyrics or plain text here…';
+    S.ytCaptionsSearching = false;
+    
+    // Parse captions and format as LRC with timestamps
+    const lrcContent = lyricsToLRC(data.lyrics);
+    S.ytCaptionsLRC = lrcContent;
+    S.ytCaptionsList = data.lyrics;
+
+    // Apply the captions immediately and set as active source
+    setLyrics(data.lyrics, 'synced', lrcContent);
+
+    // Update Lyrics Source dropdown
+    lyricsSource.disabled = false;
+    populateLyricsSource();
+    lyricsSource.value = 'yt-captions';
 
     if (data.source === 'lyrics_search') {
-      setStatus(`✓ ${data.lyrics.length} lines from lyrics video — tap Apply to use`);
+      setStatus(`✓ ${data.lyrics.length} lines from lyrics video — applied`, 'ok');
       showToast(`Used lyrics video captions: "${data.sourceTitle}"`);
     } else {
-      setStatus(`✓ ${data.lyrics.length} caption lines loaded — tap Apply to use`, 'ok');
+      setStatus(`✓ ${data.lyrics.length} caption lines loaded — applied`, 'ok');
     }
 
+    lyricsEditor.placeholder = 'Paste LRC lyrics or plain text here…';
     lyricsEditor.classList.add('pulse-attention');
     setTimeout(() => lyricsEditor.classList.remove('pulse-attention'), 2000);
 
+    // Switch to Sync tab so user sees the timestamped lyrics ready to play!
+    const syncBtn = document.querySelector('.tab-btn[data-tab="tab-sync"]');
+    if (syncBtn) syncBtn.click();
+
+    saveProjectState();
+
   } catch (err) {
+    S.ytCaptionsSearching = false;
+    lyricsSource.disabled = false;
+    populateLyricsSource();
+    
+    // Restore previous selection if possible, otherwise none
+    if (S.lyricsRecords.length) {
+      lyricsSource.value = '0';
+      loadLyricsByIdx('0');
+    } else {
+      lyricsSource.value = 'none';
+      setLyrics([], 'none', '');
+    }
+
     lyricsEditor.placeholder = 'Paste LRC lyrics or plain text lyrics here…';
     setStatus('No captions found — paste lyrics manually');
     if (!auto) alert(`Could not fetch captions: ${err.message}`);
   } finally {
     if (btnYtCaptions) {
       btnYtCaptions.disabled = false;
-      btnYtCaptions.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:4px;"><polygon points="5 3 19 12 5 21 5 3"/></svg>YT Captions`;
+      btnYtCaptions.innerHTML = 'YT Captions';
     }
   }
 }

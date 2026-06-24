@@ -241,7 +241,10 @@
           <div class="inspector-section glass-card" style="margin: 0; padding: 14px 16px;">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 8px;">
               <label class="field-label" style="margin:0;" for="lyrics-source">Lyrics Source</label>
-              <button id="btn-manual-lyrics" class="btn-action btn-glass" style="font-size: 11px; padding: 4px 8px;">Search LRCLIB</button>
+              <div style="display:flex; gap:6px;">
+                <button id="btn-yt-captions" class="btn-action btn-glass" title="Fetch auto-captions from the loaded YouTube video" style="font-size: 11px; padding: 4px 8px; background:rgba(255,50,50,0.1); border-color:rgba(255,80,80,0.25); display:none;">YT Captions</button>
+                <button id="btn-manual-lyrics" class="btn-action btn-glass" style="font-size: 11px; padding: 4px 8px;">Search LRCLIB</button>
+              </div>
             </div>
             <select id="lyrics-source" class="select-field glass-select" disabled>
               <option>No song loaded — press Ctrl+K</option>
@@ -302,9 +305,6 @@
         <div class="editor-header">
           <span id="editor-format" class="editor-format">Format: LRC (Synced)</span>
           <div style="display:flex;gap:6px;align-items:center;">
-            <button id="btn-yt-captions" class="btn-action" title="Fetch auto-captions from the loaded YouTube video" style="background:rgba(255,50,50,0.15);border-color:rgba(255,80,80,0.35);display:none;">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:4px;"><polygon points="5 3 19 12 5 21 5 3"/></svg>YT Captions
-            </button>
             <button id="btn-apply" class="btn-action">Apply</button>
           </div>
         </div>
