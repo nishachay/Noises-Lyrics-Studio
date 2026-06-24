@@ -167,6 +167,7 @@ const donePreviewLoader = $('done-preview-loader');
 const selectRes   = $('select-res');
 const selectFps   = $('select-fps');
 const selectAlign = $('select-align');
+const selectLinesPerScreen = $('select-lines-per-screen');
 
 // ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
 // 3. AUDIO ENGINE
@@ -647,8 +648,15 @@ function precomputeLyricsLayout(W, H, alignment) {
     return;
   }
 
+  const N = selectLinesPerScreen ? parseInt(selectLinesPerScreen.value, 10) || 1 : 1;
+
   // Active line font size: ~42px
-  const activeSz = Math.min(Math.round(H * 0.065), 72);
+  let activeSz = Math.min(Math.round(H * 0.065), 72);
+  if (N >= 4) {
+    activeSz = Math.min(Math.round(H * 0.048), 50);
+  } else if (N >= 3) {
+    activeSz = Math.min(Math.round(H * 0.055), 60);
+  }
   const fontSpec = `700 ${activeSz}px ${FONT}, sans-serif`;
 
   const maxWidth = alignment === 'left' ? Math.round(W * 0.44) : Math.round(W * 0.76);
@@ -679,15 +687,22 @@ function precomputeLyricsLayout(W, H, alignment) {
   };
 
   const wrapped = lyrics.map(line => {
-    const wText = wrapLine(line.text, fontSpec);
-    const transSz = activeSz * 0.60;
+    let lineActiveSz = activeSz;
+    const isHindi = /[\u0900-\u097F]/.test(line.text);
+    if (isHindi) lineActiveSz *= 1.25;
+
+    const lineFontSpec = `700 ${lineActiveSz}px ${FONT}, sans-serif`;
+    const wText = wrapLine(line.text, lineFontSpec);
+    const transSz = lineActiveSz * 0.60;
     const wTrans = line.translation ? wrapLine('(' + line.translation + ')', `600 ${transSz}px ${FONT}, sans-serif`) : [];
     return {
       time: line.time,
       text: line.text,
       translation: line.translation,
       wrapped: wText,
-      wrappedTrans: wTrans
+      wrappedTrans: wTrans,
+      activeSz: lineActiveSz,
+      transSz: transSz
     };
   });
   ctx.restore();
@@ -697,9 +712,12 @@ function precomputeLyricsLayout(W, H, alignment) {
 
   let currentTop = 0;
   precomputedLyrics = wrapped.map(line => {
-    let h = line.wrapped.length * lh;
+    const transSz = line.activeSz * 0.60;
+    const lhTrans = transSz * 1.38;
+    const transGap = line.activeSz * 0.3;
+    let h = line.wrapped.length * (line.activeSz * 1.38);
     if (line.wrappedTrans && line.wrappedTrans.length) {
-      h += line.wrappedTrans.length * (activeSz * 0.75 * 1.38) + (activeSz * 0.3); // add translation height + small gap
+      h += transGap + (line.wrappedTrans.length * lhTrans);
     }
     const yTop = currentTop;
     const yCenter = currentTop + h / 2;
@@ -814,7 +832,137 @@ function drawLyrics(W, H, songTime) {
   const tx = alignment === 'left' ? Math.round(W * 0.48) : Math.round(W / 2);
   const textAlign = alignment === 'left' ? 'left' : 'center';
 
-  // Make font size responsive but contained
+  const N = selectLinesPerScreen ? parseInt(selectLinesPerScreen.value, 10) || 1 : 1;
+
+  if (N > 1) {
+    if (activeIdx < 0) {
+      const firstTime = precomputedLyrics[0] ? precomputedLyrics[0].time : null;
+      if (firstTime !== null && firstTime !== undefined) {
+        const timeUntilFirst = firstTime - adjTime;
+        if (timeUntilFirst > 2.0) {
+          const interludeX = alignment === 'left' ? (W * 0.48 + W * 0.22) : (W / 2);
+          drawInterludeDots(interludeX, H / 2, songTime);
+          return;
+        }
+      }
+      return;
+    }
+
+    const stanzaIdx = Math.floor(activeIdx / N);
+    const startIndex = stanzaIdx * N;
+    const endIndex = Math.min(precomputedLyrics.length, startIndex + N);
+    const stanzaLines = precomputedLyrics.slice(startIndex, endIndex);
+
+    const stanzaStartTime = precomputedLyrics[startIndex] && typeof precomputedLyrics[startIndex].time === 'number' ? precomputedLyrics[startIndex].time : 0;
+    const nextStanzaStartTime = endIndex < precomputedLyrics.length && typeof precomputedLyrics[endIndex].time === 'number' ? precomputedLyrics[endIndex].time : Infinity;
+
+    const elapsed = adjTime - stanzaStartTime;
+    const timeLeft = nextStanzaStartTime - adjTime;
+
+    let stanzaOpacity = 1.0;
+    if (elapsed < 0.4) {
+      stanzaOpacity = elapsed / 0.4;
+    } else if (timeLeft < 0.4) {
+      stanzaOpacity = Math.max(0, timeLeft / 0.4);
+    }
+
+    const dur = S.track ? S.track.duration : 0;
+    const layoutAlpha = Math.max(0, Math.min(1, songTime) * Math.min(1, dur - songTime));
+    const finalOpacity = stanzaOpacity * layoutAlpha;
+
+    let activeSz = Math.min(Math.round(H * 0.065), 72);
+    if (N >= 4) {
+      activeSz = Math.min(Math.round(H * 0.048), 50);
+    } else if (N >= 3) {
+      activeSz = Math.min(Math.round(H * 0.055), 60);
+    }
+    const lh_act = activeSz * 1.38;
+    const paraGap = activeSz * 0.7;
+
+    let totalH = 0;
+    stanzaLines.forEach(line => {
+      const lineActiveSz = line.activeSz || activeSz;
+      const lh = lineActiveSz * 1.38;
+      const transSz = lineActiveSz * 0.60;
+      const lhTrans = transSz * 1.38;
+      const transGap = lineActiveSz * 0.3;
+
+      let lineH = line.wrapped.length * lh;
+      if (line.wrappedTrans && line.wrappedTrans.length > 0) {
+        lineH += transGap + (line.wrappedTrans.length * lhTrans);
+      }
+      line.calculatedHeight = lineH;
+      totalH += lineH;
+    });
+    totalH += (stanzaLines.length - 1) * paraGap;
+
+    let curY = -totalH / 2;
+    ctx.save();
+    ctx.translate(tx, H / 2);
+
+    stanzaLines.forEach((line, index) => {
+      const isLineActive = (startIndex + index) === activeIdx;
+      const lineOpacityMult = isLineActive ? 1.0 : 0.35;
+
+      ctx.save();
+      if (isLineActive) {
+        const lineElapsed = adjTime - line.time;
+        const scale = Math.min(1, 0.97 + lineElapsed * 0.15);
+        ctx.scale(scale, scale);
+      }
+
+      const lineActiveSz = line.activeSz || activeSz;
+      const lh = lineActiveSz * 1.38;
+      const transSz = lineActiveSz * 0.60;
+      const lhTrans = transSz * 1.38;
+      const transGap = lineActiveSz * 0.3;
+
+      const drawTextWithShadows = (text, y, fontStr, primaryColor, glowColor, opacityMult) => {
+        ctx.font = fontStr;
+        ctx.textAlign = textAlign;
+        ctx.textBaseline = 'middle';
+        ctx.globalAlpha = finalOpacity * lineOpacityMult * opacityMult;
+        
+        ctx.shadowColor = glowColor;
+        ctx.shadowBlur = isLineActive ? 15 : 0;
+        ctx.shadowOffsetY = 0;
+        ctx.fillStyle = primaryColor;
+        ctx.fillText(text, 0, y);
+
+        ctx.shadowColor = 'rgba(0, 0, 0, 0.8)';
+        ctx.shadowBlur = 10;
+        ctx.shadowOffsetY = 2;
+        ctx.fillText(text, 0, y);
+
+        ctx.shadowColor = 'transparent';
+        ctx.fillText(text, 0, y);
+      };
+
+      let segmentY = curY;
+      line.wrapped.forEach((seg) => {
+        segmentY += lh;
+        const wy = segmentY - lh + lineActiveSz * 0.5;
+        drawTextWithShadows(seg, wy, `800 ${lineActiveSz}px ${FONT}, sans-serif`, '#ffffff', 'rgba(255, 255, 255, 0.8)', 1.0);
+      });
+
+      if (line.wrappedTrans && line.wrappedTrans.length > 0) {
+        segmentY += transGap;
+        line.wrappedTrans.forEach((seg) => {
+          segmentY += lhTrans;
+          const wy = segmentY - lhTrans + transSz * 0.5;
+          drawTextWithShadows(seg, wy, `600 ${transSz}px ${FONT}, sans-serif`, '#ffffff', 'rgba(255, 255, 255, 0.6)', 0.90);
+        });
+      }
+
+      ctx.restore();
+      curY += line.calculatedHeight + paraGap;
+    });
+
+    ctx.restore();
+    return;
+  }
+
+  // Fallback / N=1 logic below
   let activeSz = Math.min(Math.round(H * 0.065), 72);
   
   if (activeIdx >= 0 && precomputedLyrics[activeIdx]) {
@@ -2446,6 +2594,7 @@ async function startCompile(isShort = false, shortStartTime = 0, isSlideshow = f
     resolution:     selectRes.value,
     fps:            selectFps.value,
     alignment:      selectAlign.value,
+    linesPerScreen: selectLinesPerScreen ? selectLinesPerScreen.value : '1',
     isShort:        isShort,
     shortStartTime: shortStartTime,
     isSlideshow:    isSlideshow,
@@ -3011,6 +3160,16 @@ selectAlign.addEventListener('change', () => {
   }
 });
 
+if (selectLinesPerScreen) {
+  selectLinesPerScreen.addEventListener('change', () => {
+    localStorage.setItem('noises_lyric_setting_lines_per_screen', selectLinesPerScreen.value);
+    if (S.track) {
+      precomputeLyricsLayout(canvas.width, canvas.height, selectAlign.value);
+      saveProjectState();
+    }
+  });
+}
+
 
 // Cancel render
 btnCancel.addEventListener('click', () => {
@@ -3373,6 +3532,10 @@ async function publishToYouTube(channel) {
 const savedAlign = localStorage.getItem('noises_lyric_setting_align');
 if (savedAlign && selectAlign) {
   selectAlign.value = savedAlign;
+}
+const savedLines = localStorage.getItem('noises_lyric_setting_lines_per_screen');
+if (savedLines && selectLinesPerScreen) {
+  selectLinesPerScreen.value = savedLines;
 }
 
 showView('studio');

@@ -986,7 +986,7 @@ app.get('/api/resolve', async (req, res) => {
 // GET /api/render  (SSE stream)
 // ══════════════════════════════════════════════════════════════
 app.get('/api/render', async (req, res) => {
-  const { id, videoUrl, title, artist, duration: durStr, lyrics: lyricsParam, artworkUrl: rawArtworkUrl, offset: offsetStr, resolution, fps, alignment, youtubeDuration, itunesDuration, isSlideshow: isSlideshowStr, slideshowIndices: slideshowIndicesStr, customAudioPath } = req.query;
+  const { id, videoUrl, title, artist, duration: durStr, lyrics: lyricsParam, artworkUrl: rawArtworkUrl, offset: offsetStr, resolution, fps, alignment, youtubeDuration, itunesDuration, isSlideshow: isSlideshowStr, slideshowIndices: slideshowIndicesStr, customAudioPath, linesPerScreen } = req.query;
   if (!id || !videoUrl) return res.status(400).end('Missing id or videoUrl');
 
   res.writeHead(200, {
@@ -1096,6 +1096,7 @@ app.get('/api/render', async (req, res) => {
       seoKeywords,
       youtubeDuration: parseFloat(youtubeDuration) || duration,
       itunesDuration: parseFloat(itunesDuration) || duration,
+      linesPerScreen: parseInt(linesPerScreen || '1', 10) || 1,
       progressCallback: pct => {
         // Map renderer 0–100 → SSE 18–97  (never goes backwards or reaches 100 prematurely)
         const mapped = 18 + Math.round(pct * 0.79);

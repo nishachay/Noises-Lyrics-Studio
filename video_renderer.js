@@ -181,7 +181,7 @@ function drawInterludeDots(ctx, x, y, time) {
 }
 
 // ΓöÇΓöÇ PRE-COMPUTE text wrapping and layout before render loop ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
-function precomputeWrappedLyrics(ctx, lyrics, fontSpec, maxWidth, defaultActiveSz) {
+function precomputeWrappedLyrics(ctx, lyrics, fontSpec, maxWidth, defaultActiveSz, linesPerScreen = 1, H = 720) {
   const wrapLine = (txt, fontStr) => {
     if (!txt) return [];
     ctx.font = fontStr;
@@ -200,8 +200,16 @@ function precomputeWrappedLyrics(ctx, lyrics, fontSpec, maxWidth, defaultActiveS
     return res;
   };
 
+  const N = linesPerScreen;
+  let baseActiveSz = defaultActiveSz;
+  if (N >= 4) {
+    baseActiveSz = Math.min(Math.round(H * 0.048), 50);
+  } else if (N >= 3) {
+    baseActiveSz = Math.min(Math.round(H * 0.055), 60);
+  }
+
   const wrapped = lyrics.map(line => {
-    let activeSz = defaultActiveSz;
+    let activeSz = baseActiveSz;
     const isHindi = /[\u0900-\u097F]/.test(line.text);
     if (isHindi) activeSz *= 1.25;
 
@@ -389,7 +397,7 @@ function drawAlbumPanel(ctx, img, title, artist, W, H, font, songTime, duration)
 
 
 // ΓöÇΓöÇ Scrolling Lyrics Panel ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
-function drawLyricsPanel(ctx, W, H, time, wrappedLyrics, font, alignment, duration, defaultActiveSz) {
+function drawLyricsPanel(ctx, W, H, time, wrappedLyrics, font, alignment, duration, defaultActiveSz, linesPerScreen = 1) {
   // We use the activeSz embedded in the active line.
   
   const curYOffset = H * 0.15;
@@ -465,6 +473,136 @@ function drawLyricsPanel(ctx, W, H, time, wrappedLyrics, font, alignment, durati
   if (showInterlude) {
     const interludeX = actualAlignment === 'left' ? (W * 0.48 + W * 0.22) : (W / 2);
     drawInterludeDots(ctx, interludeX, H / 2, time);
+    return;
+  }
+
+  if (linesPerScreen > 1) {
+    const N = linesPerScreen;
+    const stanzaIdx = Math.floor(activeIdx / N);
+    const startIndex = stanzaIdx * N;
+    const endIndex = Math.min(wrappedLyrics.length, startIndex + N);
+    const stanzaLines = wrappedLyrics.slice(startIndex, endIndex);
+
+    const stanzaStartTime = wrappedLyrics[startIndex] && typeof wrappedLyrics[startIndex].time === 'number' ? wrappedLyrics[startIndex].time : 0;
+    const nextStanzaStartTime = endIndex < wrappedLyrics.length && typeof wrappedLyrics[endIndex].time === 'number' ? wrappedLyrics[endIndex].time : Infinity;
+
+    const elapsed = adjTime - stanzaStartTime;
+    const timeLeft = nextStanzaStartTime - adjTime;
+
+    let stanzaOpacity = 1.0;
+    if (elapsed < 0.4) {
+      stanzaOpacity = elapsed / 0.4;
+    } else if (timeLeft < 0.4) {
+      stanzaOpacity = Math.max(0, timeLeft / 0.4);
+    }
+
+    const layoutAlpha = Math.max(0, Math.min(1, time) * Math.min(1, duration - time));
+    const finalOpacity = stanzaOpacity * layoutAlpha;
+
+    let activeSz = defaultActiveSz;
+    if (N >= 4) {
+      activeSz = Math.min(Math.round(H * 0.048), 50);
+    } else if (N >= 3) {
+      activeSz = Math.min(Math.round(H * 0.055), 60);
+    }
+    const lh_act = activeSz * 1.38;
+    const paraGap = activeSz * 0.7;
+
+    let totalH = 0;
+    stanzaLines.forEach((line) => {
+      const lineActiveSz = line.activeSz || activeSz;
+      const lh = lineActiveSz * 1.38;
+      const transSz = lineActiveSz * 0.60;
+      const lhTrans = transSz * 1.38;
+      const transGap = lineActiveSz * 0.3;
+
+      const segments = line.wrapped;
+      const transSegments = line.wrappedTrans || [];
+
+      let lineH = segments.length * lh;
+      if (transSegments.length > 0) {
+        lineH += transGap + (transSegments.length * lhTrans);
+      }
+      line.calculatedHeight = lineH;
+      totalH += lineH;
+
+      if (!line._renderCache) {
+        line._renderCache = createCanvas(W, lineH + 100);
+        const cctx = line._renderCache.getContext('2d');
+        const ccy = line._renderCache.height / 2;
+        const ccx = W / 2;
+
+        const drawShadowText = (text, y, fontStr, primaryColor, glowColor) => {
+          cctx.font = fontStr;
+          cctx.textAlign = textAlign;
+          cctx.textBaseline = 'middle';
+          
+          cctx.shadowColor = glowColor;
+          cctx.shadowBlur = 15;
+          cctx.shadowOffsetY = 0;
+          cctx.fillStyle = primaryColor;
+          cctx.fillText(text, ccx, y);
+
+          cctx.shadowColor = 'rgba(0, 0, 0, 0.8)';
+          cctx.shadowBlur = 10;
+          cctx.shadowOffsetY = 2;
+          cctx.fillText(text, ccx, y);
+
+          cctx.shadowColor = 'transparent';
+          cctx.fillText(text, ccx, y);
+        };
+
+        let curY = ccy - lineH / 2;
+        segments.forEach((seg) => {
+          curY += lh;
+          drawShadowText(seg, curY - lh + lineActiveSz * 0.5, `bold ${lineActiveSz}px "Plus Jakarta Sans", "Noto Sans Devanagari", "Noto Sans KR"`, '#ffffff', 'rgba(255, 255, 255, 0.8)');
+        });
+
+        if (transSegments.length > 0) {
+          curY += transGap;
+          transSegments.forEach((seg) => {
+            curY += lhTrans;
+            drawShadowText(seg, curY - lhTrans + transSz * 0.5, `600 ${transSz}px "Plus Jakarta Sans", "Noto Sans Devanagari", "Noto Sans KR"`, '#ffffff', 'rgba(255, 255, 255, 0.6)');
+          });
+        }
+      }
+    });
+
+    totalH += (stanzaLines.length - 1) * paraGap;
+
+    ctx.save();
+    const targetY = isVertical ? H * 0.45 : H / 2;
+    ctx.translate(tx, targetY);
+
+    let curY = -totalH / 2;
+
+    stanzaLines.forEach((line, index) => {
+      const isLineActive = (startIndex + index) === activeIdx;
+      const lineOpacityMult = isLineActive ? 1.0 : 0.35;
+
+      ctx.save();
+      let scale = 1.0;
+      if (isLineActive) {
+        const lineElapsed = adjTime - line.time;
+        scale = Math.min(1, 0.97 + lineElapsed * 0.15);
+      }
+
+      ctx.globalAlpha = finalOpacity * lineOpacityMult;
+      ctx.translate(-W/2, curY + line.calculatedHeight / 2 - line._renderCache.height / 2);
+      ctx.drawImage(
+        line._renderCache, 
+        0, 0, W, line._renderCache.height, 
+        (W - W * scale) / 2, 
+        (line._renderCache.height - line._renderCache.height * scale) / 2, 
+        W * scale, 
+        line._renderCache.height * scale
+      );
+      
+      ctx.restore();
+      curY += line.calculatedHeight + paraGap;
+    });
+
+    ctx.restore();
     return;
   }
 
@@ -795,6 +933,7 @@ function renderVideo({
   isShort = false,
   shortStartTime = 0,
   seoKeywords = [],
+  linesPerScreen = 1,
   progressCallback = () => {},
 }) {
   return new Promise(async (resolve, reject) => {
@@ -877,7 +1016,7 @@ function renderVideo({
 
       // ── Pre-compute wrapped lyrics ────────────────────────────
       ctx.font = `bold ${ACT_SZ}px "Plus Jakarta Sans", "Noto Sans Devanagari", "Noto Sans KR"`;
-      const wrappedLyrics = precomputeWrappedLyrics(ctx, adjustedLyrics, `bold ${ACT_SZ}px "Plus Jakarta Sans", "Noto Sans Devanagari", "Noto Sans KR"`, maxWidth, ACT_SZ);
+      const wrappedLyrics = precomputeWrappedLyrics(ctx, adjustedLyrics, `bold ${ACT_SZ}px "Plus Jakarta Sans", "Noto Sans Devanagari", "Noto Sans KR"`, maxWidth, ACT_SZ, linesPerScreen, H);
       console.log(`[Renderer] Pre-wrapped ${wrappedLyrics.length} lyric lines ✓`);
 
       // ── Save thumbnail & metadata ───────────────────────────────
@@ -1055,7 +1194,7 @@ function renderVideo({
           }
 
           // Lyrics panel static layout (auto-calculates activeIdx and fades inside)
-          drawLyricsPanel(ctx, W, H, songTime + appliedOffset, wrappedLyrics, FONT, alignment, duration, ACT_SZ);
+          drawLyricsPanel(ctx, W, H, songTime + appliedOffset, wrappedLyrics, FONT, alignment, duration, ACT_SZ, linesPerScreen);
         }
 
         // ── OUTRO ────────────────────────────────────────────────
