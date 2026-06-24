@@ -185,16 +185,19 @@ function precomputeWrappedLyrics(ctx, lyrics, fontSpec, maxWidth, defaultActiveS
   const wrapLine = (txt, fontStr) => {
     if (!txt) return [];
     ctx.font = fontStr;
-    const words = txt.split(' ');
+    const parts = txt.split(/\s*\/\s*/);
     const res = [];
-    let cur = '';
-    for (const w of words) {
-      const t = cur ? `${cur} ${w}` : w;
-      if (ctx.measureText(t).width <= maxWidth) { cur = t; }
-      else { if (cur) res.push(cur); cur = w; }
+    for (const part of parts) {
+      const words = part.split(' ');
+      let cur = '';
+      for (const w of words) {
+        const t = cur ? `${cur} ${w}` : w;
+        if (ctx.measureText(t).width <= maxWidth) { cur = t; }
+        else { if (cur) res.push(cur); cur = w; }
+      }
+      if (cur) res.push(cur);
     }
-    if (cur) res.push(cur);
-    return res.length ? res : [txt];
+    return res;
   };
 
   const wrapped = lyrics.map(line => {

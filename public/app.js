@@ -131,6 +131,8 @@ const btnTap       = $('btn-tap');
 const lyricsEditor = $('lyrics-editor');
 const editorFormat = $('editor-format');
 const btnApply     = $('btn-apply');
+const btnGroup2    = $('btn-group-2');
+const btnGroup4    = $('btn-group-4');
 const btnYtCaptions = $('btn-yt-captions');
 const syncOffsetEl = $('sync-offset');
 const offsetLabel  = $('offset-label');
@@ -657,20 +659,23 @@ function precomputeLyricsLayout(W, H, alignment) {
   const wrapLine = (txt, fontStr) => {
     if (!txt) return [];
     ctx.font = fontStr;
-    const words = txt.split(' ');
+    const parts = txt.split(/\s*\/\s*/);
     const res = [];
-    let cur = '';
-    for (const w of words) {
-      const t = cur ? `${cur} ${w}` : w;
-      if (ctx.measureText(t).width <= maxWidth) {
-        cur = t;
-      } else {
-        if (cur) res.push(cur);
-        cur = w;
+    for (const part of parts) {
+      const words = part.split(' ');
+      let cur = '';
+      for (const w of words) {
+        const t = cur ? `${cur} ${w}` : w;
+        if (ctx.measureText(t).width <= maxWidth) {
+          cur = t;
+        } else {
+          if (cur) res.push(cur);
+          cur = w;
+        }
       }
+      if (cur) res.push(cur);
     }
-    if (cur) res.push(cur);
-    return res.length ? res : [txt];
+    return res;
   };
 
   const wrapped = lyrics.map(line => {
@@ -2781,6 +2786,38 @@ if (btnClearTrans) {
       precomputeLyricsLayout(canvas.width, canvas.height, selectAlign.value);
     }
   });
+}
+
+// Group lyrics function
+function groupEditorLyrics(groupSize) {
+  const text = lyricsEditor.value;
+  if (!text.trim()) return;
+
+  // Split into lines, strip timestamps, filter empty
+  const lines = text.split(/\r?\n/)
+    .map(l => l.replace(/^\[\d+:\d+[.:]?\d*\]\s*/, '').trim())
+    .filter(Boolean);
+
+  if (lines.length === 0) return;
+
+  const grouped = [];
+  for (let i = 0; i < lines.length; i += groupSize) {
+    const chunk = lines.slice(i, i + groupSize);
+    grouped.push(chunk.join(' / '));
+  }
+
+  lyricsEditor.value = grouped.join('\n');
+  editorFormat.textContent = `Plain text (grouped ${groupSize}x — tap to sync)`;
+  editorFormat.className = 'editor-format';
+  
+  showToast(`Grouped lyrics into ${groupSize}-line blocks!`);
+}
+
+if (btnGroup2) {
+  btnGroup2.addEventListener('click', () => groupEditorLyrics(2));
+}
+if (btnGroup4) {
+  btnGroup4.addEventListener('click', () => groupEditorLyrics(4));
 }
 
 // Editor apply — read textarea NOW, clear old lyrics, apply new ones, switch to Sync tab
