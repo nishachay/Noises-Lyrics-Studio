@@ -1815,31 +1815,32 @@ function populateLyricsSource() {
 }
 
 function autoSelectBestLyrics() {
-  if (!S.lyricsRecords.length) {
-    lyricsSource.value = 'none';
-    setLyrics([], 'none', '');
+  const bestIdx = S.lyricsRecords.findIndex(r => r.syncedLyrics);
+  
+  if (bestIdx >= 0) {
+    // We have synced lyrics from LRCLIB! Use them directly.
+    lyricsSource.value = bestIdx;
+    loadLyricsRecord(S.lyricsRecords[bestIdx]);
+  } else {
+    // We do NOT have synced lyrics from LRCLIB.
+    // If there are plain lyrics, load them as temporary fallback first
+    if (S.lyricsRecords.length) {
+      lyricsSource.value = 0;
+      loadLyricsRecord(S.lyricsRecords[0]);
+    } else {
+      lyricsSource.value = 'none';
+      setLyrics([], 'none', '');
+    }
 
-    // Auto-switch to Edit Raw tab
-    const editBtn = document.querySelector('.tab-btn[data-tab="tab-edit"]');
-    if (editBtn) editBtn.click();
-
-    // If we have a YouTube video loaded, auto-fetch captions silently
+    // Now, trigger YouTube captions fetch in the background to see if we can get synced lyrics!
     if (S.track?.youtubeId) {
       fetchAndApplyCaptions({ auto: true });
-    } else {
-      // No video either — just pulse the editor so user knows to paste
-      const editor = document.getElementById('lyrics-editor');
-      if (editor) {
-        editor.classList.add('pulse-attention');
-        setTimeout(() => editor.classList.remove('pulse-attention'), 3000);
-      }
+    } else if (!S.lyricsRecords.length) {
+      // Auto-switch to Edit Raw tab only if we have absolutely nothing
+      const editBtn = document.querySelector('.tab-btn[data-tab="tab-edit"]');
+      if (editBtn) editBtn.click();
     }
-    return;
   }
-  const bestIdx = S.lyricsRecords.findIndex(r => r.syncedLyrics);
-  const targetIdx = bestIdx >= 0 ? bestIdx : 0;
-  lyricsSource.value = targetIdx;
-  loadLyricsRecord(S.lyricsRecords[targetIdx]);
 }
 
 function loadLyricsRecord(r) {
@@ -2873,43 +2874,52 @@ async function fetchAndApplyCaptions(opts = {}) {
     S.ytCaptionsLRC = lrcContent;
     S.ytCaptionsList = data.lyrics;
 
-    // Apply the captions immediately and set as active source
-    setLyrics(data.lyrics, 'synced', lrcContent);
+    // Check if the user changed the source dropdown while we were loading in background
+    if (lyricsSource.value === 'loading') {
+      // Apply the captions immediately and set as active source
+      setLyrics(data.lyrics, 'synced', lrcContent);
 
-    // Update Lyrics Source dropdown
-    lyricsSource.disabled = false;
-    populateLyricsSource();
-    lyricsSource.value = 'yt-captions';
+      // Update Lyrics Source dropdown
+      lyricsSource.disabled = false;
+      populateLyricsSource();
+      lyricsSource.value = 'yt-captions';
 
-    if (data.source === 'lyrics_search') {
-      setStatus(`✓ ${data.lyrics.length} lines from lyrics video — applied`, 'ok');
-      showToast(`Used lyrics video captions: "${data.sourceTitle}"`);
+      if (data.source === 'lyrics_search') {
+        setStatus(`✓ ${data.lyrics.length} lines from lyrics video — applied`, 'ok');
+        showToast(`Used lyrics video captions: "${data.sourceTitle}"`);
+      } else {
+        setStatus(`✓ ${data.lyrics.length} caption lines loaded — applied`, 'ok');
+      }
+
+      lyricsEditor.placeholder = 'Paste LRC lyrics or plain text here…';
+      lyricsEditor.classList.add('pulse-attention');
+      setTimeout(() => lyricsEditor.classList.remove('pulse-attention'), 2000);
+
+      // Switch to Sync tab so user sees the timestamped lyrics ready to play!
+      const syncBtn = document.querySelector('.tab-btn[data-tab="tab-sync"]');
+      if (syncBtn) syncBtn.click();
+
+      saveProjectState();
     } else {
-      setStatus(`✓ ${data.lyrics.length} caption lines loaded — applied`, 'ok');
+      // User changed source while loading. Just update dropdown options in case they want to switch to it later
+      lyricsSource.disabled = false;
+      populateLyricsSource();
     }
-
-    lyricsEditor.placeholder = 'Paste LRC lyrics or plain text here…';
-    lyricsEditor.classList.add('pulse-attention');
-    setTimeout(() => lyricsEditor.classList.remove('pulse-attention'), 2000);
-
-    // Switch to Sync tab so user sees the timestamped lyrics ready to play!
-    const syncBtn = document.querySelector('.tab-btn[data-tab="tab-sync"]');
-    if (syncBtn) syncBtn.click();
-
-    saveProjectState();
 
   } catch (err) {
     S.ytCaptionsSearching = false;
     lyricsSource.disabled = false;
     populateLyricsSource();
     
-    // Restore previous selection if possible, otherwise none
-    if (S.lyricsRecords.length) {
-      lyricsSource.value = '0';
-      loadLyricsByIdx('0');
-    } else {
-      lyricsSource.value = 'none';
-      setLyrics([], 'none', '');
+    // Only restore/reset if the dropdown was still showing the loading state
+    if (lyricsSource.value === 'loading') {
+      if (S.lyricsRecords.length) {
+        lyricsSource.value = '0';
+        loadLyricsByIdx('0');
+      } else {
+        lyricsSource.value = 'none';
+        setLyrics([], 'none', '');
+      }
     }
 
     lyricsEditor.placeholder = 'Paste LRC lyrics or plain text lyrics here…';
