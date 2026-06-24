@@ -380,8 +380,7 @@ async function fetchYouTubeCaptions(videoId) {
 // Parse WebVTT caption format into {time, text} objects (same format as LRC)
 function parseVTT(vtt) {
   const lines = vtt.split(/\r?\n/);
-  const result = [];
-  const seen = new Set(); // deduplicate repeated lines (VTT often has overlapping segments)
+  const rawParsed = [];
 
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i].trim();
@@ -389,7 +388,7 @@ function parseVTT(vtt) {
     const tc = line.match(/^(\d{2}):(\d{2}):(\d{2})\.(\d{3})\s*-->/);
     if (!tc) continue;
 
-    const time = parseInt(tc[1]) * 3600 + parseInt(tc[2]) * 60 + parseInt(tc[3]) + parseInt(tc[4]) / 1000;
+    const time = parseInt(tc[1], 10) * 3600 + parseInt(tc[2], 10) * 60 + parseInt(tc[3], 10) + parseInt(tc[4], 10) / 1000;
 
     // Collect text lines after the timecode
     let text = '';
@@ -404,13 +403,122 @@ function parseVTT(vtt) {
       j++;
     }
 
-    if (text && !seen.has(text)) {
-      seen.add(text);
-      result.push({ time: Math.round(time * 100) / 100, text });
+    if (text) {
+      rawParsed.push({ time: Math.round(time * 100) / 100, text });
     }
   }
 
-  return result.sort((a, b) => a.time - b.time);
+  // Sort chronologically
+  rawParsed.sort((a, b) => a.time - b.time);
+
+  // Helper to clean tags, speaker marks, and sound descriptors
+  const cleanText = (str) => {
+    return str
+      .replace(/^>>\s*/g, '')
+      .replace(/>>\s*/g, ' ')
+      .replace(/\[[^\]]+\]/g, '')
+      .replace(/\([^)]+\)/g, '')
+      .replace(/\s+/g, ' ')
+      .trim();
+  };
+
+  const splitIntoSentences = (str) => {
+    if (!str) return [];
+    // Split on . ? ! followed by a space and capital letter or >>
+    // Also split on >> if it appears in the middle
+    const rawSegments = str.split(/(?<=[.!?])\s+(?=[A-Za-z>])|(?<=.)\s*>>/g);
+    return rawSegments.map(s => s.trim()).filter(Boolean);
+  };
+
+  // Step 1: Split, clean, and filter empty/sound-only lines
+  const cleaned = [];
+  for (const item of rawParsed) {
+    const segments = splitIntoSentences(item.text);
+    segments.forEach((seg, idx) => {
+      const txt = cleanText(seg);
+      if (txt) {
+        // Estimate small offset (+0.05s per split segment) to preserve order in next steps
+        cleaned.push({ time: item.time + (idx * 0.05), text: txt });
+      }
+    });
+  }
+
+  // Step 2: Deduplicate scrolling build-ups (Prefix / Substring check)
+  const noPrefixes = [];
+  for (let i = 0; i < cleaned.length; i++) {
+    const current = cleaned[i];
+    let isDupe = false;
+    // Look ahead up to 8 lines or 6 seconds
+    for (let j = i + 1; j < Math.min(cleaned.length, i + 10); j++) {
+      const next = cleaned[j];
+      if (next.time - current.time <= 6.0 && next.text.startsWith(current.text)) {
+        isDupe = true;
+        break;
+      }
+    }
+    if (!isDupe) {
+      noPrefixes.push(current);
+    }
+  }
+
+  // Step 3: Deduplicate trailing residues (Suffix check)
+  const noSuffixes = [];
+  for (let i = 0; i < noPrefixes.length; i++) {
+    const current = noPrefixes[i];
+    let isDupe = false;
+    // Look back up to 5 lines
+    for (let j = Math.max(0, i - 5); j < i; j++) {
+      const prev = noPrefixes[j];
+      if (current.text.length < prev.text.length && prev.text.endsWith(current.text)) {
+        isDupe = true;
+        break;
+      }
+    }
+    if (!isDupe) {
+      noSuffixes.push(current);
+    }
+  }
+
+  // Step 4: Overlap merging of split scroll sentences
+  const findOverlap = (str1, str2) => {
+    const minOverlap = 5;
+    const maxLen = Math.min(str1.length, str2.length);
+    for (let len = maxLen; len >= minOverlap; len--) {
+      if (str1.endsWith(str2.slice(0, len))) {
+        return len;
+      }
+    }
+    return 0;
+  };
+
+  const merged = [];
+  for (let i = 0; i < noSuffixes.length; i++) {
+    const current = noSuffixes[i];
+    if (merged.length === 0) {
+      merged.push({ ...current });
+      continue;
+    }
+
+    const last = merged[merged.length - 1];
+    const overlapLen = findOverlap(last.text, current.text);
+    
+    if (overlapLen > 0 && current.time - last.time <= 8.0) {
+      last.text = last.text + current.text.slice(overlapLen);
+    } else {
+      // If they don't overlap, but last ends with current or current is a duplicate, skip it
+      if (last.text.includes(current.text) && current.time - last.time <= 5.0) {
+        // skip
+      } else {
+        merged.push({ ...current });
+      }
+    }
+  }
+
+  // Final trim and format cleanup
+  return merged.map(item => ({
+    time: Math.round(item.time * 100) / 100,
+    text: item.text.trim().replace(/\s+/g, ' ')
+  })).filter(item => item.text.length > 0);
 }
 
 module.exports = {
