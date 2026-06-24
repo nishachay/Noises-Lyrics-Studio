@@ -792,8 +792,12 @@ function drawLyrics(W, H, songTime) {
   // Find active line index
   let activeIdx = -1;
   for (let i = 0; i < precomputedLyrics.length; i++) {
-    if (precomputedLyrics[i].time <= adjTime) activeIdx = i;
-    else break;
+    const t = precomputedLyrics[i].time;
+    if (t !== null && t !== undefined && t <= adjTime) {
+      activeIdx = i;
+    } else {
+      break;
+    }
   }
 
   const alignment = selectAlign.value;
@@ -839,9 +843,14 @@ function drawLyrics(W, H, songTime) {
       }
     }
   } else {
-    const timeUntilFirst = precomputedLyrics[0].time - adjTime;
-    if (timeUntilFirst > 2.0) {
-      showInterlude = true;
+    const firstTime = precomputedLyrics[0] ? precomputedLyrics[0].time : null;
+    if (firstTime !== null && firstTime !== undefined) {
+      const timeUntilFirst = firstTime - adjTime;
+      if (timeUntilFirst > 2.0) {
+        showInterlude = true;
+      } else {
+        isBlank = true;
+      }
     } else {
       isBlank = true;
     }

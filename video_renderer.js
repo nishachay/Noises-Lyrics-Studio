@@ -404,8 +404,12 @@ function drawLyricsPanel(ctx, W, H, time, wrappedLyrics, font, alignment, durati
   // Find active line index
   let activeIdx = -1;
   for (let i = 0; i < wrappedLyrics.length; i++) {
-    if (wrappedLyrics[i].time <= adjTime) activeIdx = i;
-    else break;
+    const t = wrappedLyrics[i].time;
+    if (t !== null && t !== undefined && t <= adjTime) {
+      activeIdx = i;
+    } else {
+      break;
+    }
   }
 
   const tx = actualAlignment === 'left' ? (W * 0.48) : (W / 2);
@@ -440,9 +444,14 @@ function drawLyricsPanel(ctx, W, H, time, wrappedLyrics, font, alignment, durati
       }
     }
   } else {
-    const timeUntilFirst = wrappedLyrics[0].time - adjTime;
-    if (timeUntilFirst > 2.0) {
-      showInterlude = true;
+    const firstTime = wrappedLyrics[0] ? wrappedLyrics[0].time : null;
+    if (firstTime !== null && firstTime !== undefined) {
+      const timeUntilFirst = firstTime - adjTime;
+      if (timeUntilFirst > 2.0) {
+        showInterlude = true;
+      } else {
+        isBlank = true;
+      }
     } else {
       isBlank = true;
     }
