@@ -628,8 +628,13 @@ let precomputedLyrics = [];
 
 // ΓöÇΓöÇ Precompute wrapped lyrics and layout coordinates ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 function precomputeLyricsLayout(W, H, alignment) {
-  // Sort a copy chronologically for rendering, keeping S.lyrics in its natural text order
-  const lyrics = [...S.lyrics].sort((a, b) => (a.time || 0) - (b.time || 0));
+  // During tap-sync, preserve text order for untimed lines (null time = not yet stamped).
+  // Sort chronologically but keep null-time lines in their original relative position at the end.
+  const indexed = S.lyrics.map((l, i) => ({ ...l, _i: i }));
+  const hasTimes = indexed.every(l => l.time !== null && l.time !== undefined);
+  const lyrics = hasTimes
+    ? [...indexed].sort((a, b) => a.time - b.time)
+    : indexed; // preserve insertion order when mid-tap
   if (!lyrics || !lyrics.length) {
     precomputedLyrics = [];
     return;
@@ -2170,13 +2175,15 @@ function handleTap() {
 function resetTimings() {
   if (!confirm('Reset all timing stamps?')) return;
   S.lyrics.forEach(l => { l.time = null; });
-  S.tapLines.forEach(l => { l.time = null; });
   S.tapIdx = 0;
   S.lyricsType = 'none';
+  // Rebuild tapLines from reset lyrics so they stay in sync
+  S.tapLines = S.lyrics.map(l => ({ text: l.text, time: null }));
   lyricsEditor.value = S.lyrics.map(l => l.text).join('\n');
-  editorFormat.textContent = 'No timestamps';
+  editorFormat.textContent = 'No timestamps — tap Apply or use Tap Sync';
   editorFormat.className = 'editor-format';
   exitTapMode();
+  precomputeLyricsLayout(canvas.width, canvas.height, selectAlign.value);
   renderLyricsList();
   saveProjectState();
 }
@@ -2899,21 +2906,11 @@ document.querySelectorAll('.btn-copy').forEach(btn => {
   });
 });
 
-// Keyboard global
+// Ctrl+K opens search
 document.addEventListener('keydown', e => {
-  // Ctrl+K ΓåÆ open search
   if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
     e.preventDefault();
     openSearch();
-    return;
-  }
-  // Spacebar ΓåÆ tap sync (when in tap mode and not in input)
-  if (e.code === 'Space' && S.tapMode) {
-    const tag = document.activeElement?.tagName;
-    if (tag !== 'INPUT' && tag !== 'TEXTAREA' && tag !== 'SELECT') {
-      e.preventDefault();
-      handleTap();
-    }
   }
 });
 
@@ -3404,7 +3401,12 @@ document.addEventListener('keydown', (e) => {
   if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.isContentEditable) return;
 
   if (e.code === 'Space') {
-    e.preventDefault(); // Stop focused buttons from being clicked
+    e.preventDefault();
+    // In tap mode, Space stamps the current line — do NOT toggle play
+    if (S.tapMode) {
+      handleTap();
+      return;
+    }
     togglePlay();
     if (S.isPlaying) {
       flashIndicator('<svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>');
@@ -3421,12 +3423,10 @@ document.addEventListener('keydown', (e) => {
     flashIndicator('-5s');
   } else if (e.code === 'ArrowUp') {
     e.preventDefault();
-    audio.volume = Math.min(1, audio.volume + 0.1);
-    flashIndicator(`Vol: ${Math.round(audio.volume * 100)}%`);
+    if (audio) { audio.volume = Math.min(1, audio.volume + 0.1); flashIndicator(`Vol: ${Math.round(audio.volume * 100)}%`); }
   } else if (e.code === 'ArrowDown') {
     e.preventDefault();
-    audio.volume = Math.max(0, audio.volume - 0.1);
-    flashIndicator(`Vol: ${Math.round(audio.volume * 100)}%`);
+    if (audio) { audio.volume = Math.max(0, audio.volume - 0.1); flashIndicator(`Vol: ${Math.round(audio.volume * 100)}%`); }
   } else if (e.ctrlKey && e.code === 'Enter') {
     e.preventDefault();
     const btnCompile = document.getElementById('btn-compile');
