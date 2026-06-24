@@ -2758,6 +2758,7 @@ btnApply.addEventListener('click', () => {
 });
 
 // YT Captions — fetch auto-generated captions from YouTube and load into editor
+// Falls back to searching "[title] [artist] lyrics" if primary video has no captions
 if (btnYtCaptions) {
   btnYtCaptions.addEventListener('click', async () => {
     const videoId = S.track?.youtubeId;
@@ -2765,18 +2766,35 @@ if (btnYtCaptions) {
       alert('No YouTube video loaded. Search for a song first.');
       return;
     }
-    const origText = btnYtCaptions.innerHTML;
+    const origHTML = btnYtCaptions.innerHTML;
     btnYtCaptions.disabled = true;
-    btnYtCaptions.textContent = 'Fetching...';
+    btnYtCaptions.textContent = 'Searching…';
     try {
-      const res = await fetch(`/api/captions?videoId=${encodeURIComponent(videoId)}`);
+      const title  = encodeURIComponent(S.track?.title  || '');
+      const artist = encodeURIComponent(S.track?.artist || '');
+      const res  = await fetch(`/api/captions?videoId=${encodeURIComponent(videoId)}&title=${title}&artist=${artist}`);
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'No captions found');
-      // Convert to plain text lines (one per line) — user will tap-sync them
+
+      // Convert to plain text — one line per lyric — user tap-syncs them
       const lines = data.lyrics.map(l => l.text).join('\n');
       lyricsEditor.value = lines;
-      editorFormat.textContent = `${data.lyrics.length} caption lines — click Apply`;
-      editorFormat.className = 'editor-format';
+
+      // Tell the user where the captions came from
+      if (data.source === 'lyrics_search') {
+        editorFormat.textContent = `${data.lyrics.length} lines from lyrics video — click Apply`;
+        editorFormat.className = 'editor-format';
+        // Small non-intrusive toast instead of alert
+        const toast = document.createElement('div');
+        toast.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#1a1a2e;border:1px solid rgba(255,255,255,0.15);color:#fff;padding:8px 16px;border-radius:8px;font-size:12px;z-index:9999;pointer-events:none;opacity:1;transition:opacity 0.4s;';
+        toast.textContent = `⚠ Original video had no captions — using: "${data.sourceTitle}"`;
+        document.body.appendChild(toast);
+        setTimeout(() => { toast.style.opacity = '0'; setTimeout(() => toast.remove(), 400); }, 4000);
+      } else {
+        editorFormat.textContent = `${data.lyrics.length} caption lines — click Apply`;
+        editorFormat.className = 'editor-format ok';
+      }
+
       // Pulse textarea to draw attention
       lyricsEditor.classList.add('pulse-attention');
       setTimeout(() => lyricsEditor.classList.remove('pulse-attention'), 2000);
@@ -2784,7 +2802,7 @@ if (btnYtCaptions) {
       alert(`Could not fetch captions: ${err.message}`);
     } finally {
       btnYtCaptions.disabled = false;
-      btnYtCaptions.innerHTML = origText;
+      btnYtCaptions.innerHTML = origHTML;
     }
   });
 }

@@ -816,25 +816,59 @@ app.get('/api/lyrics', async (req, res) => {
 });
 
 // ══════════════════════════════════════════════════════════════
-// GET /api/captions?videoId=xxx
-// Fetches YouTube auto-generated captions via yt-dlp and returns
-// an array of { time, text } objects (same format as synced lyrics)
+// GET /api/captions?videoId=xxx&title=xxx&artist=xxx
+// 1. Try the matched video first
+// 2. If no captions, search YouTube for "[title] [artist] lyrics"
+//    and try the top 3 results until one has captions
 // ══════════════════════════════════════════════════════════════
 app.get('/api/captions', async (req, res) => {
-  const { videoId } = req.query;
+  const { videoId, title, artist } = req.query;
   if (!videoId) return res.status(400).json({ error: 'Missing videoId' });
+
   try {
-    console.log(`[Captions API] Fetching captions for: ${videoId}`);
-    const lyrics = await fetchYouTubeCaptions(videoId);
-    if (!lyrics || lyrics.length === 0) {
-      return res.status(404).json({ error: 'No captions available for this video' });
+    // ── Step 1: Try the primary matched video ──────────────────
+    console.log(`[Captions] Trying primary video: ${videoId}`);
+    let lyrics = await fetchYouTubeCaptions(videoId);
+    if (lyrics && lyrics.length > 0) {
+      return res.json({ lyrics, source: 'primary', sourceId: videoId });
     }
-    res.json({ lyrics });
+    console.log(`[Captions] Primary video has no captions.`);
+
+    // ── Step 2: If title+artist provided, search for a lyrics video ──
+    if (!title || !artist) {
+      return res.status(404).json({
+        error: 'No captions on this video. Provide title & artist so we can search for a lyrics video.'
+      });
+    }
+
+    const query = `${title} ${artist} lyrics`;
+    console.log(`[Captions] Searching YouTube for: "${query}"`);
+    const results = await searchYoutube(query);
+
+    if (!results || results.length === 0) {
+      return res.status(404).json({ error: 'No captions found and no lyrics videos found on YouTube.' });
+    }
+
+    // Try up to top 3 results, skip the original video
+    const candidates = results.filter(r => r.id !== videoId).slice(0, 3);
+    for (const video of candidates) {
+      console.log(`[Captions] Trying lyrics video: ${video.id} — "${video.title}"`);
+      lyrics = await fetchYouTubeCaptions(video.id);
+      if (lyrics && lyrics.length > 0) {
+        return res.json({ lyrics, source: 'lyrics_search', sourceId: video.id, sourceTitle: video.title });
+      }
+    }
+
+    return res.status(404).json({
+      error: 'No captions found on the matched video or any lyrics video. Try pasting lyrics manually.'
+    });
+
   } catch (err) {
     console.error('[Captions API] Error:', err.message);
     res.status(500).json({ error: err.message });
   }
 });
+
 
 // ══════════════════════════════════════════════════════════════
 // GET /api/lyrics-search
