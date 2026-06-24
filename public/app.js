@@ -1775,15 +1775,21 @@ function autoSelectBestLyrics() {
   if (!S.lyricsRecords.length) {
     lyricsSource.value = 'none';
     setLyrics([], 'none', '');
-    
-    // Auto-switch to Edit Raw tab and pulse it
+
+    // Auto-switch to Edit Raw tab
     const editBtn = document.querySelector('.tab-btn[data-tab="tab-edit"]');
     if (editBtn) editBtn.click();
-    
-    const editor = document.getElementById('lyrics-editor');
-    if (editor) {
-      editor.classList.add('pulse-attention');
-      setTimeout(() => editor.classList.remove('pulse-attention'), 3000);
+
+    // If we have a YouTube video loaded, auto-fetch captions silently
+    if (S.track?.youtubeId) {
+      fetchAndApplyCaptions({ auto: true });
+    } else {
+      // No video either — just pulse the editor so user knows to paste
+      const editor = document.getElementById('lyrics-editor');
+      if (editor) {
+        editor.classList.add('pulse-attention');
+        setTimeout(() => editor.classList.remove('pulse-attention'), 3000);
+      }
     }
     return;
   }
@@ -2129,25 +2135,36 @@ function handleTap() {
   if (S.tapIdx >= S.tapLines.length) return;
 
   const cur = audio.currentTime || 0;
-  S.tapLines[S.tapIdx].time = Math.max(0, cur - S.syncOffset);
+  const stampedTime = Math.max(0, Math.round((cur - S.syncOffset) * 100) / 100);
+  S.tapLines[S.tapIdx].time = stampedTime;
+
+  // ── KEY FIX: write stamped time back into S.lyrics immediately so the
+  //    canvas preview reflects each tap in real-time ──────────────────────
+  if (S.tapIdx < S.lyrics.length) {
+    S.lyrics[S.tapIdx].time = stampedTime;
+    S.lyricsType = 'synced';
+  }
   S.tapIdx++;
 
   if (S.tapIdx >= S.tapLines.length) {
+    // All lines tapped — sort and finalise
     const sorted = [...S.tapLines].sort((a, b) => (a.time || 0) - (b.time || 0));
     S.lyrics = sorted;
     S.lyricsType = 'synced';
     lyricsEditor.value = lyricsToLRC(sorted);
-    editorFormat.textContent = 'Synced LRC';
+    editorFormat.textContent = 'Synced LRC ✓';
     editorFormat.className = 'editor-format ok';
     exitTapMode();
-    precomputeLyricsLayout(canvas.width, canvas.height, selectAlign.value);
-    saveProjectState();
   } else {
-    // Save intermediate tap sync data too!
-    saveProjectState();
+    // Partial — update editor preview with what we have so far
+    const partial = [...S.tapLines].sort((a, b) => (a.time || 0) - (b.time || 0));
+    lyricsEditor.value = lyricsToLRC(partial);
   }
 
+  // Recompute preview so canvas shows the newly stamped line
+  precomputeLyricsLayout(canvas.width, canvas.height, selectAlign.value);
   renderLyricsList();
+  saveProjectState();
 }
 
 function resetTimings() {
@@ -2757,54 +2774,74 @@ btnApply.addEventListener('click', () => {
   if (syncBtn) syncBtn.click();
 });
 
-// YT Captions — fetch auto-generated captions from YouTube and load into editor
-// Falls back to searching "[title] [artist] lyrics" if primary video has no captions
-if (btnYtCaptions) {
-  btnYtCaptions.addEventListener('click', async () => {
-    const videoId = S.track?.youtubeId;
-    if (!videoId) {
-      alert('No YouTube video loaded. Search for a song first.');
-      return;
+// ── Shared caption fetch function ─────────────────────────────────────────────
+// opts.auto = true  → silent background fetch (no alert on error, show status in editor)
+// opts.auto = false → manual button click (show alerts)
+async function fetchAndApplyCaptions(opts = {}) {
+  const { auto = false } = opts;
+  const videoId = S.track?.youtubeId;
+  if (!videoId) return;
+
+  // Show status in editor so user knows what's happening
+  const setStatus = (msg, cls = '') => {
+    editorFormat.textContent = msg;
+    editorFormat.className   = `editor-format${cls ? ' ' + cls : ''}`;
+  };
+
+  if (btnYtCaptions) { btnYtCaptions.disabled = true; btnYtCaptions.textContent = '⏳ Searching…'; }
+  setStatus('🔍 Searching YouTube for captions…');
+  if (auto) {
+    // Show placeholder message so user knows something is happening
+    lyricsEditor.placeholder = 'Searching YouTube for captions… this may take 10–20 seconds.';
+  }
+
+  try {
+    const title  = encodeURIComponent(S.track?.title  || '');
+    const artist = encodeURIComponent(S.track?.artist || '');
+    const res  = await fetch(`/api/captions?videoId=${encodeURIComponent(videoId)}&title=${title}&artist=${artist}`);
+    const data = await res.json();
+
+    if (!res.ok) throw new Error(data.error || 'No captions found');
+
+    // Load captions as plain text → ready for tap-sync
+    const lines = data.lyrics.map(l => l.text).join('\n');
+    lyricsEditor.value = lines;
+    lyricsEditor.placeholder = 'Paste LRC lyrics or plain text here…';
+
+    if (data.source === 'lyrics_search') {
+      setStatus(`✓ ${data.lyrics.length} lines from lyrics video — tap Apply to use`);
+      showToast(`Used lyrics video captions: "${data.sourceTitle}"`);
+    } else {
+      setStatus(`✓ ${data.lyrics.length} caption lines loaded — tap Apply to use`, 'ok');
     }
-    const origHTML = btnYtCaptions.innerHTML;
-    btnYtCaptions.disabled = true;
-    btnYtCaptions.textContent = 'Searching…';
-    try {
-      const title  = encodeURIComponent(S.track?.title  || '');
-      const artist = encodeURIComponent(S.track?.artist || '');
-      const res  = await fetch(`/api/captions?videoId=${encodeURIComponent(videoId)}&title=${title}&artist=${artist}`);
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'No captions found');
 
-      // Convert to plain text — one line per lyric — user tap-syncs them
-      const lines = data.lyrics.map(l => l.text).join('\n');
-      lyricsEditor.value = lines;
+    lyricsEditor.classList.add('pulse-attention');
+    setTimeout(() => lyricsEditor.classList.remove('pulse-attention'), 2000);
 
-      // Tell the user where the captions came from
-      if (data.source === 'lyrics_search') {
-        editorFormat.textContent = `${data.lyrics.length} lines from lyrics video — click Apply`;
-        editorFormat.className = 'editor-format';
-        // Small non-intrusive toast instead of alert
-        const toast = document.createElement('div');
-        toast.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#1a1a2e;border:1px solid rgba(255,255,255,0.15);color:#fff;padding:8px 16px;border-radius:8px;font-size:12px;z-index:9999;pointer-events:none;opacity:1;transition:opacity 0.4s;';
-        toast.textContent = `⚠ Original video had no captions — using: "${data.sourceTitle}"`;
-        document.body.appendChild(toast);
-        setTimeout(() => { toast.style.opacity = '0'; setTimeout(() => toast.remove(), 400); }, 4000);
-      } else {
-        editorFormat.textContent = `${data.lyrics.length} caption lines — click Apply`;
-        editorFormat.className = 'editor-format ok';
-      }
-
-      // Pulse textarea to draw attention
-      lyricsEditor.classList.add('pulse-attention');
-      setTimeout(() => lyricsEditor.classList.remove('pulse-attention'), 2000);
-    } catch (err) {
-      alert(`Could not fetch captions: ${err.message}`);
-    } finally {
+  } catch (err) {
+    lyricsEditor.placeholder = 'Paste LRC lyrics or plain text lyrics here…';
+    setStatus('No captions found — paste lyrics manually');
+    if (!auto) alert(`Could not fetch captions: ${err.message}`);
+  } finally {
+    if (btnYtCaptions) {
       btnYtCaptions.disabled = false;
-      btnYtCaptions.innerHTML = origHTML;
+      btnYtCaptions.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:4px;"><polygon points="5 3 19 12 5 21 5 3"/></svg>YT Captions`;
     }
-  });
+  }
+}
+
+// Helper: small fade-out toast
+function showToast(msg) {
+  const t = document.createElement('div');
+  t.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#1a1a2e;border:1px solid rgba(255,255,255,0.15);color:#ccc;padding:8px 16px;border-radius:8px;font-size:12px;z-index:9999;pointer-events:none;transition:opacity 0.5s;';
+  t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(() => { t.style.opacity = '0'; setTimeout(() => t.remove(), 500); }, 4000);
+}
+
+// YT Captions button — manual retry
+if (btnYtCaptions) {
+  btnYtCaptions.addEventListener('click', () => fetchAndApplyCaptions({ auto: false }));
 }
 
 // Sync offset
