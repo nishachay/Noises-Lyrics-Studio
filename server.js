@@ -816,6 +816,27 @@ app.get('/api/lyrics', async (req, res) => {
 });
 
 // ══════════════════════════════════════════════════════════════
+// GET /api/captions?videoId=xxx
+// Fetches YouTube auto-generated captions via yt-dlp and returns
+// an array of { time, text } objects (same format as synced lyrics)
+// ══════════════════════════════════════════════════════════════
+app.get('/api/captions', async (req, res) => {
+  const { videoId } = req.query;
+  if (!videoId) return res.status(400).json({ error: 'Missing videoId' });
+  try {
+    console.log(`[Captions API] Fetching captions for: ${videoId}`);
+    const lyrics = await fetchYouTubeCaptions(videoId);
+    if (!lyrics || lyrics.length === 0) {
+      return res.status(404).json({ error: 'No captions available for this video' });
+    }
+    res.json({ lyrics });
+  } catch (err) {
+    console.error('[Captions API] Error:', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ══════════════════════════════════════════════════════════════
 // GET /api/lyrics-search
 // ══════════════════════════════════════════════════════════════
 app.get('/api/lyrics-search', async (req, res) => {

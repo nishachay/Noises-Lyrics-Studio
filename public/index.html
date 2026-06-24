@@ -301,9 +301,14 @@
       <div id="tab-edit" class="tab-pane hidden">
         <div class="editor-header">
           <span id="editor-format" class="editor-format">Format: LRC (Synced)</span>
-          <button id="btn-apply" class="btn-action">Apply</button>
+          <div style="display:flex;gap:6px;align-items:center;">
+            <button id="btn-yt-captions" class="btn-action" title="Fetch auto-captions from the loaded YouTube video" style="background:rgba(255,50,50,0.15);border-color:rgba(255,80,80,0.35);display:none;">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:4px;"><polygon points="5 3 19 12 5 21 5 3"/></svg>YT Captions
+            </button>
+            <button id="btn-apply" class="btn-action">Apply</button>
+          </div>
         </div>
-        <textarea id="lyrics-editor" class="code-editor" spellcheck="false" autocomplete="off" placeholder="Paste LRC lyrics or plain text lyrics here..."></textarea>
+        <textarea id="lyrics-editor" class="code-editor" spellcheck="false" autocomplete="off" placeholder="Paste LRC lyrics or plain text lyrics here...&#10;&#10;Tip: Click 'YT Captions' to grab captions directly from YouTube!"></textarea>
       </div>
 
       <!-- TAB: Pipeline -->

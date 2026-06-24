@@ -126,6 +126,7 @@ const btnTap       = $('btn-tap');
 const lyricsEditor = $('lyrics-editor');
 const editorFormat = $('editor-format');
 const btnApply     = $('btn-apply');
+const btnYtCaptions = $('btn-yt-captions');
 const syncOffsetEl = $('sync-offset');
 const offsetLabel  = $('offset-label');
 const btnCompile   = $('btn-compile');
@@ -1609,6 +1610,10 @@ async function resolveSong(metadata) {
     // Init audio
     if (S.track.youtubeId) {
       initAudio(S.track.youtubeId);
+      // Show YT Captions button now that we have a video ID
+      if (btnYtCaptions) btnYtCaptions.style.display = 'inline-flex';
+    } else {
+      if (btnYtCaptions) btnYtCaptions.style.display = 'none';
     }
 
 
@@ -2705,16 +2710,84 @@ if (btnClearTrans) {
   });
 }
 
-// Editor apply
+// Editor apply — read textarea NOW, clear old lyrics, apply new ones, switch to Sync tab
 btnApply.addEventListener('click', () => {
   const text = lyricsEditor.value.trim();
-  if (!text) { setLyrics([], 'none', ''); return; }
-  if (/(?:\[\d{1,2}:\d{2}|\b\d{1,2}:\d{2}\b)/.test(text)) {
-    setLyrics(parseLRC(text), 'synced', text);
-  } else if (S.track) {
-    setLyrics(spreadPlain(text, S.track.duration), 'plain', text);
+  if (!text) {
+    setLyrics([], 'none', '');
+    return;
   }
+  // Detect LRC format (timestamps like [00:12.34] or [0:12])
+  if (/\[\d{1,2}:\d{2}/.test(text)) {
+    const parsed = parseLRC(text);
+    // Preserve the exact text the user typed — don't let setLyrics overwrite it
+    S.lyrics = parsed;
+    S.lyricsType = 'synced';
+    S.lastHighlightIdx = -1;
+    S.scrollY = undefined;
+    wrapCache.clear();
+    editorFormat.textContent = 'Synced LRC';
+    editorFormat.className = 'editor-format ok';
+    S.tapLines = parsed.map(l => ({ text: l.text, time: l.time }));
+    S.tapIdx = 0;
+    exitTapMode();
+    precomputeLyricsLayout(canvas.width, canvas.height, selectAlign.value);
+    renderLyricsList();
+    saveProjectState();
+  } else {
+    // Plain text — strip any existing timestamps from lines and spread evenly
+    const plainText = text.split(/\r?\n/).map(l => l.replace(/^\[\d+:\d+[.:]?\d*\]\s*/, '').trim()).filter(Boolean).join('\n');
+    const list = S.track ? spreadPlain(plainText, S.track.duration) : [];
+    S.lyrics = list;
+    S.lyricsType = 'plain';
+    S.lastHighlightIdx = -1;
+    S.scrollY = undefined;
+    wrapCache.clear();
+    editorFormat.textContent = 'Plain text (tap to sync)';
+    editorFormat.className = 'editor-format';
+    S.tapLines = list.map(l => ({ text: l.text, time: null }));
+    S.tapIdx = 0;
+    exitTapMode();
+    precomputeLyricsLayout(canvas.width, canvas.height, selectAlign.value);
+    renderLyricsList();
+    saveProjectState();
+  }
+  // Switch to Sync tab so user can start tapping immediately
+  const syncBtn = document.querySelector('.tab-btn[data-tab="tab-sync"]');
+  if (syncBtn) syncBtn.click();
 });
+
+// YT Captions — fetch auto-generated captions from YouTube and load into editor
+if (btnYtCaptions) {
+  btnYtCaptions.addEventListener('click', async () => {
+    const videoId = S.track?.youtubeId;
+    if (!videoId) {
+      alert('No YouTube video loaded. Search for a song first.');
+      return;
+    }
+    const origText = btnYtCaptions.innerHTML;
+    btnYtCaptions.disabled = true;
+    btnYtCaptions.textContent = 'Fetching...';
+    try {
+      const res = await fetch(`/api/captions?videoId=${encodeURIComponent(videoId)}`);
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'No captions found');
+      // Convert to plain text lines (one per line) — user will tap-sync them
+      const lines = data.lyrics.map(l => l.text).join('\n');
+      lyricsEditor.value = lines;
+      editorFormat.textContent = `${data.lyrics.length} caption lines — click Apply`;
+      editorFormat.className = 'editor-format';
+      // Pulse textarea to draw attention
+      lyricsEditor.classList.add('pulse-attention');
+      setTimeout(() => lyricsEditor.classList.remove('pulse-attention'), 2000);
+    } catch (err) {
+      alert(`Could not fetch captions: ${err.message}`);
+    } finally {
+      btnYtCaptions.disabled = false;
+      btnYtCaptions.innerHTML = origText;
+    }
+  });
+}
 
 // Sync offset
 syncOffsetEl.addEventListener('input', () => {
