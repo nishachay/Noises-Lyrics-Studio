@@ -37,6 +37,27 @@
       border-color: rgba(255,255,255,0.9) !important;
       font-weight: 600 !important;
     }
+  
+    .btn-filter {
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      color: var(--text-2);
+      padding: 6px 16px;
+      border-radius: 20px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn-filter:hover:not(.active) {
+      background: var(--surface-3);
+      color: var(--text);
+    }
+    .btn-filter.active {
+      background: var(--accent);
+      color: var(--bg-a);
+      border-color: transparent;
+    }
   </style>
 </head>
 <body>
@@ -211,9 +232,9 @@
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
           Edit
         </button>
-        <button class="tab-btn" data-tab="tab-pipeline" title="Channel Pipeline">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
-          Pipeline
+        <button class="tab-btn" data-tab="tab-pipeline" title="Daily To-Do & Competitor Radar">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+          To-Do
         </button>
       </div>
 
@@ -243,7 +264,8 @@
               <label class="field-label" style="margin:0;" for="lyrics-source">Lyrics Source</label>
               <div style="display:flex; gap:6px;">
                 <button id="btn-yt-captions" class="btn-action btn-glass" title="Fetch auto-captions from the loaded YouTube video" style="font-size: 11px; padding: 4px 8px; background:rgba(255,50,50,0.1); border-color:rgba(255,80,80,0.25); display:none;">YT Captions</button>
-                <button id="btn-manual-lyrics" class="btn-action btn-glass" style="font-size: 11px; padding: 4px 8px;">Search LRCLIB</button>
+                <button id="btn-fetch-genius" class="btn-action btn-glass" style="font-size:11px; padding:4px 8px; background:rgba(255,255,0,0.1); border-color:rgba(255,255,0,0.3); color: #ffffaa;" title="Fetch raw lyrics from Genius">Genius</button>
+                <button id="btn-manual-lyrics" class="btn-action btn-glass" style="font-size: 11px; padding: 4px 8px;">LRCLIB</button>
               </div>
             </div>
             <select id="lyrics-source" class="select-field glass-select" disabled>
@@ -267,6 +289,12 @@
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
             Tap Sync
           </button>
+          <select id="select-tap-lines" class="select-field glass-select" style="width: auto; padding: 4px 8px; font-size: 11px;">
+            <option value="1">1 Line / Tap</option>
+            <option value="2">2 Lines / Tap</option>
+            <option value="4">4 Lines / Tap</option>
+            <option value="8">8 Lines / Tap</option>
+          </select>
           <button id="btn-translate" class="btn-action">Auto-Translate</button>
           <button id="btn-clear-translations" class="btn-action" style="display:none;">Clear Trans</button>
           <button id="btn-toggle-translations" class="btn-action">Show Trans</button>
@@ -313,20 +341,37 @@
         <textarea id="lyrics-editor" class="code-editor" spellcheck="false" autocomplete="off" placeholder="Paste LRC lyrics or plain text lyrics here...&#10;&#10;Tip: Click 'YT Captions' to grab captions directly from YouTube!"></textarea>
       </div>
 
-      <!-- TAB: Pipeline -->
+      <!-- TAB: To-Do & Competitors -->
       <div id="tab-pipeline" class="tab-pane hidden">
         <div class="inspector-scroll">
-          <div class="inspector-section" style="padding: 16px; background: rgba(0,0,0,0.2); border-radius: 8px; margin-bottom: 16px; border: 1px solid rgba(255,255,255,0.05);">
-            <div class="settings-label" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0;">
-              <span>Daily Pipeline</span>
-              <span style="font-size:10px; font-weight:normal; color:var(--text-3);">Auto-updates</span>
+          <div class="inspector-section glass-card" style="margin-bottom: 16px; padding: 10px;">
+            <div class="settings-label" style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 8px;">
+              <span>Daily To-Do</span>
+              <span style="font-size:10px; font-weight:normal; color:var(--text-3);">Tasks</span>
             </div>
-            <div style="display:flex; flex-direction:column; gap:10px; margin-top:12px;">
-              <div class="pipeline-item" id="pipe-pop" style="display:flex; align-items:center; font-size:12px; color:var(--text-2);"><span class="dot" style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#ef4444;margin-right:8px;"></span>Pop</div>
-              <div class="pipeline-item" id="pipe-hiphop" style="display:flex; align-items:center; font-size:12px; color:var(--text-2);"><span class="dot" style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#ef4444;margin-right:8px;"></span>Hip-Hop</div>
-              <div class="pipeline-item" id="pipe-hindi" style="display:flex; align-items:center; font-size:12px; color:var(--text-2);"><span class="dot" style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#ef4444;margin-right:8px;"></span>Hindi</div>
-              <div class="pipeline-item" id="pipe-dhh" style="display:flex; align-items:center; font-size:12px; color:var(--text-2);"><span class="dot" style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#ef4444;margin-right:8px;"></span>DHH</div>
-              <div class="pipeline-item" id="pipe-kpop" style="display:flex; align-items:center; font-size:12px; color:var(--text-2);"><span class="dot" style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#ef4444;margin-right:8px;"></span>K-Pop</div>
+            <div style="display:flex; gap: 6px; margin-bottom: 12px;">
+              <input type="text" id="todo-input" class="text-input glass-input" placeholder="Song Name - Artist" style="flex:1;">
+              <select id="todo-channel" class="select-field glass-select" style="width: 80px; padding: 4px;">
+                <option value="Pop">Pop</option>
+                <option value="Hip-Hop">Hip-Hop</option>
+                <option value="Hindi">Hindi</option>
+                <option value="DHH">DHH</option>
+                <option value="K-Pop">K-Pop</option>
+              </select>
+              <button id="btn-add-todo" class="btn-action primary" style="padding: 4px 8px;">Add</button>
+            </div>
+            <div id="todo-list" style="display:flex; flex-direction:column; gap:8px;">
+              <!-- Todos will render here -->
+            </div>
+          </div>
+
+          <div class="inspector-section glass-card" style="padding: 10px;">
+            <div class="settings-label" style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 8px;">
+              <span>Competitor Radar</span>
+              <button id="btn-refresh-competitors" class="btn-action btn-glass" style="font-size:10px; padding:2px 6px;">Refresh</button>
+            </div>
+            <div id="competitor-list" style="display:flex; flex-direction:column; gap:8px; font-size:12px; color:var(--text-2);">
+              Loading competitor uploads...
             </div>
           </div>
         </div>
@@ -401,11 +446,11 @@
             <a href="/api/youtube-auth?channel=pop" target="_blank" style="color:var(--accent); text-decoration:none; background:rgba(16,185,129,0.1); padding:4px 8px; border-radius:4px;" title="Authenticate a channel">+ Auth</a>
           </h3>
           <div style="display:flex; flex-direction:column; gap:8px;">
-            <button id="btn-yt-pop" class="btn-dl primary" onmouseover="updateSchedulePreview('pop')" onclick="publishToYouTube('pop')" style="background:#0F026B; border:none; color:#FFFFFF; font-size:12px; justify-content:center; font-weight:bold;">▶ Noises Music</button>
-            <button id="btn-yt-hiphop" class="btn-dl primary" onmouseover="updateSchedulePreview('hiphop')" onclick="publishToYouTube('hiphop')" style="background:#ff0800; border:none; color:#FFFFFF; font-size:12px; justify-content:center; font-weight:bold;">▶ Noises HipHop</button>
-            <button id="btn-yt-hindi" class="btn-dl primary" onmouseover="updateSchedulePreview('hindi')" onclick="publishToYouTube('hindi')" style="background:#ff3d00; border:none; color:#FFFFFF; font-size:12px; justify-content:center; font-weight:bold;">▶ Noises Geet</button>
-            <button id="btn-yt-dhh" class="btn-dl primary" onmouseover="updateSchedulePreview('dhh')" onclick="publishToYouTube('dhh')" style="background:#590000; border:none; color:#FFFFFF; font-size:12px; justify-content:center; font-weight:bold;">▶ Noises DHH</button>
-            <button id="btn-yt-kpop" class="btn-dl primary" onmouseover="updateSchedulePreview('kpop')" onclick="publishToYouTube('kpop')" style="background:#002e1f; border:none; color:#FFFFFF; font-size:12px; justify-content:center; font-weight:bold;">▶ Noises Kpop</button>
+            <button id="btn-yt-pop" class="btn-dl primary yt-publish-btn" data-channel="pop" data-bg="#0F026B" onmouseover="updateSchedulePreview('pop')" style="background:#0F026B; border:none; color:#FFFFFF; font-size:12px; justify-content:center; font-weight:bold; transition: background 0.2s;">▶ Noises Music</button>
+            <button id="btn-yt-hiphop" class="btn-dl primary yt-publish-btn" data-channel="hiphop" data-bg="#ff0800" onmouseover="updateSchedulePreview('hiphop')" style="background:#ff0800; border:none; color:#FFFFFF; font-size:12px; justify-content:center; font-weight:bold; transition: background 0.2s;">▶ Noises HipHop</button>
+            <button id="btn-yt-hindi" class="btn-dl primary yt-publish-btn" data-channel="hindi" data-bg="#ff3d00" onmouseover="updateSchedulePreview('hindi')" style="background:#ff3d00; border:none; color:#FFFFFF; font-size:12px; justify-content:center; font-weight:bold; transition: background 0.2s;">▶ Noises Geet</button>
+            <button id="btn-yt-dhh" class="btn-dl primary yt-publish-btn" data-channel="dhh" data-bg="#590000" onmouseover="updateSchedulePreview('dhh')" style="background:#590000; border:none; color:#FFFFFF; font-size:12px; justify-content:center; font-weight:bold; transition: background 0.2s;">▶ Noises DHH</button>
+            <button id="btn-yt-kpop" class="btn-dl primary yt-publish-btn" data-channel="kpop" data-bg="#002e1f" onmouseover="updateSchedulePreview('kpop')" style="background:#002e1f; border:none; color:#FFFFFF; font-size:12px; justify-content:center; font-weight:bold; transition: background 0.2s;">▶ Noises Kpop</button>
           </div>
           <div id="yt-publish-status" style="margin-top: 12px; font-size: 12px; color: var(--accent); font-weight:600; display:none; padding:8px; background:rgba(16,185,129,0.1); border-radius:4px; text-align:center;"></div>
           <div id="schedule-indicator" style="margin-top: 8px; font-size: 11px; color: var(--text-3); text-align: center;">Hover channel to see schedule...</div>
@@ -630,6 +675,46 @@
 </div>
 
 <script src="app.js?v=7.0.6"></script>
+
+<!-- ═══════════════════════════════════════════════
+  COMPETITOR RADAR MODAL
+════════════════════════════════════════════════ -->
+<div id="competitor-modal" class="modal-overlay hidden" role="dialog" aria-modal="true">
+  <div class="modal-card" style="width: 900px; max-width: 95vw; height: 85vh; display: flex; flex-direction: column; padding:0; overflow:hidden;">
+    <div style="display: flex; justify-content: space-between; align-items: center; padding: 24px; border-bottom: 1px solid var(--border); background: var(--bg-b);">
+      <div style="display:flex; align-items:center; gap:12px;">
+        <div style="width:40px; height:40px; background:rgba(16, 185, 129, 0.1); color:#10B981; border-radius:50%; display:flex; align-items:center; justify-content:center;">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+        </div>
+        <div>
+          <h2 style="margin:0 0 4px; font-size:20px; font-weight:700;">Competitor Radar</h2>
+          <div style="font-size:12px; color:var(--text-3);">Tracking the latest uploads across Pop, Hip-Hop, Hindi, DHH, and K-Pop.</div>
+        </div>
+      </div>
+      <div style="display:flex; gap:8px;">
+        <button id="btn-refresh-competitors" class="btn-action btn-glass">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right:6px;"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+          Refresh Data
+        </button>
+        <button id="btn-close-competitor-modal" class="btn-action btn-glass">Close</button>
+      </div>
+    </div>
+    
+    <div style="background: var(--bg-c); padding: 16px 24px; border-bottom: 1px solid var(--border); display:flex; gap:12px; overflow-x:auto;" id="competitor-filters">
+      <button class="btn-filter active" data-filter="All">All Categories</button>
+      <button class="btn-filter" data-filter="Pop">Pop</button>
+      <button class="btn-filter" data-filter="Hip-Hop">Hip-Hop</button>
+      <button class="btn-filter" data-filter="Hindi">Hindi</button>
+      <button class="btn-filter" data-filter="DHH">DHH</button>
+      <button class="btn-filter" data-filter="K-Pop">K-Pop</button>
+    </div>
+
+    <div id="competitor-list" style="flex: 1; overflow-y: auto; padding: 24px; display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 20px; background: var(--bg-a);">
+      <div style="grid-column: 1/-1; text-align:center; padding: 40px; color:var(--text-3);">Loading latest uploads...</div>
+    </div>
+  </div>
+</div>
+
 </body>
 </html>
 

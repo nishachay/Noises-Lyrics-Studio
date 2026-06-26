@@ -130,6 +130,7 @@ const tapFooter    = $('tap-footer');
 const btnTap       = $('btn-tap');
 const lyricsEditor = $('lyrics-editor');
 const editorFormat = $('editor-format');
+const btnFetchGenius = $('btn-fetch-genius');
 const btnApply     = $('btn-apply');
 const btnGroup2    = $('btn-group-2');
 const btnGroup4    = $('btn-group-4');
@@ -2339,15 +2340,23 @@ function handleTap() {
 
   const cur = audio.currentTime || 0;
   const stampedTime = Math.max(0, Math.round((cur - S.syncOffset) * 100) / 100);
-  S.tapLines[S.tapIdx].time = stampedTime;
+  
+  const selectTapLines = document.getElementById('select-tap-lines');
+  const linesToConsume = selectTapLines ? parseInt(selectTapLines.value, 10) : 1;
+  
+  for (let i = 0; i < linesToConsume; i++) {
+    if (S.tapIdx >= S.tapLines.length) break;
+    
+    S.tapLines[S.tapIdx].time = stampedTime;
 
-  // ── KEY FIX: write stamped time back into S.lyrics immediately so the
-  //    canvas preview reflects each tap in real-time ──────────────────────
-  if (S.tapIdx < S.lyrics.length) {
-    S.lyrics[S.tapIdx].time = stampedTime;
-    S.lyricsType = 'synced';
+    // ── KEY FIX: write stamped time back into S.lyrics immediately so the
+    //    canvas preview reflects each tap in real-time ──────────────────────
+    if (S.tapIdx < S.lyrics.length) {
+      S.lyrics[S.tapIdx].time = stampedTime;
+      S.lyricsType = 'synced';
+    }
+    S.tapIdx++;
   }
-  S.tapIdx++;
 
   if (S.tapIdx >= S.tapLines.length) {
     // All lines tapped — sort and finalise
@@ -2969,6 +2978,30 @@ if (btnGroup4) {
   btnGroup4.addEventListener('click', () => groupEditorLyrics(4));
 }
 
+if (btnFetchGenius) {
+  btnFetchGenius.addEventListener('click', async () => {
+    if (!S.track || !S.track.title || !S.track.artist) {
+      showToast('Please search and load a track first to fetch lyrics.');
+      return;
+    }
+    const oldText = btnFetchGenius.textContent;
+    btnFetchGenius.textContent = 'Fetching...';
+    try {
+      const res = await fetch(`/api/fetch-raw-lyrics?title=${encodeURIComponent(S.track.title)}&artist=${encodeURIComponent(S.track.artist)}`);
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to fetch raw lyrics');
+      
+      lyricsEditor.value = data.lyrics;
+      showToast(`Fetched lyrics from ${data.source}!`);
+    } catch (e) {
+      console.error('Fetch Raw Lyrics Error:', e);
+      showToast(e.message || 'Error fetching lyrics from Genius');
+    } finally {
+      btnFetchGenius.textContent = oldText;
+    }
+  });
+}
+
 // Editor apply — read textarea NOW, clear old lyrics, apply new ones, switch to Sync tab
 btnApply.addEventListener('click', () => {
   const text = lyricsEditor.value.trim();
@@ -3542,21 +3575,71 @@ showView('studio');
 startCanvasLoop();
 openSearch();
 
+
+const channelAuthState = {
+  pop: false, hiphop: false, hindi: false, dhh: false, kpop: false
+};
+
 async function updateYouTubeChannelNames() {
   try {
     const res = await fetch('/api/youtube-status');
     const status = await res.json();
     for (const [ch, info] of Object.entries(status)) {
       const btn = document.getElementById(`btn-yt-${ch}`);
-      if (btn && info.authenticated && info.name) {
-        btn.innerHTML = `&#9654; ${info.name}`;
-        btn.title = `Authenticated as: ${info.name}`;
+      if (btn) {
+        channelAuthState[ch] = info.authenticated;
+        if (info.authenticated && info.name) {
+          btn.innerHTML = `▶ ${info.name}`;
+          btn.title = `Authenticated as: ${info.name}`;
+          btn.style.background = btn.getAttribute('data-bg');
+          btn.style.opacity = '1';
+        } else {
+          const label = ch.charAt(0).toUpperCase() + ch.slice(1);
+          btn.innerHTML = `🔑 Auth ${label}`;
+          btn.title = `Click to authenticate ${label} channel`;
+          btn.style.background = 'rgba(255,255,255,0.1)';
+          btn.style.opacity = '0.7';
+        }
       }
     }
   } catch (e) {
     console.error('Failed to load YouTube channel names', e);
   }
 }
+
+// Add event listeners to the buttons dynamically
+document.querySelectorAll('.yt-publish-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const channel = btn.getAttribute('data-channel');
+    if (channelAuthState[channel]) {
+      publishToYouTube(channel);
+    } else {
+      window.open(`/api/youtube-auth?channel=${channel}`, '_blank');
+      
+      const checkInterval = setInterval(async () => {
+        try {
+          const res = await fetch('/api/youtube-status');
+          const status = await res.json();
+          if (status[channel] && status[channel].authenticated) {
+            clearInterval(checkInterval);
+            updateYouTubeChannelNames(); // Refresh UI
+            
+            const statusEl = document.getElementById('yt-publish-status');
+            if (statusEl) {
+              statusEl.style.display = 'block';
+              statusEl.style.color = '#10b981';
+              statusEl.innerText = `Successfully authenticated ${status[channel].name}! Click again to publish.`;
+              setTimeout(() => { statusEl.style.display = 'none'; }, 5000);
+            }
+          }
+        } catch(e) {}
+      }, 2000);
+      
+      setTimeout(() => clearInterval(checkInterval), 120000);
+    }
+  });
+});
+
 
 // --- Quota & Pipeline Dashboard ---
 async function fetchQuota() {
@@ -3660,6 +3743,7 @@ if (btnPreviewThumb) {
           btnThumbDownload.href = url;
           btnThumbDownload.download = `${S.track.artist} - ${S.track.title} Thumbnail.jpg`;
           btnThumbDownload.style.display = 'flex';
+          
         }
       };
     } catch (e) {
@@ -3747,5 +3831,299 @@ updateYouTubeChannelNames();
 fetchQuota();
 fetchDailyStatus();
 
+// ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// 14. TO-DO & COMPETITORS
+// ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+const todoInput = document.getElementById('todo-input');
+const todoChannel = document.getElementById('todo-channel');
+const btnAddTodo = document.getElementById('btn-add-todo');
+const todoListEl = document.getElementById('todo-list');
+
+const competitorListEl = document.getElementById('competitor-list');
+const btnRefreshCompetitors = document.getElementById('btn-refresh-competitors');
+
+let todos = [];
+
+async function loadTodos() {
+  try {
+    const res = await fetch('/api/todos');
+    todos = await res.json();
+    renderTodos();
+  } catch (e) {
+    console.error('Failed to load todos', e);
+  }
+}
+
+async function saveTodos() {
+  try {
+    await fetch('/api/todos', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(todos)
+    });
+  } catch (e) {
+    console.error('Failed to save todos', e);
+  }
+}
+
+function renderTodos() {
+  if (!todoListEl) return;
+  todoListEl.innerHTML = '';
+  
+  if (todos.length === 0) {
+    todoListEl.innerHTML = '<div style="font-size:11px; color:var(--text-3); text-align:center; margin-top:8px;">No tasks. You are all caught up!</div>';
+    return;
+  }
+  
+  todos.forEach((todo, index) => {
+    const el = document.createElement('div');
+    el.style.display = 'flex';
+    el.style.alignItems = 'center';
+    el.style.justifyContent = 'space-between';
+    el.style.background = 'rgba(255,255,255,0.03)';
+    el.style.padding = '8px 12px';
+    el.style.borderRadius = '6px';
+    el.style.fontSize = '12px';
+    
+    // Checkbox and Title
+    const leftWrap = document.createElement('div');
+    leftWrap.style.display = 'flex';
+    leftWrap.style.alignItems = 'center';
+    leftWrap.style.gap = '8px';
+    
+    const cb = document.createElement('input');
+    cb.type = 'checkbox';
+    cb.checked = todo.completed;
+    cb.style.cursor = 'pointer';
+    cb.addEventListener('change', () => {
+      todo.completed = cb.checked;
+      saveTodos();
+      renderTodos();
+    });
+    
+    const label = document.createElement('span');
+    label.textContent = todo.text;
+    if (todo.completed) {
+      label.style.textDecoration = 'line-through';
+      label.style.opacity = '0.5';
+    }
+    
+    leftWrap.appendChild(cb);
+    leftWrap.appendChild(label);
+    
+    // Channel Badge and Delete
+    const rightWrap = document.createElement('div');
+    rightWrap.style.display = 'flex';
+    rightWrap.style.alignItems = 'center';
+    rightWrap.style.gap = '8px';
+    
+    const badge = document.createElement('span');
+    badge.textContent = todo.channel;
+    badge.style.fontSize = '10px';
+    badge.style.padding = '2px 6px';
+    badge.style.borderRadius = '4px';
+    badge.style.background = 'rgba(255,255,255,0.1)';
+    badge.style.color = 'var(--text-2)';
+    
+    const delBtn = document.createElement('button');
+    delBtn.innerHTML = '&times;';
+    delBtn.style.background = 'none';
+    delBtn.style.border = 'none';
+    delBtn.style.color = '#ef4444';
+    delBtn.style.cursor = 'pointer';
+    delBtn.style.fontSize = '16px';
+    delBtn.style.padding = '0 4px';
+    
+    delBtn.addEventListener('click', () => {
+      todos.splice(index, 1);
+      saveTodos();
+      renderTodos();
+    });
+    
+    rightWrap.appendChild(badge);
+    rightWrap.appendChild(delBtn);
+    
+    el.appendChild(leftWrap);
+    el.appendChild(rightWrap);
+    
+    todoListEl.appendChild(el);
+  });
+}
+
+if (btnAddTodo) {
+  btnAddTodo.addEventListener('click', () => {
+    const text = todoInput.value.trim();
+    if (!text) return;
+    const channel = todoChannel.value;
+    todos.push({ text, channel, completed: false, id: Date.now() });
+    todoInput.value = '';
+    saveTodos();
+    renderTodos();
+  });
+  
+  todoInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') btnAddTodo.click();
+  });
+}
+
+let allCompetitorData = [];
+
+function timeAgo(dateString) {
+  const seconds = Math.floor((new Date() - new Date(dateString)) / 1000);
+  let interval = seconds / 31536000;
+  if (interval > 1) return Math.floor(interval) + " years ago";
+  interval = seconds / 2592000;
+  if (interval > 1) return Math.floor(interval) + " months ago";
+  interval = seconds / 86400;
+  if (interval > 1) return Math.floor(interval) + " days ago";
+  interval = seconds / 3600;
+  if (interval > 1) return Math.floor(interval) + " hours ago";
+  interval = seconds / 60;
+  if (interval > 1) return Math.floor(interval) + " minutes ago";
+  return Math.floor(seconds) + " seconds ago";
+}
+
+function renderCompetitors(filter = 'All') {
+  const competitorListEl = document.getElementById('competitor-list');
+  if (!competitorListEl) return;
+  
+  const filtered = filter === 'All' ? allCompetitorData : allCompetitorData.filter(d => d.category === filter);
+  
+  if (filtered.length === 0) {
+    competitorListEl.innerHTML = '<div style="grid-column: 1/-1; text-align:center; padding: 40px; color:var(--text-3); font-size:14px;">No recent uploads found for this category.</div>';
+    return;
+  }
+  
+  competitorListEl.innerHTML = '';
+  
+  filtered.forEach(item => {
+    const el = document.createElement('a');
+    el.href = item.link;
+    el.target = '_blank';
+    el.className = 'competitor-card';
+    el.style.display = 'flex';
+    el.style.flexDirection = 'column';
+    el.style.textDecoration = 'none';
+    el.style.background = 'var(--surface-2)';
+    el.style.borderRadius = '12px';
+    el.style.overflow = 'hidden';
+    el.style.border = '1px solid var(--border)';
+    el.style.transition = 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)';
+    el.style.color = 'var(--text)';
+    
+    el.addEventListener('mouseenter', () => {
+      el.style.transform = 'translateY(-4px)';
+      el.style.borderColor = 'var(--accent)';
+      el.style.boxShadow = '0 12px 24px rgba(0,0,0,0.3)';
+    });
+    el.addEventListener('mouseleave', () => {
+      el.style.transform = 'none';
+      el.style.borderColor = 'var(--border)';
+      el.style.boxShadow = 'none';
+    });
+    
+    // Category badges map
+    const catColors = {
+      'Pop': 'rgba(16, 185, 129, 0.2)',
+      'Hip-Hop': 'rgba(239, 68, 68, 0.2)',
+      'Hindi': 'rgba(245, 158, 11, 0.2)',
+      'DHH': 'rgba(139, 92, 246, 0.2)',
+      'K-Pop': 'rgba(236, 72, 153, 0.2)'
+    };
+    const color = catColors[item.category] || 'rgba(255,255,255,0.1)';
+    
+    const thumbHtml = item.thumbnail 
+      ? `<img src="${item.thumbnail}" style="width:100%; aspect-ratio:16/9; object-fit:cover; border-bottom:1px solid var(--border);">`
+      : `<div style="width:100%; aspect-ratio:16/9; background:#222; display:flex; align-items:center; justify-content:center; color:#555;">No Thumb</div>`;
+
+    el.innerHTML = `
+      ${thumbHtml}
+      <div style="padding: 16px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+          <span style="font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:1px; padding:4px 8px; border-radius:4px; background:${color}; color:#fff;">${esc(item.category)}</span>
+          <span style="font-size:11px; color:var(--text-3); font-weight:500;">${timeAgo(item.time)}</span>
+        </div>
+        <div style="font-size:14px; font-weight:600; line-height:1.4; margin-bottom:8px; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;">
+          ${esc(item.title)}
+        </div>
+        <div style="display:flex; align-items:center; gap:8px;">
+          <div style="width:24px; height:24px; border-radius:50%; background:var(--bg-c); display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:bold; color:var(--text-3);">
+            ${esc(item.channel).charAt(0)}
+          </div>
+          <span style="font-size:12px; color:var(--text-2); font-weight:500;">${esc(item.channel)}</span>
+        </div>
+      </div>
+    `;
+    
+    competitorListEl.appendChild(el);
+  });
+}
+
+async function fetchCompetitors() {
+  const competitorListEl = document.getElementById('competitor-list');
+  if (!competitorListEl) return;
+  
+  competitorListEl.innerHTML = '<div style="grid-column: 1/-1; text-align:center; padding: 40px; color:var(--text-3);">Loading latest uploads...</div>';
+  
+  try {
+    const res = await fetch('/api/competitors');
+    const data = await res.json();
+    
+    allCompetitorData = data.sort((a, b) => b.timestamp - a.timestamp);
+    
+    document.querySelectorAll('.btn-filter').forEach(b => b.classList.remove('active'));
+    const allBtn = document.querySelector('.btn-filter[data-filter="All"]');
+    if(allBtn) allBtn.classList.add('active');
+    
+    renderCompetitors('All');
+  } catch (err) {
+    competitorListEl.innerHTML = '<div style="grid-column: 1/-1; color:#ff4444; text-align:center; padding: 40px;">Failed to load radar. Refresh to try again.</div>';
+  }
+}
+
+// Add Modal Events
+const btnOpenRadar = document.getElementById('btn-open-competitor-modal');
+const modalRadar = document.getElementById('competitor-modal');
+const btnCloseRadar = document.getElementById('btn-close-competitor-modal');
+
+if (btnOpenRadar && modalRadar) {
+  btnOpenRadar.addEventListener('click', () => {
+    modalRadar.classList.remove('hidden');
+    if (allCompetitorData.length === 0) {
+      fetchCompetitors();
+    }
+  });
+}
+if (btnCloseRadar && modalRadar) {
+  btnCloseRadar.addEventListener('click', () => {
+    modalRadar.classList.add('hidden');
+  });
+}
+
+if (btnRefreshCompetitors) {
+  btnRefreshCompetitors.addEventListener('click', fetchCompetitors);
+}
+
+document.querySelectorAll('.btn-filter').forEach(btn => {
+  btn.addEventListener('click', (e) => {
+    document.querySelectorAll('.btn-filter').forEach(b => b.classList.remove('active', 'primary'));
+    e.target.classList.add('active');
+    e.target.style.background = 'var(--accent)';
+    e.target.style.color = 'var(--bg-a)';
+    e.target.style.border = '1px solid transparent';
+    
+    document.querySelectorAll('.btn-filter:not(.active)').forEach(b => {
+      b.style.background = 'var(--surface-2)';
+      b.style.color = 'var(--text-2)';
+      b.style.border = '1px solid var(--border)';
+    });
+
+    renderCompetitors(e.target.getAttribute('data-filter'));
+  });
+});
+
+window.addEventListener('load', () => {
+  loadTodos();
+});
 

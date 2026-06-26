@@ -1,6 +1,6 @@
 {
   "name": "noises-lyrics-studio",
-  "version": "8.0.0",
+  "version": "9.0.0",
   "description": "Lyric video generator and publishing tool",
   "main": "server.js",
   "scripts": {
@@ -24,10 +24,12 @@
     "archiver": "^8.0.0",
     "axios": "^1.7.2",
     "billboard-top-100": "^2.6.5",
+    "cheerio": "^1.2.0",
     "express": "^4.19.2",
     "form-data": "^4.0.6",
     "googleapis": "^173.0.0",
     "multer": "^2.2.0",
+    "rss-parser": "^3.13.0",
     "spotify-url-info": "^3.3.0",
     "youtube-sr": "^4.3.12",
     "ytmusic-api": "^5.3.1"

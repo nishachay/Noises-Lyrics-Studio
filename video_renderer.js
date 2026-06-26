@@ -476,11 +476,30 @@ function drawLyricsPanel(ctx, W, H, time, wrappedLyrics, font, alignment, durati
     return;
   }
 
-  if (linesPerScreen > 1) {
-    const N = linesPerScreen;
-    const stanzaIdx = Math.floor(activeIdx / N);
-    const startIndex = stanzaIdx * N;
-    const endIndex = Math.min(wrappedLyrics.length, startIndex + N);
+  const hasIdenticalTimestamps = (activeIdx > 0 && wrappedLyrics[activeIdx - 1].time === wrappedLyrics[activeIdx].time) || 
+                                 (activeIdx + 1 < wrappedLyrics.length && wrappedLyrics[activeIdx + 1].time === wrappedLyrics[activeIdx].time);
+
+  if (linesPerScreen > 1 || hasIdenticalTimestamps) {
+    let startIndex = activeIdx;
+    let endIndex = activeIdx + 1;
+    
+    // Group lines that share the EXACT same timestamp (created by multi-line tap sync)
+    const activeTime = wrappedLyrics[activeIdx].time;
+    while (startIndex > 0 && wrappedLyrics[startIndex - 1].time === activeTime) {
+      startIndex--;
+    }
+    while (endIndex < wrappedLyrics.length && wrappedLyrics[endIndex].time === activeTime) {
+      endIndex++;
+    }
+    
+    // If lines don't share a timestamp, use the N linesPerScreen logic
+    if (endIndex - startIndex < linesPerScreen) {
+      const N = linesPerScreen;
+      const stanzaIdx = Math.floor(startIndex / N);
+      startIndex = stanzaIdx * N;
+      endIndex = Math.min(wrappedLyrics.length, startIndex + N);
+    }
+    
     const stanzaLines = wrappedLyrics.slice(startIndex, endIndex);
 
     const stanzaStartTime = wrappedLyrics[startIndex] && typeof wrappedLyrics[startIndex].time === 'number' ? wrappedLyrics[startIndex].time : 0;

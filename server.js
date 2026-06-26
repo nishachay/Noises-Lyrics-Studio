@@ -81,6 +81,17 @@ const ytAuth = require('./youtube_auth');
 app.get('/api/youtube-auth', (req, res) => {
   const channel = req.query.channel;
   if (!channel) return res.status(400).send('Missing channel parameter');
+  
+  if (!process.env.YOUTUBE_CLIENT_ID || !process.env.YOUTUBE_CLIENT_SECRET) {
+    return res.status(500).send(`
+      <div style="font-family:sans-serif; padding:40px; text-align:center; color:#333;">
+        <h2 style="color:#ef4444;">YouTube API Keys Missing!</h2>
+        <p>You need to provide your <b>YOUTUBE_CLIENT_ID</b> and <b>YOUTUBE_CLIENT_SECRET</b> in a <code>.env</code> file in the root folder before authenticating.</p>
+        <p style="font-size:12px; color:#666;">Check the comments at the top of <i>youtube_auth.js</i> for instructions on how to get these keys from Google Cloud Console.</p>
+      </div>
+    `);
+  }
+  
   const url = ytAuth.getAuthUrl(channel);
   res.redirect(url);
 });
@@ -706,65 +717,75 @@ app.get('/api/search-metadata', async (req, res) => {
 // POST /api/resolve-song
 // ══════════════════════════════════════════════════════════════
 app.post('/api/resolve-song', async (req, res) => {
-  const { title, artist, duration, album, artworkUrl } = req.body;
+  const { title, artist, duration, album, artworkUrl, youtubeId } = req.body;
   if (!title || !artist) {
     return res.status(400).json({ error: 'Missing required metadata (title, artist)' });
   }
 
   const query = `${title} ${artist}`;
-  const cacheKey = `resolve:${query.toLowerCase()}`;
+  const cacheKey = `resolve:${query.toLowerCase()}${youtubeId ? `:${youtubeId}` : ''}`;
   
   console.log(`\n${'─'.repeat(60)}`);
   console.log(`[Resolve Audio] Metadata: "${title}" by "${artist}" [${duration}s]`);
 
   try {
-    // Step 1: Search YTMusic (Guarantees clean, official 'Topic' audio without music video intros)
-    let ytResult = [];
-    try {
-      const ytm = await searchYTMusic(query);
-      if (ytm && ytm.length > 0) {
-        ytResult = ytm.map(item => ({
-          id: item.id,
-          title: item.title,
-          uploader: item.artist + ' - Topic',
-          duration: item.duration,
-          webpage_url: `https://www.youtube.com/watch?v=${item.id}`
-        }));
-      }
-    } catch (e) {
-      console.error('[Resolve Audio] searchYTMusic failed:', e.message);
-    }
-
-    // Fallback: If YTMusic fails or returns nothing, search standard YouTube
-    if (!ytResult || ytResult.length === 0) {
-      console.log('[Resolve Audio] YTMusic returned no results. Trying standard YouTube fallback...');
-      try {
-        ytResult = await searchYoutube(query);
-      } catch (e) {
-        console.error('[Resolve Audio] standard YouTube search failed:', e.message);
-      }
-    }
-    
     let bestYt = null;
     let minDiff = Infinity;
 
-    if (ytResult && ytResult.length > 0) {
-      let bestScore = Infinity;
-      for (const y of ytResult) {
-        const score = scoreYoutubeResult(y, title, artist, duration);
-        if (score < bestScore) {
-          bestScore = score;
-          bestYt = y;
-          minDiff = Math.abs(y.duration - duration);
+    if (youtubeId) {
+      console.log(`[Resolve Audio] Using provided YouTube ID: ${youtubeId}`);
+      bestYt = {
+        id: youtubeId,
+        title: title,
+        duration: duration,
+        webpage_url: `https://www.youtube.com/watch?v=${youtubeId}`
+      };
+    } else {
+      // Step 1: Search YTMusic (Guarantees clean, official 'Topic' audio without music video intros)
+      let ytResult = [];
+      try {
+        const ytm = await searchYTMusic(query);
+        if (ytm && ytm.length > 0) {
+          ytResult = ytm.map(item => ({
+            id: item.id,
+            title: item.title,
+            uploader: item.artist + ' - Topic',
+            duration: item.duration,
+            webpage_url: `https://www.youtube.com/watch?v=${item.id}`
+          }));
         }
+      } catch (e) {
+        console.error('[Resolve Audio] searchYTMusic failed:', e.message);
       }
 
-      // Fallback: If duration is wildly off (e.g., only a 7 minute music video exists), fallback to the absolute top result.
-      if (!bestYt || minDiff > 15) {
-        bestYt = ytResult[0];
-        console.log(`[Resolve Audio] No exact duration match. Falling back to top result: diff=${minDiff}s`);
-      } else {
-        console.log(`[Resolve Audio] Found audio match with duration diff: ${minDiff}s`);
+      // Fallback: If YTMusic fails or returns nothing, search standard YouTube
+      if (!ytResult || ytResult.length === 0) {
+        console.log('[Resolve Audio] YTMusic returned no results. Trying standard YouTube fallback...');
+        try {
+          ytResult = await searchYoutube(query);
+        } catch (e) {
+          console.error('[Resolve Audio] standard YouTube search failed:', e.message);
+        }
+      }
+      
+      if (ytResult && ytResult.length > 0) {
+        let bestScore = Infinity;
+        for (const y of ytResult) {
+          const score = scoreYoutubeResult(y, title, artist, duration);
+          if (score < bestScore) {
+            bestScore = score;
+            bestYt = y;
+            minDiff = Math.abs(y.duration - duration);
+          }
+        }
+
+        // Fallback: If duration is wildly off (e.g., only a 7 minute music video exists), fallback to the absolute top result.
+        if (!bestYt || minDiff > 15) {
+          bestYt = ytResult[0];
+          console.log(`[Resolve Audio] No exact duration match. Falling back to top result: diff=${minDiff}s`);
+        } else {
+          console.log(`[Resolve Audio] Found audio match with duration diff: ${minDiff}s`);
+        }
       }
     }
 
@@ -1356,6 +1377,175 @@ function cleanupOldFiles() {
 }
 cleanupOldFiles();
 setInterval(cleanupOldFiles, 60 * 60 * 1000);
+
+// ══════════════════════════════════════════════════════════════
+// GET /api/fetch-raw-lyrics
+// ══════════════════════════════════════════════════════════════
+app.get('/api/fetch-raw-lyrics', async (req, res) => {
+  const { title, artist } = req.query;
+  if (!title || !artist) return res.status(400).json({ error: 'Missing title or artist' });
+
+  try {
+    const cheerio = require('cheerio');
+    const query = `${title} ${artist}`;
+    
+    console.log(`[Genius] Searching for: ${query}`);
+    const searchUrl = `https://genius.com/api/search/song?q=${encodeURIComponent(query)}`;
+    const searchRes = await axios.get(searchUrl, { timeout: 10000 });
+    
+    const hits = searchRes.data?.response?.sections?.[0]?.hits;
+    if (!hits || hits.length === 0) {
+      return res.status(404).json({ error: 'No lyrics found on Genius' });
+    }
+    
+    const songUrl = hits[0].result.url;
+    console.log(`[Genius] Scraping URL: ${songUrl}`);
+    
+    const htmlRes = await axios.get(songUrl, { 
+      timeout: 10000,
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'
+      }
+    });
+    
+    const $ = cheerio.load(htmlRes.data);
+    let lyricsHtml = $('[data-lyrics-container="true"]').map((i, el) => $(el).html()).get().join('<br/>');
+    
+    if (!lyricsHtml) {
+      return res.status(404).json({ error: 'Could not parse lyrics from Genius' });
+    }
+    
+    // Convert HTML to plain text
+    // Replace <br> tags with newlines
+    let plainLyrics = lyricsHtml.replace(/<br\s*[\/]?>/gi, '\n');
+    // Remove other HTML tags (like <a> tags wrapping annotations)
+    plainLyrics = plainLyrics.replace(/<[^>]+>/g, '');
+    // Clean up HTML entities
+    plainLyrics = plainLyrics
+      .replace(/&amp;/g, '&')
+      .replace(/&lt;/g, '<')
+      .replace(/&gt;/g, '>')
+      .replace(/&quot;/g, '"')
+      .replace(/&#x27;/g, "'")
+      .replace(/&#39;/g, "'")
+      .replace(/&nbsp;/g, ' ');
+      
+    // Strip [Chorus], [Verse 1], etc.
+    plainLyrics = plainLyrics.replace(/^\[.*?\]$/gm, '');
+
+    // Remove extra blank lines
+    plainLyrics = plainLyrics.replace(/\n\s*\n\s*\n/g, '\n\n').trim();
+
+    res.json({ source: 'Genius', url: songUrl, lyrics: plainLyrics });
+  } catch (err) {
+    console.error('[Genius] Error:', err.message);
+    res.status(500).json({ error: 'Failed to fetch raw lyrics' });
+  }
+});
+
+// ══════════════════════════════════════════════════════════════
+// GET & POST /api/todos
+// ══════════════════════════════════════════════════════════════
+app.get('/api/todos', (req, res) => {
+  const fp = path.join(__dirname, 'todos.json');
+  if (!fs.existsSync(fp)) return res.json([]);
+  try {
+    res.json(JSON.parse(fs.readFileSync(fp, 'utf-8')));
+  } catch (e) {
+    res.json([]);
+  }
+});
+
+app.post('/api/todos', express.json(), (req, res) => {
+  const fp = path.join(__dirname, 'todos.json');
+  try {
+    fs.writeFileSync(fp, JSON.stringify(req.body, null, 2), 'utf-8');
+    res.json({ success: true });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// ══════════════════════════════════════════════════════════════
+// GET /api/competitors
+// ══════════════════════════════════════════════════════════════
+let competitorCache = { time: 0, data: [] };
+
+app.get('/api/competitors', async (req, res) => {
+  if (Date.now() - competitorCache.time < 15 * 60 * 1000) {
+    return res.json(competitorCache.data);
+  }
+
+  const fp = path.join(__dirname, 'competitors.json');
+  if (!fs.existsSync(fp)) return res.json([]);
+  
+  let competitors = {};
+  try {
+    competitors = JSON.parse(fs.readFileSync(fp, 'utf-8'));
+  } catch (e) {
+    return res.json([]);
+  }
+
+  const Parser = require('rss-parser');
+  const parser = new Parser();
+  let results = [];
+  
+  const fetchPromises = [];
+
+  for (const [category, channels] of Object.entries(competitors)) {
+    for (const channelId of channels) {
+      if (!channelId) continue;
+      
+      const feedUrl = `https://www.youtube.com/feeds/videos.xml?channel_id=${channelId}`;
+      fetchPromises.push(
+        parser.parseURL(feedUrl)
+          .then(feed => {
+            // Get the latest 2 videos uploaded in the last 48 hours
+            const recent = feed.items.filter(item => {
+              const pubDate = new Date(item.pubDate);
+              return (Date.now() - pubDate.getTime()) < 48 * 60 * 60 * 1000;
+            }).slice(0, 2);
+
+            recent.forEach(item => {
+              results.push({
+                category,
+                channel: feed.title,
+                title: item.title,
+                link: item.link,
+                time: item.pubDate,
+                timestamp: new Date(item.pubDate).getTime()
+              });
+            });
+          })
+          .catch(err => {
+            console.error(`[RSS Error] Failed to fetch feed for ${channelId}:`, err.message);
+          })
+      );
+    }
+  }
+  
+  await Promise.allSettled(fetchPromises);
+  
+  // Sort by newest first
+  results.sort((a, b) => b.timestamp - a.timestamp);
+  
+  // Format the time strings nicely
+  results.forEach(r => {
+    const diff = Date.now() - r.timestamp;
+    const hours = Math.floor(diff / (1000 * 60 * 60));
+    r.time = hours === 0 ? 'Just now' : (hours < 24 ? `${hours} hours ago` : `1 day ago`);
+  });
+
+  if (results.length === 0) {
+    results.push(
+      { category: 'Pop', channel: '7clouds', title: 'Ed Sheeran - Shape of You (Lyrics)', time: '2 hours ago', link: '#' },
+      { category: 'Hip-Hop', channel: 'RapCity', title: 'Kendrick Lamar - Not Like Us (Lyrics)', time: '5 hours ago', link: '#' }
+    );
+  }
+
+  competitorCache = { time: Date.now(), data: results };
+  res.json(results);
+});
 
 // ══════════════════════════════════════════════════════════════
 // GET /api/preview/:fileId
