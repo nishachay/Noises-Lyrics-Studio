@@ -157,6 +157,11 @@
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right:6px;"><path d="M12 2c0 0-5 6.5-5 11a5 5 0 0 0 10 0c0-4.5-5-11-5-11Z"/></svg>
         Top Drops
       </button>
+
+      <button id="btn-open-competitor-modal" class="header-action-btn" aria-label="Competitor Radar" style="margin: 0;">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right:6px;"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="2"/><line x1="12" y1="2" x2="12" y2="12"/></svg>
+        Radar
+      </button>
     </div>
 
     <!-- Hidden compat node for header-track-content -->
@@ -362,16 +367,6 @@
             </div>
             <div id="todo-list" style="display:flex; flex-direction:column; gap:8px;">
               <!-- Todos will render here -->
-            </div>
-          </div>
-
-          <div class="inspector-section glass-card" style="padding: 10px;">
-            <div class="settings-label" style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 8px;">
-              <span>Competitor Radar</span>
-              <button id="btn-refresh-competitors" class="btn-action btn-glass" style="font-size:10px; padding:2px 6px;">Refresh</button>
-            </div>
-            <div id="competitor-list" style="display:flex; flex-direction:column; gap:8px; font-size:12px; color:var(--text-2);">
-              Loading competitor uploads...
             </div>
           </div>
         </div>
@@ -674,8 +669,6 @@
   </div>
 </div>
 
-<script src="app.js?v=7.0.6"></script>
-
 <!-- ═══════════════════════════════════════════════
   COMPETITOR RADAR MODAL
 ════════════════════════════════════════════════ -->
@@ -709,12 +702,13 @@
       <button class="btn-filter" data-filter="K-Pop">K-Pop</button>
     </div>
 
-    <div id="competitor-list" style="flex: 1; overflow-y: auto; padding: 24px; display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 20px; background: var(--bg-a);">
-      <div style="grid-column: 1/-1; text-align:center; padding: 40px; color:var(--text-3);">Loading latest uploads...</div>
+    <div id="competitor-list" style="flex: 1; overflow-y: auto; padding: 24px; display: flex; flex-direction: column; gap: 8px; background: var(--bg-a);">
+      <div style="text-align:center; padding: 40px; color:var(--text-3);">Loading latest uploads...</div>
     </div>
   </div>
 </div>
 
+<script src="app.js?v=7.0.7"></script>
 </body>
 </html>
 

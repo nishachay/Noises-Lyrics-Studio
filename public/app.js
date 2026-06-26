@@ -4003,58 +4003,81 @@ function renderCompetitors(filter = 'All') {
     el.target = '_blank';
     el.className = 'competitor-card';
     el.style.display = 'flex';
-    el.style.flexDirection = 'column';
+    el.style.alignItems = 'center';
+    el.style.gap = '12px';
+    el.style.padding = '12px 16px';
     el.style.textDecoration = 'none';
     el.style.background = 'var(--surface-2)';
-    el.style.borderRadius = '12px';
-    el.style.overflow = 'hidden';
+    el.style.borderRadius = '8px';
     el.style.border = '1px solid var(--border)';
-    el.style.transition = 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)';
+    el.style.transition = 'all 0.2s ease';
     el.style.color = 'var(--text)';
     
     el.addEventListener('mouseenter', () => {
-      el.style.transform = 'translateY(-4px)';
+      el.style.background = 'var(--surface-3)';
       el.style.borderColor = 'var(--accent)';
-      el.style.boxShadow = '0 12px 24px rgba(0,0,0,0.3)';
     });
     el.addEventListener('mouseleave', () => {
-      el.style.transform = 'none';
+      el.style.background = 'var(--surface-2)';
       el.style.borderColor = 'var(--border)';
-      el.style.boxShadow = 'none';
     });
     
-    // Category badges map
     const catColors = {
-      'Pop': 'rgba(16, 185, 129, 0.2)',
-      'Hip-Hop': 'rgba(239, 68, 68, 0.2)',
-      'Hindi': 'rgba(245, 158, 11, 0.2)',
-      'DHH': 'rgba(139, 92, 246, 0.2)',
-      'K-Pop': 'rgba(236, 72, 153, 0.2)'
+      'Pop': 'rgba(16, 185, 129, 0.15)',
+      'Hip-Hop': 'rgba(239, 68, 68, 0.15)',
+      'Hindi': 'rgba(245, 158, 11, 0.15)',
+      'DHH': 'rgba(139, 92, 246, 0.15)',
+      'K-Pop': 'rgba(236, 72, 153, 0.15)'
     };
-    const color = catColors[item.category] || 'rgba(255,255,255,0.1)';
+    const catTextColors = {
+      'Pop': '#10B981',
+      'Hip-Hop': '#EF4444',
+      'Hindi': '#F59E0B',
+      'DHH': '#8B5CF6',
+      'K-Pop': '#EC4899'
+    };
     
-    const thumbHtml = item.thumbnail 
-      ? `<img src="${item.thumbnail}" style="width:100%; aspect-ratio:16/9; object-fit:cover; border-bottom:1px solid var(--border);">`
-      : `<div style="width:100%; aspect-ratio:16/9; background:#222; display:flex; align-items:center; justify-content:center; color:#555;">No Thumb</div>`;
+    const bg = catColors[item.category] || 'rgba(255,255,255,0.1)';
+    const textCol = catTextColors[item.category] || '#fff';
 
     el.innerHTML = `
-      ${thumbHtml}
-      <div style="padding: 16px;">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-          <span style="font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:1px; padding:4px 8px; border-radius:4px; background:${color}; color:#fff;">${esc(item.category)}</span>
-          <span style="font-size:11px; color:var(--text-3); font-weight:500;">${timeAgo(item.time)}</span>
-        </div>
-        <div style="font-size:14px; font-weight:600; line-height:1.4; margin-bottom:8px; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;">
-          ${esc(item.title)}
-        </div>
-        <div style="display:flex; align-items:center; gap:8px;">
-          <div style="width:24px; height:24px; border-radius:50%; background:var(--bg-c); display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:bold; color:var(--text-3);">
-            ${esc(item.channel).charAt(0)}
-          </div>
-          <span style="font-size:12px; color:var(--text-2); font-weight:500;">${esc(item.channel)}</span>
-        </div>
+      <span style="font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:1px; padding:4px 8px; border-radius:4px; background:${bg}; color:${textCol}; flex-shrink:0; width: 70px; text-align:center;">${esc(item.category)}</span>
+      <div style="font-size:13px; font-weight:500; color:var(--text); flex:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+        ${esc(item.title)}
       </div>
+      <div style="font-size:12px; font-weight:600; color:var(--text-3); flex-shrink:0;">
+        ${esc(item.channel)}
+      </div>
+      <button class="btn-add-radar" style="background:transparent; border:none; color:var(--text-3); cursor:pointer; padding:6px; margin-left:8px; border-radius:6px; transition:all 0.2s; display:flex; align-items:center; justify-content:center; width:28px; height:28px;" aria-label="Add to To-Do" title="Add to To-Do">
+        <svg class="icon-plus" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+      </button>
     `;
+    
+    const btn = el.querySelector('.btn-add-radar');
+    btn.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      todos.push({ text: item.title, channel: item.category, link: item.link, completed: false, id: Date.now() });
+      saveTodos();
+      renderTodos();
+      
+      btn.innerHTML = '<svg class="icon-check" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>';
+      btn.style.background = 'rgba(16,185,129,0.1)';
+      
+      setTimeout(() => {
+        btn.innerHTML = '<svg class="icon-plus" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>';
+        btn.style.background = 'transparent';
+      }, 2000);
+    });
+    
+    btn.addEventListener('mouseenter', () => {
+      btn.style.color = 'var(--text)';
+      btn.style.background = 'rgba(255,255,255,0.05)';
+    });
+    btn.addEventListener('mouseleave', () => {
+      btn.style.color = 'var(--text-3)';
+      btn.style.background = 'transparent';
+    });
     
     competitorListEl.appendChild(el);
   });

@@ -1386,6 +1386,18 @@ app.get('/api/fetch-raw-lyrics', async (req, res) => {
   if (!title || !artist) return res.status(400).json({ error: 'Missing title or artist' });
 
   try {
+    // 1. Try LRCLIB first for incredibly clean plain lyrics
+    console.log(`[Raw Lyrics] Checking LRCLIB for: ${title} - ${artist}`);
+    const lrclibRecords = await fetchLyricsList(title, artist);
+    // Find the first record that actually has plainLyrics
+    const lrcMatch = lrclibRecords.find(r => r.plainLyrics && r.plainLyrics.length > 10);
+    
+    if (lrcMatch) {
+      console.log(`[Raw Lyrics] Found clean lyrics on LRCLIB`);
+      return res.json({ source: 'LRCLIB', url: 'https://lrclib.net', lyrics: lrcMatch.plainLyrics });
+    }
+
+    // 2. Fallback to Genius
     const cheerio = require('cheerio');
     const query = `${title} ${artist}`;
     
@@ -1432,6 +1444,20 @@ app.get('/api/fetch-raw-lyrics', async (req, res) => {
       
     // Strip [Chorus], [Verse 1], etc.
     plainLyrics = plainLyrics.replace(/^\[.*?\]$/gm, '');
+
+    // Genius sometimes includes metadata at the very beginning
+    const lines = plainLyrics.split('\n');
+    let startIndex = 0;
+    // Look through the first 10 lines for garbage metadata
+    for (let i = 0; i < Math.min(lines.length, 10); i++) {
+      if (lines[i].includes('ContributorsTranslations') || lines[i].includes('Read More') || lines[i].includes('Lyrics')) {
+        startIndex = i + 1; // skip this line
+        while(startIndex < lines.length && lines[startIndex].trim() === '') {
+          startIndex++; // skip empty lines after metadata
+        }
+      }
+    }
+    plainLyrics = lines.slice(startIndex).join('\n');
 
     // Remove extra blank lines
     plainLyrics = plainLyrics.replace(/\n\s*\n\s*\n/g, '\n\n').trim();
@@ -1500,19 +1526,20 @@ app.get('/api/competitors', async (req, res) => {
       fetchPromises.push(
         parser.parseURL(feedUrl)
           .then(feed => {
-            // Get the latest 2 videos uploaded in the last 48 hours
-            const recent = feed.items.filter(item => {
-              const pubDate = new Date(item.pubDate);
-              return (Date.now() - pubDate.getTime()) < 48 * 60 * 60 * 1000;
-            }).slice(0, 2);
+            // Get the latest 1 video uploaded (no time limit so it's never empty)
+            const recent = feed.items.slice(0, 1);
 
             recent.forEach(item => {
+              const videoIdMatch = item.id.match(/yt:video:(.+)/);
+              const videoId = videoIdMatch ? videoIdMatch[1] : null;
+              const thumbnail = videoId ? `https://i.ytimg.com/vi/${videoId}/mqdefault.jpg` : null;
+
               results.push({
                 category,
                 channel: feed.title,
                 title: item.title,
                 link: item.link,
-                time: item.pubDate,
+                thumbnail: thumbnail,
                 timestamp: new Date(item.pubDate).getTime()
               });
             });
@@ -1528,20 +1555,6 @@ app.get('/api/competitors', async (req, res) => {
   
   // Sort by newest first
   results.sort((a, b) => b.timestamp - a.timestamp);
-  
-  // Format the time strings nicely
-  results.forEach(r => {
-    const diff = Date.now() - r.timestamp;
-    const hours = Math.floor(diff / (1000 * 60 * 60));
-    r.time = hours === 0 ? 'Just now' : (hours < 24 ? `${hours} hours ago` : `1 day ago`);
-  });
-
-  if (results.length === 0) {
-    results.push(
-      { category: 'Pop', channel: '7clouds', title: 'Ed Sheeran - Shape of You (Lyrics)', time: '2 hours ago', link: '#' },
-      { category: 'Hip-Hop', channel: 'RapCity', title: 'Kendrick Lamar - Not Like Us (Lyrics)', time: '5 hours ago', link: '#' }
-    );
-  }
 
   competitorCache = { time: Date.now(), data: results };
   res.json(results);
