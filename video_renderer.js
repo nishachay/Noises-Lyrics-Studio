@@ -878,49 +878,29 @@ function generateThumbnail(coverImg, colors, title, artist, font, alignment, wra
   const titleLineHeight = Math.round(finalTitleSz * 1.25);
   
   // Calculate total height of elements and center them vertically
-  // Include space for the LYRICS badge
-  const badgeH = Math.round(H * 0.045);
-  const badgeGap = Math.round(H * 0.025);
-  
-  const totalH = artSz + gap1 + (titleLines.length * titleLineHeight) + gap2 + artistSz + badgeGap + badgeH;
+  const totalH = artSz + gap1 + (titleLines.length * titleLineHeight) + gap2 + artistSz;
   const ay = Math.round((H - totalH) / 2);
   const titleY = ay + artSz + gap1;
   const artistY = titleY + (titleLines.length * titleLineHeight) + gap2;
-  const badgeY = artistY + artistSz + badgeGap;
 
   // Draw Cover Art
   if (coverImg) {
     ctx.save();
     ctx.imageSmoothingEnabled = true;
     ctx.imageSmoothingQuality = 'high';
-    // Deep cinematic drop shadow
-    ctx.shadowColor = 'rgba(0, 0, 0, 0.8)';
-    ctx.shadowBlur = 60;
-    ctx.shadowOffsetY = 25;
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.55)';
+    ctx.shadowBlur = 40;
+    ctx.shadowOffsetY = 16;
 
-    ctx.beginPath();
-    ctx.roundRect(ax, ay, artSz, artSz, radius);
-    ctx.clip();
     ctx.drawImage(coverImg, ax, ay, artSz, artSz);
-    ctx.restore();
-
-    // Subtle white inner border
-    ctx.save();
-    ctx.beginPath();
-    ctx.roundRect(ax, ay, artSz, artSz, radius);
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.25)';
-    ctx.lineWidth = 2.0;
-    ctx.stroke();
     ctx.restore();
   } else {
     ctx.save();
     ctx.fillStyle = '#111115';
-    ctx.shadowColor = 'rgba(0, 0, 0, 0.8)';
-    ctx.shadowBlur = 60;
-    ctx.shadowOffsetY = 25;
-    ctx.beginPath();
-    ctx.roundRect(ax, ay, artSz, artSz, radius);
-    ctx.fill();
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.55)';
+    ctx.shadowBlur = 40;
+    ctx.shadowOffsetY = 16;
+    ctx.fillRect(ax, ay, artSz, artSz);
     ctx.restore();
   }
 
@@ -947,39 +927,12 @@ function generateThumbnail(coverImg, colors, title, artist, font, alignment, wra
   ctx.fillText(artist, W / 2, artistY);
   ctx.restore();
 
-  // Draw "LYRICS" Badge
-  ctx.save();
-  const badgeText = "LYRICS";
-  ctx.font = `bold ${Math.round(badgeH * 0.6)}px "Plus Jakarta Sans"`;
-  const badgeTextW = ctx.measureText(badgeText).width;
-  const badgeW = badgeTextW + Math.round(W * 0.04);
-  const badgeX = (W - badgeW) / 2;
-  
-  ctx.shadowColor = 'rgba(0,0,0,0.3)';
-  ctx.shadowBlur = 15;
-  ctx.shadowOffsetY = 5;
-  
-  ctx.beginPath();
-  ctx.roundRect(badgeX, badgeY, badgeW, badgeH, badgeH / 2);
-  ctx.fillStyle = 'rgba(255, 255, 255, 0.15)'; // frosted look
-  ctx.fill();
-  ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
-  ctx.lineWidth = 1.5;
-  ctx.stroke();
-  
-  ctx.shadowColor = 'transparent';
-  ctx.fillStyle = '#ffffff';
-  ctx.textBaseline = 'middle';
-  ctx.textAlign = 'center';
-  ctx.letterSpacing = '2px';
-  ctx.fillText(badgeText, W / 2, badgeY + (badgeH / 2));
-  ctx.restore();
-
   // Draw watermark logo in the corner (at static time = 0.0)
   drawWatermark(ctx, W, H, 0.0, logoImg);
 
   return tc.toBuffer('image/jpeg', { quality: 96 });
 }
+
 
 // ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
 // MAIN RENDER ENGINE

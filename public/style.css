@@ -1502,8 +1502,9 @@ body {
   box-shadow: 0 4px 12px var(--accent-dim);
 }
 
-/* ── Premium Input Forms ── */
-.text-input, .select-field, .glass-input, .glass-select, #modal-query, #modal-lyrics-query, .text-inline, #yt-title, #error-yt-link {
+
+/* -- Premium Glass Inputs (To-Do panel only) -- */
+.glass-input {
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 6px;
@@ -1512,20 +1513,16 @@ body {
   font-size: 13px;
   padding: 8px 12px;
   outline: none;
-  transition: all 0.2s ease;
+  transition: border-color 0.2s ease, background 0.2s ease;
+  width: 100%;
 }
 
-.text-input:focus, .select-field:focus, .glass-input:focus, .glass-select:focus, #modal-query:focus, #modal-lyrics-query:focus, .text-inline:focus, #yt-title:focus, #error-yt-link:focus {
+.glass-input:focus {
   background: rgba(255, 255, 255, 0.08);
   border-color: var(--accent);
-  box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.15); /* matching accent color */
+  box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.15);
 }
 
-.text-input::placeholder, .glass-input::placeholder, #modal-query::placeholder, #modal-lyrics-query::placeholder, .text-inline::placeholder {
+.glass-input::placeholder {
   color: var(--text-3);
-}
-
-.select-field option, .glass-select option {
-  background: var(--surface-1);
-  color: var(--text-1);
 }

@@ -1456,6 +1456,7 @@ if (btnTrending && trendingModal) {
     if (!viralDataFetched) {
       fetchTrendingInsights('pop');
     }
+    buildTodaysPlan();
   });
 }
 
@@ -1464,6 +1465,75 @@ if (btnTrendingClose && trendingModal) {
     trendingModal.classList.add('hidden');
   });
 }
+
+// ─── TODAY'S UPLOAD PLAN ────────────────────────────────────────────────────
+function buildTodaysPlan() {
+  const container = document.getElementById('today-plan-content');
+  if (!container) return;
+
+  const now = new Date();
+  const dayNames = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  const dayName = dayNames[now.getDay()];
+  
+  // Day virality score
+  const dayRating = { Sun: {emoji:'🟢', label:'High', tip:'Weekends peak — great for Pop & K-Pop'}, Mon: {emoji:'🔴', label:'Low', tip:'Slowest day. Focus on DHH & Hindi instead'}, Tue: {emoji:'🟡', label:'Mid', tip:'Solid for Hip-Hop & DHH uploads'}, Wed: {emoji:'🟡', label:'Mid', tip:'Mid-week — good for Hindi & Pop content'}, Thu: {emoji:'🟢', label:'High', tip:'Pre-weekend surge. Best for Pop & Hip-Hop'}, Fri: {emoji:'🟢', label:'High', tip:'Friday drops are the highest-traffic day for music'}, Sat: {emoji:'🟢', label:'Peak', tip:'Peak weekend browsing — upload everything today'} }[dayName.slice(0,3)] || {emoji:'🟡', label:'Mid', tip:'Decent day for uploads'};
+
+  // Channel schedule — upload time mapped by niche (IST)
+  const schedule = [
+    { channel: 'Pop', icon: '🎵', uploadIST: '2:00 PM', songs: [
+      { title: 'Ordinary', artist: 'Alex Warren', reason: '#1 Billboard now' },
+      { title: 'Die With A Smile', artist: 'Lady Gaga & Bruno Mars', reason: 'Evergreen — massive search volume' },
+    ]},
+    { channel: 'Hip-Hop', icon: '🎤', uploadIST: '11:00 AM', songs: [
+      { title: 'Luther', artist: 'Kendrick Lamar & SZA', reason: 'Perpetually trending' },
+      { title: 'Not Like Us', artist: 'Kendrick Lamar', reason: 'All-time viral' },
+    ]},
+    { channel: 'Hindi', icon: '🎶', uploadIST: '7:00 PM', songs: [
+      { title: 'Kesariya', artist: 'Arijit Singh', reason: 'All-time search champion' },
+      { title: 'Tum Kya Mile', artist: 'Pritam', reason: 'From Rocky Aur Rani — still trending' },
+    ]},
+    { channel: 'DHH', icon: '🔥', uploadIST: '9:00 PM', songs: [
+      { title: 'Fiza', artist: 'Prabh Deep', reason: 'Critically acclaimed, niche high-engage' },
+      { title: 'Mere Gully Mein', artist: 'Divine & Naezy', reason: 'All-time DHH anthem' },
+    ]},
+    { channel: 'K-Pop', icon: '⭐', uploadIST: '6:00 PM', songs: [
+      { title: 'FAMOUS', artist: 'ALLDAY PROJECT', reason: 'Newly debuted — early mover advantage' },
+      { title: 'Dirty Work', artist: 'aespa', reason: 'High fan engagement right now' },
+    ]},
+  ];
+
+  container.innerHTML = `
+    <div style="margin-bottom:12px; padding:10px 12px; background:rgba(16,185,129,0.06); border-radius:8px; border:1px solid rgba(16,185,129,0.15);">
+      <div style="font-size:18px; margin-bottom:4px;">${dayRating.emoji} ${dayName} — ${dayRating.label} Virality</div>
+      <div style="font-size:11px; color:var(--text-3); line-height:1.5;">${dayRating.tip}</div>
+    </div>
+    ${schedule.map(ch => `
+      <div style="margin-bottom:10px; border:1px solid rgba(255,255,255,0.06); border-radius:8px; overflow:hidden;">
+        <div style="display:flex; align-items:center; justify-content:space-between; padding:8px 10px; background:rgba(255,255,255,0.03); border-bottom:1px solid rgba(255,255,255,0.05);">
+          <span style="font-size:12px; font-weight:700; color:var(--text-1);">${ch.icon} ${ch.channel}</span>
+          <span style="font-size:10px; color:var(--accent); font-family:var(--mono);">📤 ${ch.uploadIST}</span>
+        </div>
+        ${ch.songs.map(s => `
+          <div class="today-plan-song" onclick="autoLoadAndPlay('${s.title} ${s.artist}')" style="display:flex; flex-direction:column; gap:2px; padding:8px 10px; cursor:pointer; transition:background 0.15s; border-bottom:1px solid rgba(255,255,255,0.03);">
+            <div style="font-size:12px; font-weight:600; color:var(--text-1); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${esc(s.title)}</div>
+            <div style="font-size:11px; color:var(--text-3);">${esc(s.artist)}</div>
+            <div style="font-size:10px; color:rgba(16,185,129,0.7); margin-top:1px;">${s.reason}</div>
+          </div>
+        `).join('')}
+      </div>
+    `).join('')}
+    <div style="padding:8px 0; font-size:10px; color:var(--text-3); text-align:center; line-height:1.6;">
+      Click any song to auto-load it<br>Upload times are IST
+    </div>
+  `;
+
+  // Add hover style for plan songs
+  container.querySelectorAll('.today-plan-song').forEach(el => {
+    el.addEventListener('mouseenter', () => el.style.background = 'rgba(255,255,255,0.04)');
+    el.addEventListener('mouseleave', () => el.style.background = 'transparent');
+  });
+}
+
 
 // ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
 // PUBLISH MODAL LOGIC

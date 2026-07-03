@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&family=Noto+Sans+Devanagari:wght@400;500;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=5.1">
+  <link rel="stylesheet" href="style.css?v=5.2">
   <link rel="stylesheet" href="premium.css?v=4.0">
   <style>
     /* Hard-coded to bypass any browser cache issues */
@@ -335,20 +335,42 @@
 
       <!-- TAB: Edit Raw -->
       <div id="tab-edit" class="tab-pane hidden" style="display: flex; flex-direction: column;">
-        <div class="editor-header" style="flex-shrink: 0; flex-wrap: wrap; gap: 8px; justify-content: center; min-height: 40px; align-items: center;">
-          <span id="editor-format" class="editor-format" style="font-size: 11px;">Format: LRC</span>
-          <div style="display:flex;gap:6px;align-items:center; flex-wrap: wrap; justify-content: center;">
-            <button id="btn-group-2" class="btn-action btn-glass" style="font-size:11px; padding:4px 8px;" title="Group lines into pairs (slash separated)">Group 2x</button>
-            <button id="btn-group-4" class="btn-action btn-glass" style="font-size:11px; padding:4px 8px;" title="Group lines into quads (slash separated)">Group 4x</button>
-            <button id="btn-map-translations" class="btn-action btn-glass" style="font-size:11px; padding:4px 8px; background:rgba(16,185,129,0.1); border-color:rgba(16,185,129,0.3); color:#10B981;" title="Map translations line-by-line to lyrics">Map Trans</button>
-            <button id="btn-apply" class="btn-action" style="padding: 4px 12px;">Apply</button>
+        <!-- Toolbar row -->
+        <div class="editor-header" style="flex-shrink:0; display:flex; align-items:center; justify-content:space-between; padding:8px 12px; gap:8px; border-bottom:1px solid var(--border); background:var(--surface);">
+          <div style="display:flex; align-items:center; gap:6px;">
+            <span id="editor-format" class="editor-format" style="font-size:11px;">Format: LRC</span>
+            <span style="color:var(--border-2);">·</span>
+            <button id="btn-group-2" class="btn-action btn-glass" style="font-size:11px; padding:3px 8px;" title="Group lines into pairs (slash separated)">2×</button>
+            <button id="btn-group-4" class="btn-action btn-glass" style="font-size:11px; padding:3px 8px;" title="Group lines into quads (slash separated)">4×</button>
+          </div>
+          <div style="display:flex; align-items:center; gap:6px;">
+            <button id="btn-map-translations" class="btn-action btn-glass" style="font-size:11px; padding:3px 8px; background:rgba(16,185,129,0.08); border-color:rgba(16,185,129,0.25); color:#10B981;" title="Map translations line-by-line to the lyrics">Map →</button>
+            <button id="btn-apply" class="btn-action" style="padding:3px 12px; font-size:11px; background:var(--accent); border:none; color:#000; font-weight:700;">Apply</button>
           </div>
         </div>
-        <div style="display: flex; gap: 8px; flex: 1; min-height: 0;">
-          <textarea id="lyrics-editor" class="code-editor" spellcheck="false" autocomplete="off" placeholder="Paste LRC lyrics or plain text lyrics here...&#10;&#10;Tip: Click 'YT Captions' to grab captions directly from YouTube!" style="flex:1; resize:none;"></textarea>
-          <textarea id="translations-editor" class="code-editor" spellcheck="false" autocomplete="off" placeholder="Paste translated lines here...&#10;&#10;Will map line-by-line to the lyrics on the left when you click 'Map Translations'." style="flex:1; resize:none; border-color:rgba(16,185,129,0.3);"></textarea>
+
+        <!-- Dual-pane editor -->
+        <div style="display:flex; flex:1; min-height:0;">
+          <!-- LEFT: Lyrics -->
+          <div style="flex:1; display:flex; flex-direction:column; min-width:0; border-right:1px solid var(--border);">
+            <div style="display:flex; align-items:center; justify-content:space-between; padding:6px 12px; background:var(--surface-2); border-bottom:1px solid var(--border); flex-shrink:0;">
+              <span style="font-size:10px; font-weight:700; letter-spacing:0.08em; text-transform:uppercase; color:var(--text-3);">Lyrics</span>
+              <span style="font-size:10px; color:var(--text-3);">LRC or plain text</span>
+            </div>
+            <textarea id="lyrics-editor" class="code-editor" spellcheck="false" autocomplete="off" placeholder="Paste LRC lyrics or plain text lyrics here...&#10;&#10;Tip: Use 'YT Captions' in the Track tab to auto-grab captions from YouTube." style="flex:1; resize:none; border:none;"></textarea>
+          </div>
+
+          <!-- RIGHT: Translations -->
+          <div style="flex:1; display:flex; flex-direction:column; min-width:0;">
+            <div style="display:flex; align-items:center; justify-content:space-between; padding:6px 12px; background:rgba(16,185,129,0.04); border-bottom:1px solid rgba(16,185,129,0.15); flex-shrink:0;">
+              <span style="font-size:10px; font-weight:700; letter-spacing:0.08em; text-transform:uppercase; color:#10B981;">Translations</span>
+              <span style="font-size:10px; color:var(--text-3);">Line-by-line</span>
+            </div>
+            <textarea id="translations-editor" class="code-editor" spellcheck="false" autocomplete="off" placeholder="Paste translated lines here...&#10;&#10;Each line maps 1-to-1 with the lyrics on the left.&#10;Click 'Map →' to apply." style="flex:1; resize:none; border:none; background:rgba(16,185,129,0.02);"></textarea>
+          </div>
         </div>
       </div>
+
 
       <!-- TAB: To-Do & Competitors -->
       <div id="tab-pipeline" class="tab-pane hidden" style="display: flex; flex-direction: column;">
@@ -618,7 +640,7 @@
   TRENDING MODAL
 ════════════════════════════════════════════════ -->
 <div id="trending-modal" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-label="Top Drops & iTunes Trending">
-  <div class="modal-card" style="max-width: 900px; height: 85vh; max-height: 800px; display: flex; flex-direction: column;">
+  <div class="modal-card" style="max-width: 1100px; width: 96vw; height: 85vh; max-height: 820px; display: flex; flex-direction: column;">
     <div class="modal-search-row" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.05); padding: 16px 24px;">
       <div style="font-size: 16px; font-weight: 600; color: #fff; display: flex; align-items: center; gap: 8px;">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2c0 0-5 6.5-5 11a5 5 0 0 0 10 0c0-4.5-5-11-5-11Z"/></svg>
@@ -627,7 +649,7 @@
       <button id="btn-trending-close" class="modal-esc-btn" aria-label="Close">Esc</button>
     </div>
     
-    <div style="padding: 16px 24px 0 24px; border-bottom: 1px solid rgba(255,255,255,0.05); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; padding-bottom: 12px;">
+    <div style="padding: 12px 24px; border-bottom: 1px solid rgba(255,255,255,0.05); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
       <div class="trending-tabs" style="display:flex; gap:6px; overflow-x:auto;">
         <button class="trending-tab active" data-cat="pop">Pop</button>
         <button class="trending-tab" data-cat="hiphop">Hip-Hop</button>
@@ -643,31 +665,44 @@
 
     <div class="modal-results" style="padding: 0; flex: 1; display: flex; overflow: hidden;">
       <!-- Spotify Top Drops Column -->
-      <div style="flex: 1; border-right: 1px solid rgba(255,255,255,0.05); display: flex; flex-direction: column;">
-        <div style="padding: 12px 24px; font-size: 11px; font-weight: 700; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.05em; background: rgba(0,0,0,0.2);">Spotify Top Drops</div>
+      <div style="flex: 1; border-right: 1px solid rgba(255,255,255,0.05); display: flex; flex-direction: column; min-width: 0;">
+        <div style="padding: 10px 16px; font-size: 11px; font-weight: 700; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.05em; background: rgba(0,0,0,0.2); flex-shrink:0;">Spotify Top Drops</div>
         <div id="viral-loading" style="padding: 40px 20px; text-align: center; color: var(--text-3); font-size: 13px;">
           <div class="state-spinner" style="margin: 0 auto 10px;"></div>
           <span>Loading live trends...</span>
         </div>
-        <div id="viral-content" class="hidden" style="flex: 1; overflow-y: auto; padding: 16px 24px;">
-          <div id="viral-hot-list" class="viral-grid" style="grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));"></div>
+        <div id="viral-content" class="hidden" style="flex: 1; overflow-y: auto; padding: 12px 16px;">
+          <div id="viral-hot-list" class="viral-grid" style="grid-template-columns: 1fr;"></div>
         </div>
       </div>
       
       <!-- iTunes Trending Column -->
-      <div style="flex: 1; display: flex; flex-direction: column;">
-        <div style="padding: 12px 24px; font-size: 11px; font-weight: 700; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.05em; background: rgba(0,0,0,0.2);">iTunes Top Trending</div>
+      <div style="flex: 1; border-right: 1px solid rgba(255,255,255,0.05); display: flex; flex-direction: column; min-width: 0;">
+        <div style="padding: 10px 16px; font-size: 11px; font-weight: 700; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.05em; background: rgba(0,0,0,0.2); flex-shrink:0;">iTunes Top Trending</div>
         <div id="itunes-loading" style="padding: 40px 20px; text-align: center; color: var(--text-3); font-size: 13px;">
           <div class="state-spinner" style="margin: 0 auto 10px;"></div>
           <span>Loading iTunes charts...</span>
         </div>
-        <div id="itunes-content" class="hidden" style="flex: 1; overflow-y: auto; padding: 16px 24px;">
-          <div id="itunes-hot-list" class="viral-grid" style="grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));"></div>
+        <div id="itunes-content" class="hidden" style="flex: 1; overflow-y: auto; padding: 12px 16px;">
+          <div id="itunes-hot-list" class="viral-grid" style="grid-template-columns: 1fr;"></div>
+        </div>
+      </div>
+
+      <!-- TODAY'S PLAN Column -->
+      <div style="width: 280px; flex-shrink: 0; display: flex; flex-direction: column; background: rgba(16,185,129,0.03);">
+        <div style="padding: 10px 16px; font-size: 11px; font-weight: 700; color: #10B981; text-transform: uppercase; letter-spacing: 0.05em; background: rgba(16,185,129,0.06); border-bottom: 1px solid rgba(16,185,129,0.12); flex-shrink:0; display:flex; align-items:center; gap:6px;">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+          Today's Plan
+        </div>
+        <div id="today-plan-content" style="flex: 1; overflow-y: auto; padding: 12px;">
+          <!-- Populated by JS -->
+          <div style="padding: 30px 12px; text-align: center; color: var(--text-3); font-size: 12px;">Loading strategy...</div>
         </div>
       </div>
     </div>
   </div>
 </div>
+
 
 <!-- ═══════════════════════════════════════════════
   COMPETITOR RADAR MODAL
@@ -708,7 +743,7 @@
   </div>
 </div>
 
-<script src="app.js?v=7.0.7"></script>
+<script src="app.js?v=7.1.0"></script>
 </body>
 </html>
 
