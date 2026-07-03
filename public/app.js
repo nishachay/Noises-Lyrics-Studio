@@ -392,6 +392,14 @@ function prepareBlurSource(img) {
 }
 
 // ΓöÇΓöÇ Extract dominant colors from album art ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+function getLuminance(r, g, b) {
+  const [rs, gs, bs] = [r, g, b].map(c => {
+    c = c / 255;
+    return c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
+  });
+  return 0.2126 * rs + 0.7152 * gs + 0.0722 * bs;
+}
+
 function extractColors(img) {
   try {
     const tmp = document.createElement('canvas');
@@ -405,10 +413,22 @@ function extractColors(img) {
       rgb: (r, g, b, a) => `rgba(${r},${g},${b},${a})`
     };
     
-    // Set subtle dark background color based on center pixel
-    const [r, g, b] = colorData.c;
-    document.body.style.setProperty('--art-color', `rgba(${r}, ${g}, ${b}, 0.1)`);
-    document.body.style.setProperty('--art-color-dark', `rgba(${r}, ${g}, ${b}, 0.03)`);
+    // AAA Contrast Algorithm
+    // We want the background luminance to be <= 0.10 for 7:1 contrast with white text.
+    let [r, g, b] = colorData.c;
+    let lum = getLuminance(r, g, b);
+    
+    // Darken the color until it meets AAA standards (L <= 0.1)
+    while (lum > 0.1) {
+      r = Math.max(0, Math.floor(r * 0.9));
+      g = Math.max(0, Math.floor(g * 0.9));
+      b = Math.max(0, Math.floor(b * 0.9));
+      lum = getLuminance(r, g, b);
+    }
+    
+    document.body.style.setProperty('--art-color', `rgba(${r}, ${g}, ${b}, 0.8)`);
+    document.body.style.setProperty('--art-color-dark', `rgba(${Math.floor(r*0.5)}, ${Math.floor(g*0.5)}, ${Math.floor(b*0.5)}, 0.9)`);
+    colorData.aaaDark = [r, g, b];
   } catch(e) { colorData = null; }
 }
 
@@ -2405,11 +2425,14 @@ function saveProjectState() {
     syncOffset: S.syncOffset,
     lyricsSourceValue: lyricsSource.value,
     trackTitle: S.track.title,
-    trackArtist: S.track.artist,
-    ytCaptionsLRC: S.ytCaptionsLRC || null,
-    ytCaptionsList: S.ytCaptionsList || null
+    trackArtist: S.track.artist
+    // Removed ytCaptionsLRC and ytCaptionsList to fix 5MB quota exceeded error
   };
-  localStorage.setItem(`noises_lyric_project_${S.track.youtubeId}`, JSON.stringify(state));
+  try {
+    localStorage.setItem(`noises_lyric_project_${S.track.youtubeId}`, JSON.stringify(state));
+  } catch (e) {
+    console.warn("Could not save project state:", e);
+  }
 }
 
 function loadProjectState() {
@@ -3002,6 +3025,31 @@ if (btnFetchGenius) {
   });
 }
 
+// Map Translations line by line
+if (btnMapTranslations) {
+  btnMapTranslations.addEventListener('click', () => {
+    if (!S.lyrics || S.lyrics.length === 0) {
+      alert("Please parse or load raw lyrics on the left first.");
+      return;
+    }
+    const transText = translationsEditor.value.trim();
+    if (!transText) return;
+    
+    const lines = transText.split('\n').map(l => l.trim()).filter(l => l);
+    if (lines.length > 0) {
+      S.lyrics.forEach((lyricObj, idx) => {
+        if (lines[idx]) {
+          lyricObj.translation = lines[idx];
+        } else {
+          delete lyricObj.translation;
+        }
+      });
+      renderLyricsList();
+      alert(`Mapped ${Math.min(lines.length, S.lyrics.length)} translation lines successfully!`);
+    }
+  });
+}
+
 // Editor apply — read textarea NOW, clear old lyrics, apply new ones, switch to Sync tab
 btnApply.addEventListener('click', () => {
   const text = lyricsEditor.value.trim();
@@ -3475,6 +3523,15 @@ if (localAudioUpload) {
       audio.load();
       audioOverlay.classList.remove('hidden');
       audioLoadTxt.textContent = 'Loading custom audio...';
+      
+      audio.addEventListener('loadedmetadata', () => {
+        if (S.track) {
+          S.track.duration = audio.duration;
+          S.audioDuration = audio.duration;
+          updatePlayerUIElements();
+        }
+      }, { once: true });
+      
       audio.addEventListener('canplay', () => { audioOverlay.classList.add('hidden'); }, { once: true });
 
       btnCompile.disabled = false;
@@ -3941,6 +3998,23 @@ function renderTodos() {
       renderTodos();
     });
     
+    if (todo.time) {
+      const timeBadge = document.createElement('span');
+      // Format 24h time to 12h AM/PM if needed, or just show as is.
+      const [h, m] = todo.time.split(':');
+      const hour = parseInt(h);
+      const ampm = hour >= 12 ? 'PM' : 'AM';
+      const formattedTime = `${hour % 12 || 12}:${m} ${ampm}`;
+      
+      timeBadge.textContent = formattedTime;
+      timeBadge.style.fontSize = '10px';
+      timeBadge.style.padding = '2px 6px';
+      timeBadge.style.borderRadius = '4px';
+      timeBadge.style.background = 'rgba(16,185,129,0.15)'; // Greenish background for time
+      timeBadge.style.color = 'var(--accent)'; // Highlighted color
+      rightWrap.appendChild(timeBadge);
+    }
+    
     rightWrap.appendChild(badge);
     rightWrap.appendChild(delBtn);
     
@@ -3951,13 +4025,17 @@ function renderTodos() {
   });
 }
 
+const todoTime = document.getElementById('todo-time');
+
 if (btnAddTodo) {
   btnAddTodo.addEventListener('click', () => {
     const text = todoInput.value.trim();
     if (!text) return;
     const channel = todoChannel.value;
-    todos.push({ text, channel, completed: false, id: Date.now() });
+    const time = todoTime ? todoTime.value : '';
+    todos.push({ text, channel, time, completed: false, id: Date.now() });
     todoInput.value = '';
+    if (todoTime) todoTime.value = '';
     saveTodos();
     renderTodos();
   });

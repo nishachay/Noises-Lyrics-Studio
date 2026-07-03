@@ -334,16 +334,20 @@
       </div>
 
       <!-- TAB: Edit Raw -->
-      <div id="tab-edit" class="tab-pane hidden">
-        <div class="editor-header">
+      <div id="tab-edit" class="tab-pane hidden" style="display: flex; flex-direction: column;">
+        <div class="editor-header" style="flex-shrink: 0;">
           <span id="editor-format" class="editor-format">Format: LRC (Synced)</span>
           <div style="display:flex;gap:6px;align-items:center;">
             <button id="btn-group-2" class="btn-action btn-glass" style="font-size:11px; padding:4px 8px;" title="Group lines into pairs (slash separated)">Group 2x</button>
             <button id="btn-group-4" class="btn-action btn-glass" style="font-size:11px; padding:4px 8px;" title="Group lines into quads (slash separated)">Group 4x</button>
+            <button id="btn-map-translations" class="btn-action btn-glass" style="font-size:11px; padding:4px 8px; background:rgba(16,185,129,0.1); border-color:rgba(16,185,129,0.3); color:#10B981;" title="Map translations line-by-line to lyrics">Map Translations</button>
             <button id="btn-apply" class="btn-action">Apply</button>
           </div>
         </div>
-        <textarea id="lyrics-editor" class="code-editor" spellcheck="false" autocomplete="off" placeholder="Paste LRC lyrics or plain text lyrics here...&#10;&#10;Tip: Click 'YT Captions' to grab captions directly from YouTube!"></textarea>
+        <div style="display: flex; gap: 8px; flex: 1; min-height: 0;">
+          <textarea id="lyrics-editor" class="code-editor" spellcheck="false" autocomplete="off" placeholder="Paste LRC lyrics or plain text lyrics here...&#10;&#10;Tip: Click 'YT Captions' to grab captions directly from YouTube!" style="flex:1; resize:none;"></textarea>
+          <textarea id="translations-editor" class="code-editor" spellcheck="false" autocomplete="off" placeholder="Paste translated lines here...&#10;&#10;Will map line-by-line to the lyrics on the left when you click 'Map Translations'." style="flex:1; resize:none; border-color:rgba(16,185,129,0.3);"></textarea>
+        </div>
       </div>
 
       <!-- TAB: To-Do & Competitors -->
@@ -363,6 +367,7 @@
                 <option value="DHH">DHH</option>
                 <option value="K-Pop">K-Pop</option>
               </select>
+              <input type="time" id="todo-time" class="text-input glass-input" style="width: 90px; padding: 4px;" title="Upload Time">
               <button id="btn-add-todo" class="btn-action primary" style="padding: 4px 8px;">Add</button>
             </div>
             <div id="todo-list" style="display:flex; flex-direction:column; gap:8px;">
@@ -434,22 +439,7 @@
           </div>
         </div>
 
-        <!-- Auto-Publish Section -->
-        <div style="background: var(--surface-2); padding: 16px; border-radius: 8px; border: 1px solid var(--border);">
-          <h3 style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-3); margin-bottom: 12px; display:flex; justify-content:space-between; align-items:center;">
-            1-Click Publish 
-            <a href="/api/youtube-auth?channel=pop" target="_blank" style="color:var(--accent); text-decoration:none; background:rgba(16,185,129,0.1); padding:4px 8px; border-radius:4px;" title="Authenticate a channel">+ Auth</a>
-          </h3>
-          <div style="display:flex; flex-direction:column; gap:8px;">
-            <button id="btn-yt-pop" class="btn-dl primary yt-publish-btn" data-channel="pop" data-bg="#0F026B" onmouseover="updateSchedulePreview('pop')" style="background:#0F026B; border:none; color:#FFFFFF; font-size:12px; justify-content:center; font-weight:bold; transition: background 0.2s;">▶ Noises Music</button>
-            <button id="btn-yt-hiphop" class="btn-dl primary yt-publish-btn" data-channel="hiphop" data-bg="#ff0800" onmouseover="updateSchedulePreview('hiphop')" style="background:#ff0800; border:none; color:#FFFFFF; font-size:12px; justify-content:center; font-weight:bold; transition: background 0.2s;">▶ Noises HipHop</button>
-            <button id="btn-yt-hindi" class="btn-dl primary yt-publish-btn" data-channel="hindi" data-bg="#ff3d00" onmouseover="updateSchedulePreview('hindi')" style="background:#ff3d00; border:none; color:#FFFFFF; font-size:12px; justify-content:center; font-weight:bold; transition: background 0.2s;">▶ Noises Geet</button>
-            <button id="btn-yt-dhh" class="btn-dl primary yt-publish-btn" data-channel="dhh" data-bg="#590000" onmouseover="updateSchedulePreview('dhh')" style="background:#590000; border:none; color:#FFFFFF; font-size:12px; justify-content:center; font-weight:bold; transition: background 0.2s;">▶ Noises DHH</button>
-            <button id="btn-yt-kpop" class="btn-dl primary yt-publish-btn" data-channel="kpop" data-bg="#002e1f" onmouseover="updateSchedulePreview('kpop')" style="background:#002e1f; border:none; color:#FFFFFF; font-size:12px; justify-content:center; font-weight:bold; transition: background 0.2s;">▶ Noises Kpop</button>
-          </div>
-          <div id="yt-publish-status" style="margin-top: 12px; font-size: 12px; color: var(--accent); font-weight:600; display:none; padding:8px; background:rgba(16,185,129,0.1); border-radius:4px; text-align:center;"></div>
-          <div id="schedule-indicator" style="margin-top: 8px; font-size: 11px; color: var(--text-3); text-align: center;">Hover channel to see schedule...</div>
-        </div>
+        <!-- Auto-Publish Section Removed -->
 
       </div>
       <div class="done-meta">

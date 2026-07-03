@@ -19,6 +19,9 @@ const fontDir = path.join(__dirname, 'bin', 'fonts');
     ['Tokotype-PlusJakartaSans-Medium.ttf', 'Plus Jakarta Sans'],
     ['Tokotype-PlusJakartaSans-Bold.ttf',   'Plus Jakarta Sans'],
     ['NotoSansDevanagari.ttf',              'Noto Sans Devanagari'],
+    ['NotoSansDevanagari-Bold.ttf',         'Noto Sans Devanagari'],
+    ['NotoSansKR.ttf',                      'Noto Sans KR'],
+    ['NotoSansKR-Bold.otf',                 'Noto Sans KR'],
   ];
   for (const [file, family] of pairs) {
     const fp = path.join(fontDir, file);
@@ -140,17 +143,30 @@ function drawBackground(ctx, w, h, coverImg, colors, time, amp) {
     ctx.fillRect(0, 0, w, h);
   }
 
-  // Smart darkening overlay for readability
-  let baseAlpha = 0.4;
-  if (colors) {
-    const getLuma = (c) => 0.299*c[0] + 0.587*c[1] + 0.114*c[2];
-    const avgLuma = (getLuma(colors.tl) + getLuma(colors.tr) + getLuma(colors.bl) + getLuma(colors.br) + getLuma(colors.c)) / 5;
-    if (avgLuma > 100) {
-      baseAlpha += Math.min(0.35, ((avgLuma - 100) / 155) * 0.35);
+  // AAA Contrast Algorithm overlay
+  if (colors && colors.c) {
+    let [r, g, b] = colors.c;
+    const getLuminance = (r, g, b) => {
+      const [rs, gs, bs] = [r, g, b].map(c => {
+        c = c / 255;
+        return c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
+      });
+      return 0.2126 * rs + 0.7152 * gs + 0.0722 * bs;
+    };
+    
+    let lum = getLuminance(r, g, b);
+    while (lum > 0.08) {
+      r = Math.max(0, Math.floor(r * 0.85));
+      g = Math.max(0, Math.floor(g * 0.85));
+      b = Math.max(0, Math.floor(b * 0.85));
+      lum = getLuminance(r, g, b);
     }
+    
+    // Fill a solid rich dark tint derived from the album art, 85% opacity overlay
+    ctx.fillStyle = `rgba(${r}, ${g}, ${b}, 0.85)`;
+  } else {
+    ctx.fillStyle = `rgba(0,0,0,0.85)`;
   }
-
-  ctx.fillStyle = `rgba(0,0,0,${baseAlpha.toFixed(2)})`;
   ctx.fillRect(0, 0, w, h);
 
   // Soft vignette drawn under text overlays
@@ -811,12 +827,12 @@ function generateThumbnail(coverImg, colors, title, artist, font, alignment, wra
   drawBackground(ctx, W, H, coverImg, colors, 10.0, 0.0);
 
   // 2. Draw centered Album Cover Art
-  const artSz = Math.round(H * 0.55); // Increased for high quality!
+  const artSz = Math.round(H * 0.55);
   const radius = Math.round(artSz * 0.06);
 
   const ax = Math.round((W - artSz) / 2);
-  const titleSz = Math.round(H * 0.095); // Much bigger title
-  const artistSz = Math.round(H * 0.048); // Bigger artist
+  const titleSz = Math.round(H * 0.095);
+  const artistSz = Math.round(H * 0.048);
   const gap1 = Math.round(H * 0.05);
   const gap2 = Math.round(H * 0.02);
 
@@ -862,20 +878,25 @@ function generateThumbnail(coverImg, colors, title, artist, font, alignment, wra
   const titleLineHeight = Math.round(finalTitleSz * 1.25);
   
   // Calculate total height of elements and center them vertically
-  const totalH = artSz + gap1 + (titleLines.length * titleLineHeight) + gap2 + artistSz;
+  // Include space for the LYRICS badge
+  const badgeH = Math.round(H * 0.045);
+  const badgeGap = Math.round(H * 0.025);
+  
+  const totalH = artSz + gap1 + (titleLines.length * titleLineHeight) + gap2 + artistSz + badgeGap + badgeH;
   const ay = Math.round((H - totalH) / 2);
   const titleY = ay + artSz + gap1;
   const artistY = titleY + (titleLines.length * titleLineHeight) + gap2;
+  const badgeY = artistY + artistSz + badgeGap;
 
   // Draw Cover Art
   if (coverImg) {
     ctx.save();
     ctx.imageSmoothingEnabled = true;
     ctx.imageSmoothingQuality = 'high';
-    // Drop shadow
-    ctx.shadowColor = 'rgba(0, 0, 0, 0.65)';
-    ctx.shadowBlur = 50;
-    ctx.shadowOffsetY = 15;
+    // Deep cinematic drop shadow
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.8)';
+    ctx.shadowBlur = 60;
+    ctx.shadowOffsetY = 25;
 
     ctx.beginPath();
     ctx.roundRect(ax, ay, artSz, artSz, radius);
@@ -887,16 +908,16 @@ function generateThumbnail(coverImg, colors, title, artist, font, alignment, wra
     ctx.save();
     ctx.beginPath();
     ctx.roundRect(ax, ay, artSz, artSz, radius);
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
-    ctx.lineWidth = 1.5;
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.25)';
+    ctx.lineWidth = 2.0;
     ctx.stroke();
     ctx.restore();
   } else {
     ctx.save();
     ctx.fillStyle = '#111115';
-    ctx.shadowColor = 'rgba(0, 0, 0, 0.65)';
-    ctx.shadowBlur = 50;
-    ctx.shadowOffsetY = 15;
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.8)';
+    ctx.shadowBlur = 60;
+    ctx.shadowOffsetY = 25;
     ctx.beginPath();
     ctx.roundRect(ax, ay, artSz, artSz, radius);
     ctx.fill();
@@ -909,9 +930,9 @@ function generateThumbnail(coverImg, colors, title, artist, font, alignment, wra
   ctx.textBaseline = 'top';
   ctx.font = `bold ${finalTitleSz}px "Plus Jakarta Sans", "Noto Sans Devanagari", "Noto Sans KR"`;
   ctx.fillStyle = '#ffffff';
-  ctx.shadowColor = 'rgba(0, 0, 0, 0.4)';
-  ctx.shadowBlur = 8;
-  ctx.shadowOffsetY = 2;
+  ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
+  ctx.shadowBlur = 10;
+  ctx.shadowOffsetY = 4;
 
   for (let i = 0; i < titleLines.length; i++) {
     ctx.fillText(titleLines[i], W / 2, titleY + i * titleLineHeight);
@@ -920,10 +941,38 @@ function generateThumbnail(coverImg, colors, title, artist, font, alignment, wra
   // Draw Artist Name
   ctx.font = `600 ${artistSz}px "Plus Jakarta Sans", "Noto Sans Devanagari", "Noto Sans KR"`;
   ctx.fillStyle = 'rgba(255, 255, 255, 0.85)';
-  ctx.shadowColor = 'rgba(0, 0, 0, 0.3)';
-  ctx.shadowBlur = 4;
-  ctx.shadowOffsetY = 1;
+  ctx.shadowColor = 'rgba(0, 0, 0, 0.4)';
+  ctx.shadowBlur = 6;
+  ctx.shadowOffsetY = 2;
   ctx.fillText(artist, W / 2, artistY);
+  ctx.restore();
+
+  // Draw "LYRICS" Badge
+  ctx.save();
+  const badgeText = "LYRICS";
+  ctx.font = `bold ${Math.round(badgeH * 0.6)}px "Plus Jakarta Sans"`;
+  const badgeTextW = ctx.measureText(badgeText).width;
+  const badgeW = badgeTextW + Math.round(W * 0.04);
+  const badgeX = (W - badgeW) / 2;
+  
+  ctx.shadowColor = 'rgba(0,0,0,0.3)';
+  ctx.shadowBlur = 15;
+  ctx.shadowOffsetY = 5;
+  
+  ctx.beginPath();
+  ctx.roundRect(badgeX, badgeY, badgeW, badgeH, badgeH / 2);
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.15)'; // frosted look
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+  
+  ctx.shadowColor = 'transparent';
+  ctx.fillStyle = '#ffffff';
+  ctx.textBaseline = 'middle';
+  ctx.textAlign = 'center';
+  ctx.letterSpacing = '2px';
+  ctx.fillText(badgeText, W / 2, badgeY + (badgeH / 2));
   ctx.restore();
 
   // Draw watermark logo in the corner (at static time = 0.0)
@@ -1068,7 +1117,7 @@ function renderVideo({
         '-filter_complex',
           `[1:a]afade=t=in:ss=0:d=1,afade=t=out:st=${renderDuration - 2}:d=2[a]`,
         '-map', '0:v', '-map', '[a]',
-        '-c:v', 'libx264', '-preset', 'ultrafast', '-crf', '20',
+        '-c:v', 'libx264', '-preset', 'fast', '-crf', '18',
         '-vsync', 'cfr',                     // Force Constant Frame Rate to avoid audio drift
         '-r', `${FPS}`,                      // Set explicit output frame rate
         '-pix_fmt', 'yuv420p',
