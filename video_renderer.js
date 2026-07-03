@@ -1051,16 +1051,16 @@ function renderVideo({
           colors   = extractColors(coverImg);
           
           // Generate _blurCanvas exactly like app.js
-          _blurCanvas = createCanvas(32, 18);
+          _blurCanvas = createCanvas(256, 144);
           const bx = _blurCanvas.getContext('2d');
           const iW = coverImg.width || 1000;
           const iH = coverImg.height || 1000;
-          const target = 32 / 18;
+          const target = 256 / 144;
           const ratio = iW / iH;
           let sx, sy, sw, sh;
           if (ratio > target) { sh = iH; sw = iH * target; sx = (iW - sw) / 2; sy = 0; }
           else                { sw = iW; sh = iW / target; sx = 0; sy = (iH - sh) / 2; }
-          bx.drawImage(coverImg, sx, sy, sw, sh, 0, 0, 32, 18);
+          bx.drawImage(coverImg, sx, sy, sw, sh, 0, 0, 256, 144);
           
           console.log('[Renderer] Cover art loaded ✓');
         } catch (e) { console.error('[Renderer] Cover art:', e.message); }
@@ -1441,16 +1441,16 @@ async function renderSlideshow({
             colors = extractColors(coverImg);
             
             // Generate _blurCanvas for slideshow background
-            _blurCanvas = createCanvas(32, 18);
+            _blurCanvas = createCanvas(256, 144);
             const bx = _blurCanvas.getContext('2d');
             const iW = coverImg.width || 1000;
             const iH = coverImg.height || 1000;
-            const target = 32 / 18;
+            const target = 256 / 144;
             const ratio = iW / iH;
             let sx, sy, sw, sh;
             if (ratio > target) { sh = iH; sw = iH * target; sx = (iW - sw) / 2; sy = 0; }
             else                { sw = iW; sh = iW / target; sx = 0; sy = (iH - sh) / 2; }
-            bx.drawImage(coverImg, sx, sy, sw, sh, 0, 0, 32, 18);
+            bx.drawImage(coverImg, sx, sy, sw, sh, 0, 0, 256, 144);
 
             processSlides();
           });
@@ -1474,16 +1474,16 @@ async function generateThumbnailBuffer({ title, artist, artworkUrl, theme, logoP
   const colors = extractColors(coverImg);
 
   // Generate _blurCanvas exactly like renderVideo for the background
-  _blurCanvas = createCanvas(32, 18);
+  _blurCanvas = createCanvas(256, 144);
   const bx = _blurCanvas.getContext('2d');
   const iW = coverImg.width || 1000;
   const iH = coverImg.height || 1000;
-  const target = 32 / 18;
+  const target = 256 / 144;
   const ratio = iW / iH;
   let sx=0, sy=0, sw=iW, sh=iH;
   if (ratio > target) { sw = iH * target; sx = (iW - sw) / 2; }
   else { sh = iW / target; sy = (iH - sh) / 2; }
-  bx.drawImage(coverImg, sx, sy, sw, sh, 0, 0, 32, 18);
+  bx.drawImage(coverImg, sx, sy, sw, sh, 0, 0, 256, 144);
 
   const alignment = theme === 'center' ? 'center' : 'left';
   const FONT = 'Plus Jakarta Sans';
