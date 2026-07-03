@@ -4027,6 +4027,25 @@ function renderTodos() {
 
 const todoTime = document.getElementById('todo-time');
 
+// Auto-fill time based on channel
+if (todoChannel && todoTime) {
+  todoChannel.addEventListener('change', () => {
+    const defaultTimes = {
+      'Pop': '10:00',
+      'Hip-Hop': '13:00',
+      'Hindi': '18:00',
+      'DHH': '21:00',
+      'K-Pop': '15:00'
+    };
+    const sel = todoChannel.value;
+    if (defaultTimes[sel]) {
+      todoTime.value = defaultTimes[sel];
+    }
+  });
+  // Trigger it once on load
+  todoChannel.dispatchEvent(new Event('change'));
+}
+
 if (btnAddTodo) {
   btnAddTodo.addEventListener('click', () => {
     const text = todoInput.value.trim();
@@ -4185,16 +4204,22 @@ async function fetchCompetitors() {
 
 // Add Modal Events
 const btnOpenRadar = document.getElementById('btn-open-competitor-modal');
+const btnOpenRadarTab = document.getElementById('btn-open-competitor-modal-tab');
 const modalRadar = document.getElementById('competitor-modal');
 const btnCloseRadar = document.getElementById('btn-close-competitor-modal');
 
+function openRadarModal() {
+  modalRadar.classList.remove('hidden');
+  if (allCompetitorData.length === 0) {
+    fetchCompetitors();
+  }
+}
+
 if (btnOpenRadar && modalRadar) {
-  btnOpenRadar.addEventListener('click', () => {
-    modalRadar.classList.remove('hidden');
-    if (allCompetitorData.length === 0) {
-      fetchCompetitors();
-    }
-  });
+  btnOpenRadar.addEventListener('click', openRadarModal);
+}
+if (btnOpenRadarTab && modalRadar) {
+  btnOpenRadarTab.addEventListener('click', openRadarModal);
 }
 if (btnCloseRadar && modalRadar) {
   btnCloseRadar.addEventListener('click', () => {
