@@ -134,6 +134,7 @@ const btnFetchGenius = $('btn-fetch-genius');
 const btnApply     = $('btn-apply');
 const btnGroup2    = $('btn-group-2');
 const btnGroup4    = $('btn-group-4');
+const btnMapTranslations = $('btn-map-translations');
 const btnYtCaptions = $('btn-yt-captions');
 const syncOffsetEl = $('sync-offset');
 const offsetLabel  = $('offset-label');
