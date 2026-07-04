@@ -2496,15 +2496,47 @@ function saveProjectState() {
     syncOffset: S.syncOffset,
     lyricsSourceValue: lyricsSource.value,
     trackTitle: S.track.title,
-    trackArtist: S.track.artist
-    // Removed ytCaptionsLRC and ytCaptionsList to fix 5MB quota exceeded error
+    trackArtist: S.track.artist,
+    savedAt: Date.now()
   };
-  try {
-    localStorage.setItem(`noises_lyric_project_${S.track.youtubeId}`, JSON.stringify(state));
-  } catch (e) {
-    console.warn("Could not save project state:", e);
-  }
+
+  const key = `noises_lyric_project_${S.track.youtubeId}`;
+  const value = JSON.stringify(state);
+
+  // LRU eviction: if quota exceeded, remove oldest saved project and retry
+  const tryWrite = () => {
+    try {
+      localStorage.setItem(key, value);
+    } catch (e) {
+      if (e.name === 'QuotaExceededError' || e.code === 22) {
+        // Find all project keys and sort by savedAt
+        const projectKeys = [];
+        for (let i = 0; i < localStorage.length; i++) {
+          const k = localStorage.key(i);
+          if (k && k.startsWith('noises_lyric_project_') && k !== key) {
+            try {
+              const stored = JSON.parse(localStorage.getItem(k));
+              projectKeys.push({ key: k, savedAt: stored.savedAt || 0 });
+            } catch (_) {
+              projectKeys.push({ key: k, savedAt: 0 });
+            }
+          }
+        }
+        if (projectKeys.length > 0) {
+          // Remove the oldest
+          projectKeys.sort((a, b) => a.savedAt - b.savedAt);
+          localStorage.removeItem(projectKeys[0].key);
+          console.info('[Storage] Evicted oldest project to free space:', projectKeys[0].key);
+          try { localStorage.setItem(key, value); } catch (_) { /* give up gracefully */ }
+        }
+      } else {
+        console.warn('Could not save project state:', e);
+      }
+    }
+  };
+  tryWrite();
 }
+
 
 function loadProjectState() {
   if (!S.track || !S.track.youtubeId) return false;
@@ -3771,14 +3803,7 @@ document.querySelectorAll('.yt-publish-btn').forEach(btn => {
 
 // --- Quota & Pipeline Dashboard ---
 async function fetchQuota() {
-  try {
-    const res = await fetch('/api/quota');
-    const { quota } = await res.json();
-    const pct = Math.min(100, Math.round((quota / 10000) * 100));
-    document.getElementById('quota-text').innerText = `${quota} / 10000`;
-    document.getElementById('quota-bar-fill').style.width = `${pct}%`;
-    if (pct > 90) document.getElementById('quota-bar-fill').style.background = '#ef4444';
-  } catch (e) {}
+  // Quota tracker UI removed — function kept as stub to avoid breaking any callers
 }
 
 async function fetchDailyStatus() {

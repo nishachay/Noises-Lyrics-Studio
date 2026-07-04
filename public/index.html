@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&family=Noto+Sans+Devanagari:wght@400;500;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=5.2">
+  <link rel="stylesheet" href="style.css?v=5.3">
   <link rel="stylesheet" href="premium.css?v=4.0">
   <style>
     /* Hard-coded to bypass any browser cache issues */
@@ -143,6 +143,7 @@
     <div class="header-brand" style="display: flex; align-items: center; gap: 8px;">
       <div class="brand-dot"></div>
       <span class="brand-name">noises studio</span>
+      <span style="font-size:10px; font-weight:600; color:var(--accent); background:rgba(16,185,129,0.1); border:1px solid rgba(16,185,129,0.2); border-radius:4px; padding:1px 6px; letter-spacing:0.04em; font-family:var(--mono);">v7.1</span>
     </div>
 
     <!-- CENTER ACTIONS (Search and Top Drops) -->
@@ -171,16 +172,8 @@
       <div id="header-artist"></div>
     </div>
 
-    <!-- RIGHT ACTIONS (Quota and Publish) -->
+    <!-- RIGHT ACTIONS -->
     <div class="header-right-actions" style="display:flex; align-items:center; gap:16px; margin-left: auto;">
-      <!-- QUOTA TRACKER -->
-      <div id="quota-tracker" style="display:flex; align-items:center; gap:8px; font-size: 11px; color: var(--text-2);">
-        <span>Quota:</span>
-        <div style="width: 80px; height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px; overflow: hidden;">
-          <div id="quota-bar-fill" style="width: 0%; height: 100%; background: var(--accent); transition: width 0.3s ease;"></div>
-        </div>
-        <span id="quota-text">...</span>
-      </div>
 
       <button id="btn-publish-modal" class="btn-publish-header" aria-label="Publish / Export" style="margin: 0;">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right:6px;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
@@ -219,7 +212,10 @@
         <div class="scrubber-track">
           <input id="player-scrubber" type="range" min="0" max="1000" value="0" class="scrubber" aria-label="Seek">
           <div id="scrubber-fill" class="scrubber-fill"></div>
+        </div>
+      </div>
     </section>
+
 
     <!-- RIGHT: Inspector panel -->
     <aside class="control-column">
@@ -743,7 +739,7 @@
   </div>
 </div>
 
-<script src="app.js?v=7.1.0"></script>
+<script src="app.js?v=7.2.0"></script>
 </body>
 </html>
 

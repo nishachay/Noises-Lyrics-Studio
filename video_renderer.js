@@ -16,20 +16,28 @@ const ffmpegInstaller = require('@ffmpeg-installer/ffmpeg');
 const fontDir = path.join(__dirname, 'bin', 'fonts');
 (function registerFonts() {
   const pairs = [
-    ['Tokotype-PlusJakartaSans-Medium.ttf', 'Plus Jakarta Sans'],
-    ['Tokotype-PlusJakartaSans-Bold.ttf',   'Plus Jakarta Sans'],
-    ['NotoSansDevanagari.ttf',              'Noto Sans Devanagari'],
-    ['NotoSansDevanagari-Bold.ttf',         'Noto Sans Devanagari'],
-    ['NotoSansKR.ttf',                      'Noto Sans KR'],
-    ['NotoSansKR-Bold.otf',                 'Noto Sans KR'],
+    // Plus Jakarta Sans
+    ['Tokotype-PlusJakartaSans-Medium.ttf', 'Plus Jakarta Sans', { weight: '500' }],
+    ['Tokotype-PlusJakartaSans-Bold.ttf',   'Plus Jakarta Sans', { weight: '700' }],
+    ['PlusJakartaSans-Bold.ttf',            'Plus Jakarta Sans', { weight: '800' }],
+    // Noto Sans Devanagari (Hindi)
+    ['NotoSansDevanagari.ttf',              'Noto Sans Devanagari', { weight: '400' }],
+    ['NotoSansDevanagari-Bold.ttf',         'Noto Sans Devanagari', { weight: '700' }],
+    // Noto Sans KR (Korean)
+    ['NotoSansKR.ttf',                      'Noto Sans KR', { weight: '400' }],
+    ['NotoSansKR-Bold.otf',                 'Noto Sans KR', { weight: '700' }],
   ];
-  for (const [file, family] of pairs) {
+  for (const [file, family, opts] of pairs) {
     const fp = path.join(fontDir, file);
     if (fs.existsSync(fp)) {
-      try { GlobalFonts.registerFromPath(fp, family); } catch (_) {}
+      try { GlobalFonts.registerFromPath(fp, family, opts); } catch (e) {
+        // Fallback for older @napi-rs/canvas versions that don't accept opts
+        try { GlobalFonts.registerFromPath(fp, family); } catch (_) {}
+      }
     }
   }
 })();
+
 
 // ── Beautiful Lyrics constants (from Lyrics.scss / LineVocals.ts) ────────────
 const BL = {
