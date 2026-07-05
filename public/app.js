@@ -408,28 +408,45 @@ function extractColors(img) {
     const t = tmp.getContext('2d');
     t.drawImage(img, 0, 0, 10, 10);
     const d = t.getImageData(0, 0, 10, 10).data;
-    const px = (x, y) => { const i = (y * 10 + x) * 4; return [d[i], d[i+1], d[i+2]]; };
+    
+    // AAA Contrast Algorithm
+    const getLuminance = (r, g, b) => {
+      const [rs, gs, bs] = [r, g, b].map(c => {
+        c = c / 255;
+        return c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
+      });
+      return 0.2126 * rs + 0.7152 * gs + 0.0722 * bs;
+    };
+
+    const enforceAAAContrast = (color) => {
+      let L = getLuminance(...color);
+      let darkened = [...color];
+      let iterations = 0;
+      while (L > 0.1 && iterations < 20) {
+        darkened = [
+          Math.max(0, Math.floor(darkened[0] * 0.9)),
+          Math.max(0, Math.floor(darkened[1] * 0.9)),
+          Math.max(0, Math.floor(darkened[2] * 0.9))
+        ];
+        L = getLuminance(...darkened);
+        iterations++;
+      }
+      return darkened;
+    };
+
+    const px = (x, y) => { 
+      const i = (y * 10 + x) * 4; 
+      return enforceAAAContrast([d[i], d[i+1], d[i+2]]); 
+    };
+
     colorData = {
       tl: px(1,1), tr: px(8,1), bl: px(1,8), br: px(8,8), c: px(5,5),
       rgb: (r, g, b, a) => `rgba(${r},${g},${b},${a})`
     };
     
-    // AAA Contrast Algorithm
-    // We want the background luminance to be <= 0.10 for 7:1 contrast with white text.
     let [r, g, b] = colorData.c;
-    let lum = getLuminance(r, g, b);
-    
-    // Darken the color until it meets AAA standards (L <= 0.1)
-    while (lum > 0.1) {
-      r = Math.max(0, Math.floor(r * 0.9));
-      g = Math.max(0, Math.floor(g * 0.9));
-      b = Math.max(0, Math.floor(b * 0.9));
-      lum = getLuminance(r, g, b);
-    }
-    
     document.body.style.setProperty('--art-color', `rgba(${r}, ${g}, ${b}, 0.8)`);
     document.body.style.setProperty('--art-color-dark', `rgba(${Math.floor(r*0.5)}, ${Math.floor(g*0.5)}, ${Math.floor(b*0.5)}, 0.9)`);
-    colorData.aaaDark = [r, g, b];
   } catch(e) { colorData = null; }
 }
 
@@ -1470,68 +1487,62 @@ if (btnTrendingClose && trendingModal) {
 function buildTodaysPlan() {
   const container = document.getElementById('today-plan-content');
   if (!container) return;
-
-  const now = new Date();
-  const dayNames = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
-  const dayName = dayNames[now.getDay()];
   
-  // Day virality score
-  const dayRating = { Sun: {emoji:'🟢', label:'High', tip:'Weekends peak — great for Pop & K-Pop'}, Mon: {emoji:'🔴', label:'Low', tip:'Slowest day. Focus on DHH & Hindi instead'}, Tue: {emoji:'🟡', label:'Mid', tip:'Solid for Hip-Hop & DHH uploads'}, Wed: {emoji:'🟡', label:'Mid', tip:'Mid-week — good for Hindi & Pop content'}, Thu: {emoji:'🟢', label:'High', tip:'Pre-weekend surge. Best for Pop & Hip-Hop'}, Fri: {emoji:'🟢', label:'High', tip:'Friday drops are the highest-traffic day for music'}, Sat: {emoji:'🟢', label:'Peak', tip:'Peak weekend browsing — upload everything today'} }[dayName.slice(0,3)] || {emoji:'🟡', label:'Mid', tip:'Decent day for uploads'};
+  container.innerHTML = '<div style="padding: 20px; text-align: center; color: var(--text-3);">Fetching live trends from Kworb...</div>';
 
-  // Channel schedule — upload time mapped by niche (IST)
-  const schedule = [
-    { channel: 'Pop', icon: '🎵', uploadIST: '2:00 PM', songs: [
-      { title: 'Ordinary', artist: 'Alex Warren', reason: '#1 Billboard now' },
-      { title: 'Die With A Smile', artist: 'Lady Gaga & Bruno Mars', reason: 'Evergreen — massive search volume' },
-    ]},
-    { channel: 'Hip-Hop', icon: '🎤', uploadIST: '11:00 AM', songs: [
-      { title: 'Luther', artist: 'Kendrick Lamar & SZA', reason: 'Perpetually trending' },
-      { title: 'Not Like Us', artist: 'Kendrick Lamar', reason: 'All-time viral' },
-    ]},
-    { channel: 'Hindi', icon: '🎶', uploadIST: '7:00 PM', songs: [
-      { title: 'Kesariya', artist: 'Arijit Singh', reason: 'All-time search champion' },
-      { title: 'Tum Kya Mile', artist: 'Pritam', reason: 'From Rocky Aur Rani — still trending' },
-    ]},
-    { channel: 'DHH', icon: '🔥', uploadIST: '9:00 PM', songs: [
-      { title: 'Fiza', artist: 'Prabh Deep', reason: 'Critically acclaimed, niche high-engage' },
-      { title: 'Mere Gully Mein', artist: 'Divine & Naezy', reason: 'All-time DHH anthem' },
-    ]},
-    { channel: 'K-Pop', icon: '⭐', uploadIST: '6:00 PM', songs: [
-      { title: 'FAMOUS', artist: 'ALLDAY PROJECT', reason: 'Newly debuted — early mover advantage' },
-      { title: 'Dirty Work', artist: 'aespa', reason: 'High fan engagement right now' },
-    ]},
-  ];
+  fetch('/api/todays-plan')
+    .then(res => res.json())
+    .then(json => {
+      if (!json.success || !json.data) throw new Error('Failed to load plan');
 
-  container.innerHTML = `
-    <div style="margin-bottom:12px; padding:10px 12px; background:rgba(16,185,129,0.06); border-radius:8px; border:1px solid rgba(16,185,129,0.15);">
-      <div style="font-size:18px; margin-bottom:4px;">${dayRating.emoji} ${dayName} — ${dayRating.label} Virality</div>
-      <div style="font-size:11px; color:var(--text-3); line-height:1.5;">${dayRating.tip}</div>
-    </div>
-    ${schedule.map(ch => `
-      <div style="margin-bottom:10px; border:1px solid rgba(255,255,255,0.06); border-radius:8px; overflow:hidden;">
-        <div style="display:flex; align-items:center; justify-content:space-between; padding:8px 10px; background:rgba(255,255,255,0.03); border-bottom:1px solid rgba(255,255,255,0.05);">
-          <span style="font-size:12px; font-weight:700; color:var(--text-1);">${ch.icon} ${ch.channel}</span>
-          <span style="font-size:10px; color:var(--accent); font-family:var(--mono);">📤 ${ch.uploadIST}</span>
+      const now = new Date();
+      const dayNames = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+      const dayName = dayNames[now.getDay()];
+      
+      const dayRating = { Sun: {emoji:'🟢', label:'High', tip:'Weekends peak — great for Pop & K-Pop'}, Mon: {emoji:'🔴', label:'Low', tip:'Slowest day. Focus on DHH & Hindi instead'}, Tue: {emoji:'🟡', label:'Mid', tip:'Solid for Hip-Hop & DHH uploads'}, Wed: {emoji:'🟡', label:'Mid', tip:'Mid-week — good for Hindi & Pop content'}, Thu: {emoji:'🟢', label:'High', tip:'Pre-weekend surge. Best for Pop & Hip-Hop'}, Fri: {emoji:'🟢', label:'High', tip:'Friday drops are the highest-traffic day for music'}, Sat: {emoji:'🟢', label:'Peak', tip:'Peak weekend browsing — upload everything today'} }[dayName.slice(0,3)] || {emoji:'🟡', label:'Mid', tip:'Decent day for uploads'};
+
+      const dynamicSchedule = [
+        { channel: 'Pop', icon: '🎵', uploadIST: '2:00 PM', songs: json.data['Pop'] || [] },
+        { channel: 'Hip-Hop', icon: '🎤', uploadIST: '11:00 AM', songs: json.data['Hip-Hop'] || [] },
+        { channel: 'Hindi', icon: '🎶', uploadIST: '7:00 PM', songs: json.data['Hindi'] || [] },
+        { channel: 'DHH', icon: '🔥', uploadIST: '9:00 PM', songs: json.data['DHH'] || [] },
+        { channel: 'K-Pop', icon: '⭐', uploadIST: '6:00 PM', songs: json.data['K-Pop'] || [] },
+      ];
+
+      container.innerHTML = `
+        <div style="margin-bottom:12px; padding:10px 12px; background:rgba(16,185,129,0.06); border-radius:8px; border:1px solid rgba(16,185,129,0.15);">
+          <div style="font-size:18px; margin-bottom:4px;">${dayRating.emoji} ${dayName} — ${dayRating.label} Virality</div>
+          <div style="font-size:11px; color:var(--text-3); line-height:1.5;">${dayRating.tip}</div>
         </div>
-        ${ch.songs.map(s => `
-          <div class="today-plan-song" onclick="autoLoadAndPlay('${s.title} ${s.artist}')" style="display:flex; flex-direction:column; gap:2px; padding:8px 10px; cursor:pointer; transition:background 0.15s; border-bottom:1px solid rgba(255,255,255,0.03);">
-            <div style="font-size:12px; font-weight:600; color:var(--text-1); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${esc(s.title)}</div>
-            <div style="font-size:11px; color:var(--text-3);">${esc(s.artist)}</div>
-            <div style="font-size:10px; color:rgba(16,185,129,0.7); margin-top:1px;">${s.reason}</div>
+        ${dynamicSchedule.map(ch => `
+          <div style="margin-bottom:10px; border:1px solid rgba(255,255,255,0.06); border-radius:8px; overflow:hidden;">
+            <div style="display:flex; align-items:center; justify-content:space-between; padding:8px 10px; background:rgba(255,255,255,0.03); border-bottom:1px solid rgba(255,255,255,0.05);">
+              <span style="font-size:12px; font-weight:700; color:var(--text-1);">${ch.icon} ${ch.channel}</span>
+              <span style="font-size:10px; color:var(--accent); font-family:var(--mono);">📤 ${ch.uploadIST}</span>
+            </div>
+            ${ch.songs.map(s => `
+              <div class="today-plan-song" onclick="autoLoadAndPlay('${s.title.replace(/'/g, "\\'")} ${s.artist.replace(/'/g, "\\'")}')" style="display:flex; flex-direction:column; gap:2px; padding:8px 10px; cursor:pointer; transition:background 0.15s; border-bottom:1px solid rgba(255,255,255,0.03);">
+                <div style="font-size:12px; font-weight:600; color:var(--text-1); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${esc(s.title)}</div>
+                <div style="font-size:11px; color:var(--text-3);">${esc(s.artist)}</div>
+                <div style="font-size:10px; color:rgba(16,185,129,0.7); margin-top:1px;">${s.reason}</div>
+              </div>
+            `).join('')}
           </div>
         `).join('')}
-      </div>
-    `).join('')}
-    <div style="padding:8px 0; font-size:10px; color:var(--text-3); text-align:center; line-height:1.6;">
-      Click any song to auto-load it<br>Upload times are IST
-    </div>
-  `;
+        <div style="padding:8px 0; font-size:10px; color:var(--text-3); text-align:center; line-height:1.6;">
+          Click any song to auto-load it<br>Upload times are IST<br>Powered by Kworb Charts
+        </div>
+      `;
 
-  // Add hover style for plan songs
-  container.querySelectorAll('.today-plan-song').forEach(el => {
-    el.addEventListener('mouseenter', () => el.style.background = 'rgba(255,255,255,0.04)');
-    el.addEventListener('mouseleave', () => el.style.background = 'transparent');
-  });
+      container.querySelectorAll('.today-plan-song').forEach(el => {
+        el.addEventListener('mouseenter', () => el.style.background = 'rgba(255,255,255,0.04)');
+        el.addEventListener('mouseleave', () => el.style.background = 'transparent');
+      });
+    })
+    .catch(err => {
+      container.innerHTML = '<div style="padding: 20px; text-align: center; color: #ff4444;">Failed to fetch trending data from Kworb.</div>';
+      console.error(err);
+    });
 }
 
 

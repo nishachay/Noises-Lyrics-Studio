@@ -1578,7 +1578,71 @@ app.get('/api/preview/:fileId', (req, res) => {
 // ══════════════════════════════════════════════════════════════
 ensureFonts().then(() => {
   ensureYTMusic();
-  app.listen(PORT, () => {
+  
+// ==========================================
+// TODAY'S PLAN (Kworb Trending Scraper)
+// ==========================================
+app.get('/api/todays-plan', async (req, res) => {
+  try {
+    const fetchKworb = async (url) => {
+      const response = await axios.get(url, { headers: { 'User-Agent': 'Mozilla/5.0' } });
+      const html = response.data;
+      
+      // Extract the first 3 songs from the Kworb table
+      // Kworb rows: <tr><td class="pos">1</td><td><div><a href="...">Artist - Title</a>...</div></td></tr>
+      const matches = [...html.matchAll(/<td class="text"><div[^>]*><a href="[^"]*">([^<]+)<\/a><\/div>/g)];
+      
+      return matches.slice(0, 3).map(m => {
+        const text = m[1].replace(/&amp;/g, '&');
+        const parts = text.split(' - ');
+        return {
+          artist: parts[0] ? parts[0].trim() : 'Unknown Artist',
+          title: parts[1] ? parts.slice(1).join(' - ').trim() : text
+        };
+      });
+    };
+
+    const fetchYouTubeKworb = async (url) => {
+      const response = await axios.get(url, { headers: { 'User-Agent': 'Mozilla/5.0' } });
+      const html = response.data;
+      // YouTube kworb rows: <tr><td class="pos">1</td><td><a href="...">Artist - Title</a></td></tr>
+      const matches = [...html.matchAll(/<td class="text"><a href="[^"]*">([^<]+)<\/a>/g)];
+      
+      return matches.slice(0, 3).map(m => {
+        const text = m[1].replace(/&amp;/g, '&');
+        const parts = text.split(' - ');
+        return {
+          artist: parts[0] ? parts[0].trim() : 'Unknown Artist',
+          title: parts[1] ? parts.slice(1).join(' - ').trim() : text
+        };
+      });
+    }
+
+    const [pop, hiphop, hindi, kpop] = await Promise.all([
+      fetchKworb('https://kworb.net/charts/itunes/us.html'), // Using US iTunes for Pop proxy
+      fetchYouTubeKworb('https://kworb.net/youtube/'),       // Global YouTube for HipHop/Global hits proxy
+      fetchKworb('https://kworb.net/charts/itunes/in.html'), // India iTunes for Hindi/DHH
+      fetchKworb('https://kworb.net/charts/itunes/kr.html')  // Korea iTunes for K-Pop
+    ]);
+
+    res.json({
+      success: true,
+      data: {
+        Pop: pop.map(s => ({ ...s, reason: 'Trending #1 on US iTunes' })),
+        'Hip-Hop': hiphop.map(s => ({ ...s, reason: 'Viral Global YouTube hit' })),
+        Hindi: hindi.map(s => ({ ...s, reason: 'Trending #1 in India' })),
+        DHH: hindi.slice(1).map(s => ({ ...s, reason: 'High engagement DHH' })), // Reusing India charts for DHH
+        'K-Pop': kpop.map(s => ({ ...s, reason: 'Trending #1 in South Korea' }))
+      }
+    });
+
+  } catch (error) {
+    console.error('Todays plan fetch error:', error);
+    res.status(500).json({ success: false, error: 'Failed to fetch trending data' });
+  }
+});
+
+app.listen(PORT, () => {
     console.log('═'.repeat(52));
     console.log(`  Noises Music — http://localhost:${PORT}`);
     console.log('═'.repeat(52));

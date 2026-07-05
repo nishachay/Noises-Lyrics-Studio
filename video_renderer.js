@@ -1362,8 +1362,7 @@ async function renderSlideshow({
             for (const l of lines) {
               ctx.font = `bold ${Math.round(activeSz * 0.8)}px "${FONT}"`;
               ctx.fillStyle = '#ffffff';
-              ctx.shadowColor = 'rgba(255,255,255,0.5)';
-              ctx.shadowBlur = 15;
+              /* removed vintage text shadow */
               ctx.fillText(l, W / 2, ay);
               ctx.shadowBlur = 0;
               ay += activeSz;
@@ -1428,28 +1427,13 @@ async function renderSlideshow({
 
 async function generateThumbnailBuffer({ title, artist, artworkUrl, theme, logoPath }) {
   const coverImg = await loadImage(artworkUrl);
-  let logoImg = null;
-  if (logoPath && fs.existsSync(logoPath)) {
-    logoImg = await loadImage(logoPath);
-  }
-  const colors = extractColors(coverImg);
-
-  // Generate _blurCanvas exactly like renderVideo for the background
-  _blurCanvas = createCanvas(256, 144);
-  const bx = _blurCanvas.getContext('2d');
-  const iW = coverImg.width || 1000;
-  const iH = coverImg.height || 1000;
-  const target = 256 / 144;
-  const ratio = iW / iH;
-  let sx=0, sy=0, sw=iW, sh=iH;
-  if (ratio > target) { sw = iH * target; sx = (iW - sw) / 2; }
-  else { sh = iW / target; sy = (iH - sh) / 2; }
-  bx.drawImage(coverImg, sx, sy, sw, sh, 0, 0, 256, 144);
-
-  const alignment = theme === 'center' ? 'center' : 'left';
-  const FONT = 'Plus Jakarta Sans';
+  const tc = createCanvas(1280, 720);
+  const ctx = tc.getContext('2d');
   
-  return generateThumbnail(coverImg, colors, title, artist, FONT, alignment, null, 200, logoImg, 1920, 1080);
+  // Just draw the cover art directly as a clean, high-quality background (no vintage text/shadows)
+  ctx.drawImage(coverImg, 0, 0, 1280, 720);
+  
+  return tc.toBuffer('image/jpeg', { quality: 100 });
 }
 
 module.exports = {

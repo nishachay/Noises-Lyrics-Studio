@@ -1419,3 +1419,71 @@ body {
 .glass-input::placeholder {
   color: var(--text-3);
 }
+
+
+/* Unified Input Styles */
+.unified-input, input[type="text"], input[type="time"], .select-field {
+  background: rgba(255, 255, 255, 0.05) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  color: var(--text-1) !important;
+  border-radius: 8px !important;
+  font-family: inherit !important;
+  transition: all 0.2s ease !important;
+  box-shadow: none !important;
+  outline: none !important;
+  /* Don't force padding on everything, only those lacking inline paddings */
+  padding: var(--input-padding, 10px 14px);
+  font-size: var(--input-font-size, 14px);
+}
+.unified-input:focus, input[type="text"]:focus, input[type="time"]:focus, .select-field:focus {
+  background: rgba(255, 255, 255, 0.1) !important;
+  border-color: rgba(255, 255, 255, 0.2) !important;
+}
+input[readonly] {
+  opacity: 0.7;
+  pointer-events: none;
+}
+.line-time-badge {
+  padding: 2px !important; /* Force padding back down for the tiny timestamp editors */
+  font-size: 12px !important;
+}
+
+
+/* Form Element Normalization Fixes */
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+option {
+  background-color: #1a1a1a !important;
+  color: #ffffff !important;
+  padding: 8px !important;
+}
+
+select {
+  color-scheme: dark;
+}
+
+/* Fix checkboxes to match the accent color if possible, or force dark mode styling */
+input[type="checkbox"], input[type="radio"] {
+  accent-color: var(--accent, #3b82f6);
+  cursor: pointer;
+}
+
+/* Fix scrollbars universally for the entire document if not already handled */
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+/* Fix input placeholders to not be glaringly white */
+::placeholder {
+  color: rgba(255, 255, 255, 0.4) !important;
+  opacity: 1; /* Firefox */
+}
