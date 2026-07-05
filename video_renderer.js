@@ -96,20 +96,20 @@ function drawVignette(ctx, w, h) {
   ctx.restore();
 }
 
-// ΓöÇΓöÇ Color extraction ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+// ── Color extraction ────────────────────────────────────────────────────────
 function extractColors(img) {
-  const tmp = createCanvas(10, 10);
+  const tmp = createCanvas(1, 1);
   const c   = tmp.getContext('2d');
-  c.drawImage(img, 0, 0, 10, 10);
-  const d   = c.getImageData(0, 0, 10, 10).data;
-  const px  = (x, y) => { const i = (y * 10 + x) * 4; return [d[i], d[i+1], d[i+2]]; };
-  const rgb = (r, g, b, a) => `rgba(${r},${g},${b},${a})`;
-  return {
-    tl: px(1,1), tr: px(8,1), bl: px(1,8), br: px(8,8), c: px(5,5), rgb
-  };
+  c.drawImage(img, 0, 0, 1, 1);
+  const [r, g, b] = c.getImageData(0, 0, 1, 1).data;
+  
+  // First principles: true average brightness of the image
+  const avgBrightness = (r + g + b) / 3;
+  
+  return { r, g, b, avgBrightness };
 }
 
-// ΓöÇΓöÇ Animated background (blurred album art + colour blobs) ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+// ── Animated background (blurred album art + colour blobs) ──────────────────
 function drawBackground(ctx, w, h, coverImg, colors, time, amp) {
   if (_blurCanvas) {
     ctx.save();
@@ -151,37 +151,21 @@ function drawBackground(ctx, w, h, coverImg, colors, time, amp) {
     ctx.fillRect(0, 0, w, h);
   }
 
-  // AAA Contrast Algorithm overlay
-  if (colors && colors.c) {
-    let [r, g, b] = colors.c;
-    const getLuminance = (r, g, b) => {
-      const [rs, gs, bs] = [r, g, b].map(c => {
-        c = c / 255;
-        return c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
-      });
-      return 0.2126 * rs + 0.7152 * gs + 0.0722 * bs;
-    };
-    
-    let lum = getLuminance(r, g, b);
-    while (lum > 0.08) {
-      r = Math.max(0, Math.floor(r * 0.85));
-      g = Math.max(0, Math.floor(g * 0.85));
-      b = Math.max(0, Math.floor(b * 0.85));
-      lum = getLuminance(r, g, b);
+  // First principles dynamic darkening overlay
+  let baseAlpha = 0.55; 
+  if (colors) {
+    if (colors.avgBrightness > 60) {
+      // Scale alpha up to 0.85 aggressively based on brightness
+      baseAlpha += Math.min(0.30, ((colors.avgBrightness - 60) / 140) * 0.30);
     }
-    
-    // Fill a solid rich dark tint derived from the album art, 85% opacity overlay
-    ctx.fillStyle = `rgba(${r}, ${g}, ${b}, 0.85)`;
-  } else {
-    ctx.fillStyle = `rgba(0,0,0,0.85)`;
   }
+
+  ctx.fillStyle = `rgba(0,0,0,${baseAlpha.toFixed(2)})`;
   ctx.fillRect(0, 0, w, h);
 
   // Soft vignette drawn under text overlays
   drawVignette(ctx, w, h);
 }
-
-// ΓöÇΓöÇ Floating ΓÖ¬ musical notes ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 function drawInterludeDots(ctx, x, y, time) {
   const notes = ['♪', '♫', '♪'];
   const R = 7, GAP = 30;

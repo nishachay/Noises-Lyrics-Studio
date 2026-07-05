@@ -401,52 +401,27 @@ function getLuminance(r, g, b) {
   return 0.2126 * rs + 0.7152 * gs + 0.0722 * bs;
 }
 
+
 function extractColors(img) {
   try {
     const tmp = document.createElement('canvas');
-    tmp.width = 10; tmp.height = 10;
+    tmp.width = 1; tmp.height = 1;
     const t = tmp.getContext('2d');
-    t.drawImage(img, 0, 0, 10, 10);
-    const d = t.getImageData(0, 0, 10, 10).data;
+    t.drawImage(img, 0, 0, 1, 1);
+    const [r, g, b] = t.getImageData(0, 0, 1, 1).data;
     
-    // AAA Contrast Algorithm
-    const getLuminance = (r, g, b) => {
-      const [rs, gs, bs] = [r, g, b].map(c => {
-        c = c / 255;
-        return c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
-      });
-      return 0.2126 * rs + 0.7152 * gs + 0.0722 * bs;
-    };
-
-    const enforceAAAContrast = (color) => {
-      let L = getLuminance(...color);
-      let darkened = [...color];
-      let iterations = 0;
-      while (L > 0.1 && iterations < 20) {
-        darkened = [
-          Math.max(0, Math.floor(darkened[0] * 0.9)),
-          Math.max(0, Math.floor(darkened[1] * 0.9)),
-          Math.max(0, Math.floor(darkened[2] * 0.9))
-        ];
-        L = getLuminance(...darkened);
-        iterations++;
-      }
-      return darkened;
-    };
-
-    const px = (x, y) => { 
-      const i = (y * 10 + x) * 4; 
-      return enforceAAAContrast([d[i], d[i+1], d[i+2]]); 
-    };
-
+    // First principles: true average brightness of the image
+    const avgBrightness = (r + g + b) / 3;
+    
     colorData = {
-      tl: px(1,1), tr: px(8,1), bl: px(1,8), br: px(8,8), c: px(5,5),
+      r, g, b, avgBrightness,
       rgb: (r, g, b, a) => `rgba(${r},${g},${b},${a})`
     };
     
-    let [r, g, b] = colorData.c;
-    document.body.style.setProperty('--art-color', `rgba(${r}, ${g}, ${b}, 0.8)`);
-    document.body.style.setProperty('--art-color-dark', `rgba(${Math.floor(r*0.5)}, ${Math.floor(g*0.5)}, ${Math.floor(b*0.5)}, 0.9)`);
+    // First principles: to guarantee UI buttons are dark enough for white text, 
+    // just multiply the raw color by 0.3 (caps at 76, which is AAA compliant dark gray)
+    document.body.style.setProperty('--art-color', `rgba(${Math.floor(r * 0.3)}, ${Math.floor(g * 0.3)}, ${Math.floor(b * 0.3)}, 0.8)`);
+    document.body.style.setProperty('--art-color-dark', `rgba(${Math.floor(r * 0.2)}, ${Math.floor(g * 0.2)}, ${Math.floor(b * 0.2)}, 0.9)`);
   } catch(e) { colorData = null; }
 }
 
@@ -505,13 +480,12 @@ function drawBackground(W, H, t) {
     ctx.fillRect(0, 0, W, H);
   }
 
-  // Smart darkening overlay for readability
-  let baseAlpha = 0.4;
+  // First principles dynamic darkening overlay
+  let baseAlpha = 0.55; 
   if (colorData) {
-    const getLuma = (c) => 0.299*c[0] + 0.587*c[1] + 0.114*c[2];
-    const avgLuma = (getLuma(colorData.tl) + getLuma(colorData.tr) + getLuma(colorData.bl) + getLuma(colorData.br) + getLuma(colorData.c)) / 5;
-    if (avgLuma > 100) {
-      baseAlpha += Math.min(0.35, ((avgLuma - 100) / 155) * 0.35);
+    if (colorData.avgBrightness > 60) {
+      // Scale alpha up to 0.85 aggressively based on brightness
+      baseAlpha += Math.min(0.30, ((colorData.avgBrightness - 60) / 140) * 0.30);
     }
   }
 
@@ -1521,7 +1495,7 @@ function buildTodaysPlan() {
               <span style="font-size:10px; color:var(--accent); font-family:var(--mono);">📤 ${ch.uploadIST}</span>
             </div>
             ${ch.songs.map(s => `
-              <div class="today-plan-song" onclick="autoLoadAndPlay('${s.title.replace(/'/g, "\\'")} ${s.artist.replace(/'/g, "\\'")}')" style="display:flex; flex-direction:column; gap:2px; padding:8px 10px; cursor:pointer; transition:background 0.15s; border-bottom:1px solid rgba(255,255,255,0.03);">
+              <div class="today-plan-song" data-title="${esc(s.title)}" data-artist="${esc(s.artist)}" style="display:flex; flex-direction:column; gap:2px; padding:8px 10px; cursor:pointer; transition:background 0.15s; border-bottom:1px solid rgba(255,255,255,0.03);">
                 <div style="font-size:12px; font-weight:600; color:var(--text-1); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${esc(s.title)}</div>
                 <div style="font-size:11px; color:var(--text-3);">${esc(s.artist)}</div>
                 <div style="font-size:10px; color:rgba(16,185,129,0.7); margin-top:1px;">${s.reason}</div>
@@ -1537,6 +1511,7 @@ function buildTodaysPlan() {
       container.querySelectorAll('.today-plan-song').forEach(el => {
         el.addEventListener('mouseenter', () => el.style.background = 'rgba(255,255,255,0.04)');
         el.addEventListener('mouseleave', () => el.style.background = 'transparent');
+        el.addEventListener('click', () => autoLoadAndPlay(`${el.dataset.title} ${el.dataset.artist}`));
       });
     })
     .catch(err => {
@@ -3885,29 +3860,19 @@ if (btnPreviewThumb) {
     if (btnThumbDownload) btnThumbDownload.style.display = 'none';
 
     try {
-      const req = await fetch('/api/thumbnail-preview', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          title: S.track.title,
-          artist: S.track.artist,
-          artworkUrl: S.track.artworkUrl,
-          theme: selectAlign ? selectAlign.value : 'center'
-        })
-      });
-      if (!req.ok) throw new Error('Failed to generate thumbnail');
-      const blob = await req.blob();
-      const url = URL.createObjectURL(blob);
-      thumbImage.src = url;
+      // Draw 1 frame instantly to ensure it is visually up to date
+      if (typeof drawFrame === 'function') drawFrame();
+      
+      const dataUrl = canvas.toDataURL('image/jpeg', 0.95);
+      thumbImage.src = dataUrl;
       thumbImage.onload = () => {
         thumbLoading.style.display = 'none';
         thumbImage.style.opacity = '1';
         // Show download button
         if (btnThumbDownload) {
-          btnThumbDownload.href = url;
+          btnThumbDownload.href = dataUrl;
           btnThumbDownload.download = `${S.track.artist} - ${S.track.title} Thumbnail.jpg`;
           btnThumbDownload.style.display = 'flex';
-          
         }
       };
     } catch (e) {
