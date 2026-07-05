@@ -151,17 +151,7 @@ function drawBackground(ctx, w, h, coverImg, colors, time, amp) {
     ctx.fillRect(0, 0, w, h);
   }
 
-  // First principles dynamic darkening overlay
-  let baseAlpha = 0.55; 
-  if (colors) {
-    if (colors.avgBrightness > 60) {
-      // Scale alpha up to 0.85 aggressively based on brightness
-      baseAlpha += Math.min(0.30, ((colors.avgBrightness - 60) / 140) * 0.30);
-    }
-  }
-
-  ctx.fillStyle = `rgba(0,0,0,${baseAlpha.toFixed(2)})`;
-  ctx.fillRect(0, 0, w, h);
+  // No black overlay needed; the blur source is natively darkened (Jewel Tone algorithm)
 
   // Soft vignette drawn under text overlays
   drawVignette(ctx, w, h);
@@ -1006,6 +996,23 @@ function renderVideo({
           if (ratio > target) { sh = iH; sw = iH * target; sx = (iW - sw) / 2; sy = 0; }
           else                { sw = iW; sh = iW / target; sx = 0; sy = (iH - sh) / 2; }
           bx.drawImage(coverImg, sx, sy, sw, sh, 0, 0, 256, 144);
+
+            // --- Jewel Tone AAA Contrast Transformation ---
+            const imgData = bx.getImageData(0, 0, 256, 144);
+            const data = imgData.data;
+            for (let i = 0; i < data.length; i += 4) {
+              let [h, s, l] = rgbToHsl(data[i], data[i+1], data[i+2]);
+              if (l > 0.25) {
+                l = 0.25; // Clamp lightness for AAA contrast
+                if (s > 0.05) {
+                  s = Math.min(1.0, s * 1.5); // Boost saturation
+                  s = Math.max(s, 0.6); // Guarantee deep color
+                }
+              }
+              const [r, g, b] = hslToRgb(h, s, l);
+              data[i] = r; data[i+1] = g; data[i+2] = b;
+            }
+            bx.putImageData(imgData, 0, 0);
           
           console.log('[Renderer] Cover art loaded ✓');
         } catch (e) { console.error('[Renderer] Cover art:', e.message); }
@@ -1395,6 +1402,23 @@ async function renderSlideshow({
             if (ratio > target) { sh = iH; sw = iH * target; sx = (iW - sw) / 2; sy = 0; }
             else                { sw = iW; sh = iW / target; sx = 0; sy = (iH - sh) / 2; }
             bx.drawImage(coverImg, sx, sy, sw, sh, 0, 0, 256, 144);
+
+            // --- Jewel Tone AAA Contrast Transformation ---
+            const imgData = bx.getImageData(0, 0, 256, 144);
+            const data = imgData.data;
+            for (let i = 0; i < data.length; i += 4) {
+              let [h, s, l] = rgbToHsl(data[i], data[i+1], data[i+2]);
+              if (l > 0.25) {
+                l = 0.25; // Clamp lightness for AAA contrast
+                if (s > 0.05) {
+                  s = Math.min(1.0, s * 1.5); // Boost saturation
+                  s = Math.max(s, 0.6); // Guarantee deep color
+                }
+              }
+              const [r, g, b] = hslToRgb(h, s, l);
+              data[i] = r; data[i+1] = g; data[i+2] = b;
+            }
+            bx.putImageData(imgData, 0, 0);
 
             processSlides();
           });
