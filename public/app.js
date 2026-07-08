@@ -434,7 +434,7 @@ function extractColors(img) {
     }
     
     colorData = {
-      r: safeR, g: safeG, b: safeB,
+      r: safeR, g: safeG, b: safeB, L,
       rgb: (r, g, b, a) => `rgba(${r},${g},${b},${a})`
     };
     
@@ -492,12 +492,15 @@ function drawBackground(W, H, t) {
     ctx.drawImage(blurCanvas, -dw/2, -dw/2, dw, dw);
     ctx.restore();
     
-    // Multiply AAA Safe Tint
+    // Multiply AAA Safe Tint (only if cover is too bright)
     if (colorData) {
-      ctx.globalCompositeOperation = 'multiply';
-      ctx.globalAlpha = 1.0;
-      ctx.fillStyle = `rgb(${colorData.r}, ${colorData.g}, ${colorData.b})`;
-      ctx.fillRect(0, 0, W, H);
+      const alpha = Math.max(0, Math.min(1, (colorData.L - 0.10) / 0.3)); // Fades in between L=0.10 (already dark) and L=0.40 (fully active)
+      if (alpha > 0) {
+        ctx.globalCompositeOperation = 'multiply';
+        ctx.globalAlpha = alpha;
+        ctx.fillStyle = `rgb(${colorData.r}, ${colorData.g}, ${colorData.b})`;
+        ctx.fillRect(0, 0, W, H);
+      }
     }
     
     ctx.restore();

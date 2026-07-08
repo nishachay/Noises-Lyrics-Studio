@@ -171,10 +171,10 @@ function extractColors(img) {
       safeB = Math.min(255, Math.floor(b * gammaScale));
     }
     
-    return { r: safeR, g: safeG, b: safeB, avgBrightness, palette };
+    return { r: safeR, g: safeG, b: safeB, L, avgBrightness, palette };
   } catch (e) {
     return { 
-      r: 40, g: 40, b: 40, avgBrightness: 40, 
+      r: 40, g: 40, b: 40, L: 0.05, avgBrightness: 40, 
       palette: [{r:40,g:40,b:40}, {r:20,g:20,b:20}] 
     };
   }
@@ -216,12 +216,15 @@ function drawBackground(ctx, w, h, coverImg, colors, time, amp) {
     ctx.drawImage(_blurCanvas, -dw/2, -dw/2, dw, dw);
     ctx.restore();
     
-    // Multiply AAA Safe Tint
+    // Multiply AAA Safe Tint (only if cover is too bright)
     if (colors) {
-      ctx.globalCompositeOperation = 'multiply';
-      ctx.globalAlpha = 1.0;
-      ctx.fillStyle = `rgb(${colors.r}, ${colors.g}, ${colors.b})`;
-      ctx.fillRect(0, 0, w, h);
+      const alpha = Math.max(0, Math.min(1, (colors.L - 0.10) / 0.3)); // Fades in between L=0.10 (already dark) and L=0.40 (fully active)
+      if (alpha > 0) {
+        ctx.globalCompositeOperation = 'multiply';
+        ctx.globalAlpha = alpha;
+        ctx.fillStyle = `rgb(${colors.r}, ${colors.g}, ${colors.b})`;
+        ctx.fillRect(0, 0, w, h);
+      }
     }
     
     ctx.restore();
