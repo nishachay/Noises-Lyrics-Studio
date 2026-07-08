@@ -119,9 +119,8 @@ function extractColors(img) {
         s = l > 0.5 ? (max - min) / (510 - max - min) : (max - min) / (max + min);
       }
       
-      if (s > 0.15 && l > 0.1 && l < 0.9) {
-        colors.push({r, g, b});
-      }
+      // Use all colors to get true dominant color (ColorThief logic)
+      colors.push({r, g, b});
     }
     
     const avgBrightness = (totalR + totalG + totalB) / (3 * 4096);
@@ -155,7 +154,24 @@ function extractColors(img) {
       while (palette.length < 2) palette.push(palette[0]);
     }
     
-    return { r: palette[0].r, g: palette[0].g, b: palette[0].b, avgBrightness, palette };
+    // AAA contrast enforcement
+    let r = palette[0].r, g = palette[0].g, b = palette[0].b;
+    let rs = r / 255; let gs = g / 255; let bs = b / 255;
+    rs = rs <= 0.03928 ? rs / 12.92 : Math.pow((rs + 0.055) / 1.055, 2.4);
+    gs = gs <= 0.03928 ? gs / 12.92 : Math.pow((gs + 0.055) / 1.055, 2.4);
+    bs = bs <= 0.03928 ? bs / 12.92 : Math.pow((bs + 0.055) / 1.055, 2.4);
+    const L = 0.2126 * rs + 0.7152 * gs + 0.0722 * bs;
+    
+    let safeR = r, safeG = g, safeB = b;
+    if (L > 0.10) {
+      const scale = 0.10 / L;
+      const gammaScale = Math.pow(scale, 1 / 2.2);
+      safeR = Math.min(255, Math.floor(r * gammaScale));
+      safeG = Math.min(255, Math.floor(g * gammaScale));
+      safeB = Math.min(255, Math.floor(b * gammaScale));
+    }
+    
+    return { r: safeR, g: safeG, b: safeB, avgBrightness, palette };
   } catch (e) {
     return { 
       r: 40, g: 40, b: 40, avgBrightness: 40, 
@@ -164,7 +180,7 @@ function extractColors(img) {
   }
 }
 
-// ── Animated background (Apple Music style blurred art + Color Orbs) ──────────────────
+// ── Animated background (Apple Music style blurred art + Multiply layer) ──────────────────
 function drawBackground(ctx, w, h, coverImg, colors, time, amp) {
   if (_blurCanvas) {
     ctx.save();
@@ -200,34 +216,11 @@ function drawBackground(ctx, w, h, coverImg, colors, time, amp) {
     ctx.drawImage(_blurCanvas, -dw/2, -dw/2, dw, dw);
     ctx.restore();
     
-    // NEW: Hybrid Color Lighting (Draws glowing orbs on top of the blur)
-    if (colors && colors.palette) {
-      const pal = colors.palette;
-      ctx.globalCompositeOperation = 'overlay';
-      ctx.globalAlpha = 0.7;
-      
-      const maxDim = Math.max(w, h);
-      
-      // Orb 1 (Top right)
-      const c1 = pal[0];
-      const x1 = w * 0.7 + Math.sin(time * 0.2) * w * 0.3;
-      const y1 = h * 0.2 + Math.cos(time * 0.25) * h * 0.3;
-      const r1 = maxDim * 0.8;
-      const g1 = ctx.createRadialGradient(x1, y1, 0, x1, y1, r1);
-      g1.addColorStop(0, `rgba(${c1.r}, ${c1.g}, ${c1.b}, 1)`);
-      g1.addColorStop(1, `rgba(${c1.r}, ${c1.g}, ${c1.b}, 0)`);
-      ctx.fillStyle = g1;
-      ctx.fillRect(0, 0, w, h);
-      
-      // Orb 2 (Bottom left)
-      const c2 = pal[1] || pal[0];
-      const x2 = w * 0.2 + Math.cos(time * 0.15) * w * 0.3;
-      const y2 = h * 0.8 + Math.sin(time * 0.18) * h * 0.3;
-      const r2 = maxDim * 0.9;
-      const g2 = ctx.createRadialGradient(x2, y2, 0, x2, y2, r2);
-      g2.addColorStop(0, `rgba(${c2.r}, ${c2.g}, ${c2.b}, 1)`);
-      g2.addColorStop(1, `rgba(${c2.r}, ${c2.g}, ${c2.b}, 0)`);
-      ctx.fillStyle = g2;
+    // Multiply AAA Safe Tint
+    if (colors) {
+      ctx.globalCompositeOperation = 'multiply';
+      ctx.globalAlpha = 1.0;
+      ctx.fillStyle = `rgb(${colors.r}, ${colors.g}, ${colors.b})`;
       ctx.fillRect(0, 0, w, h);
     }
     
@@ -236,14 +229,6 @@ function drawBackground(ctx, w, h, coverImg, colors, time, amp) {
     ctx.fillStyle = '#111';
     ctx.fillRect(0, 0, w, h);
   }
-
-  // Smart darkening overlay for readability
-  let baseAlpha = 0.4;
-  if (colors && colors.avgBrightness > 100) {
-    baseAlpha += Math.min(0.35, ((colors.avgBrightness - 100) / 155) * 0.35);
-  }
-  ctx.fillStyle = `rgba(0,0,0,${baseAlpha.toFixed(2)})`;
-  ctx.fillRect(0, 0, w, h);
 
   // Soft vignette drawn under text overlays
   drawVignette(ctx, w, h);

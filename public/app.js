@@ -407,73 +407,39 @@ function getLuminance(r, g, b) {
 
 function extractColors(img) {
   try {
-    const tmp = document.createElement('canvas');
-    tmp.width = 64; tmp.height = 64;
-    const t = tmp.getContext('2d');
-    t.drawImage(img, 0, 0, 64, 64);
-    const data = t.getImageData(0, 0, 64, 64).data;
+    const colorThief = new ColorThief();
+    const dominantColor = colorThief.getColor(img);
+    const r = dominantColor[0];
+    const g = dominantColor[1];
+    const b = dominantColor[2];
     
-    let totalR = 0, totalG = 0, totalB = 0;
-    const colors = [];
+    // AAA contrast enforcement
+    // Calculate relative luminance
+    let rs = r / 255; let gs = g / 255; let bs = b / 255;
+    rs = rs <= 0.03928 ? rs / 12.92 : Math.pow((rs + 0.055) / 1.055, 2.4);
+    gs = gs <= 0.03928 ? gs / 12.92 : Math.pow((gs + 0.055) / 1.055, 2.4);
+    bs = bs <= 0.03928 ? bs / 12.92 : Math.pow((bs + 0.055) / 1.055, 2.4);
+    const L = 0.2126 * rs + 0.7152 * gs + 0.0722 * bs;
     
-    for (let i = 0; i < data.length; i += 4) {
-      const r = data[i], g = data[i+1], b = data[i+2];
-      totalR += r; totalG += g; totalB += b;
-      
-      const max = Math.max(r, g, b);
-      const min = Math.min(r, g, b);
-      const l = (max + min) / 510;
-      let s = 0;
-      if (max !== min) {
-        s = l > 0.5 ? (max - min) / (510 - max - min) : (max - min) / (max + min);
-      }
-      
-      // Filter out grays, blacks, and whites to find pure accent colors
-      if (s > 0.15 && l > 0.1 && l < 0.9) {
-        colors.push({r, g, b});
-      }
-    }
+    let safeR = r, safeG = g, safeB = b;
     
-    const avgBrightness = (totalR + totalG + totalB) / (3 * 4096);
-    let palette = [];
-    
-    if (colors.length === 0) {
-      palette = [ {r:40, g:40, b:40}, {r:20, g:20, b:20} ];
-    } else {
-      const clusters = [];
-      const THRESHOLD = 60;
-      
-      for (const c of colors) {
-        let found = false;
-        for (const cluster of clusters) {
-          const dr = cluster.r - c.r;
-          const dg = cluster.g - c.g;
-          const db = cluster.b - c.b;
-          if (Math.sqrt(dr*dr + dg*dg + db*db) < THRESHOLD) {
-            cluster.r = (cluster.r * cluster.count + c.r) / (cluster.count + 1);
-            cluster.g = (cluster.g * cluster.count + c.g) / (cluster.count + 1);
-            cluster.b = (cluster.b * cluster.count + c.b) / (cluster.count + 1);
-            cluster.count++;
-            found = true; break;
-          }
-        }
-        if (!found) clusters.push({ r: c.r, g: c.g, b: c.b, count: 1 });
-      }
-      
-      clusters.sort((a, b) => b.count - a.count);
-      palette = clusters.slice(0, 2).map(c => ({ r: Math.round(c.r), g: Math.round(c.g), b: Math.round(c.b) }));
-      while (palette.length < 2) palette.push(palette[0]);
+    // White has L = 1. Contrast ratio = 1.05 / (L + 0.05)
+    // For 7:1 AAA contrast, we need L <= 0.10
+    if (L > 0.10) {
+      const scale = 0.10 / L;
+      const gammaScale = Math.pow(scale, 1 / 2.2);
+      safeR = Math.min(255, Math.floor(r * gammaScale));
+      safeG = Math.min(255, Math.floor(g * gammaScale));
+      safeB = Math.min(255, Math.floor(b * gammaScale));
     }
     
     colorData = {
-      r: palette[0].r, g: palette[0].g, b: palette[0].b,
-      palette,
-      avgBrightness,
+      r: safeR, g: safeG, b: safeB,
       rgb: (r, g, b, a) => `rgba(${r},${g},${b},${a})`
     };
     
-    document.body.style.setProperty('--art-color', `rgba(${Math.floor(palette[0].r * 0.3)}, ${Math.floor(palette[0].g * 0.3)}, ${Math.floor(palette[0].b * 0.3)}, 0.8)`);
-    document.body.style.setProperty('--art-color-dark', `rgba(${Math.floor(palette[0].r * 0.2)}, ${Math.floor(palette[0].g * 0.2)}, ${Math.floor(palette[0].b * 0.2)}, 0.9)`);
+    document.body.style.setProperty('--art-color', `rgba(${Math.floor(safeR * 0.3)}, ${Math.floor(safeG * 0.3)}, ${Math.floor(safeB * 0.3)}, 0.8)`);
+    document.body.style.setProperty('--art-color-dark', `rgba(${Math.floor(safeR * 0.2)}, ${Math.floor(safeG * 0.2)}, ${Math.floor(safeB * 0.2)}, 0.9)`);
   } catch(e) { colorData = null; }
 }
 
@@ -490,7 +456,7 @@ function loadArtwork(url) {
   img.src = `/api/proxy?url=${encodeURIComponent(url)}`;
 }
 
-// ΓöÇΓöÇ Draw background (Apple Music style blurred art + Color Orbs) ΓöÇΓöÇΓöÇΓöÇ
+// ΓöÇΓöÇ Draw background (Apple Music style blurred art + Multiply layer) ΓöÇΓöÇΓöÇΓöÇ
 function drawBackground(W, H, t) {
   if (blurCanvas) {
     ctx.save();
@@ -526,34 +492,11 @@ function drawBackground(W, H, t) {
     ctx.drawImage(blurCanvas, -dw/2, -dw/2, dw, dw);
     ctx.restore();
     
-    // NEW: Hybrid Color Lighting (Draws glowing orbs on top of the blur)
-    if (colorData && colorData.palette) {
-      const pal = colorData.palette;
-      ctx.globalCompositeOperation = 'overlay';
-      ctx.globalAlpha = 0.7;
-      
-      const maxDim = Math.max(W, H);
-      
-      // Orb 1 (Top right)
-      const c1 = pal[0];
-      const x1 = W * 0.7 + Math.sin(t * 0.2) * W * 0.3;
-      const y1 = H * 0.2 + Math.cos(t * 0.25) * H * 0.3;
-      const r1 = maxDim * 0.8;
-      const g1 = ctx.createRadialGradient(x1, y1, 0, x1, y1, r1);
-      g1.addColorStop(0, `rgba(${c1.r}, ${c1.g}, ${c1.b}, 1)`);
-      g1.addColorStop(1, `rgba(${c1.r}, ${c1.g}, ${c1.b}, 0)`);
-      ctx.fillStyle = g1;
-      ctx.fillRect(0, 0, W, H);
-      
-      // Orb 2 (Bottom left)
-      const c2 = pal[1] || pal[0];
-      const x2 = W * 0.2 + Math.cos(t * 0.15) * W * 0.3;
-      const y2 = H * 0.8 + Math.sin(t * 0.18) * H * 0.3;
-      const r2 = maxDim * 0.9;
-      const g2 = ctx.createRadialGradient(x2, y2, 0, x2, y2, r2);
-      g2.addColorStop(0, `rgba(${c2.r}, ${c2.g}, ${c2.b}, 1)`);
-      g2.addColorStop(1, `rgba(${c2.r}, ${c2.g}, ${c2.b}, 0)`);
-      ctx.fillStyle = g2;
+    // Multiply AAA Safe Tint
+    if (colorData) {
+      ctx.globalCompositeOperation = 'multiply';
+      ctx.globalAlpha = 1.0;
+      ctx.fillStyle = `rgb(${colorData.r}, ${colorData.g}, ${colorData.b})`;
       ctx.fillRect(0, 0, W, H);
     }
     
@@ -562,14 +505,6 @@ function drawBackground(W, H, t) {
     ctx.fillStyle = '#111';
     ctx.fillRect(0, 0, W, H);
   }
-
-  // Smart darkening overlay for readability
-  let baseAlpha = 0.4;
-  if (colorData && colorData.avgBrightness > 100) {
-    baseAlpha += Math.min(0.35, ((colorData.avgBrightness - 100) / 155) * 0.35);
-  }
-  ctx.fillStyle = `rgba(0,0,0,${baseAlpha.toFixed(2)})`;
-  ctx.fillRect(0, 0, W, H);
 
   // Soft vignette
   const vig = ctx.createRadialGradient(W/2, H/2, W*0.2, W/2, H/2, W*0.9);
