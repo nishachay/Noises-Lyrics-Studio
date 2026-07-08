@@ -997,22 +997,21 @@ function renderVideo({
           else                { sw = iW; sh = iW / target; sx = 0; sy = (iH - sh) / 2; }
           bx.drawImage(coverImg, sx, sy, sw, sh, 0, 0, 256, 144);
 
-            // --- Jewel Tone AAA Contrast Transformation ---
-            const imgData = bx.getImageData(0, 0, 256, 144);
-            const data = imgData.data;
-            for (let i = 0; i < data.length; i += 4) {
-              let [h, s, l] = rgbToHsl(data[i], data[i+1], data[i+2]);
-              if (l > 0.25) {
-                l = 0.25; // Clamp lightness for AAA contrast
-                if (s > 0.05) {
-                  s = Math.min(1.0, s * 1.5); // Boost saturation
-                  s = Math.max(s, 0.6); // Guarantee deep color
-                }
-              }
-              const [r, g, b] = hslToRgb(h, s, l);
-              data[i] = r; data[i+1] = g; data[i+2] = b;
-            }
-            bx.putImageData(imgData, 0, 0);
+  // --- Natural Contrast Transformation (Linear RGB Scaling) ---
+  const imgData = bx.getImageData(0, 0, bx.canvas.width, bx.canvas.height);
+  const data = imgData.data;
+  
+  for (let i = 0; i < data.length; i += 4) {
+    let r = data[i], g = data[i+1], b = data[i+2];
+    let luma = 0.299 * r + 0.587 * g + 0.114 * b;
+    if (luma > 70) {
+      const scale = 70 / luma;
+      data[i] = Math.round(r * scale);
+      data[i+1] = Math.round(g * scale);
+      data[i+2] = Math.round(b * scale);
+    }
+  }
+  bx.putImageData(imgData, 0, 0);
           
           console.log('[Renderer] Cover art loaded ✓');
         } catch (e) { console.error('[Renderer] Cover art:', e.message); }
@@ -1403,22 +1402,21 @@ async function renderSlideshow({
             else                { sw = iW; sh = iW / target; sx = 0; sy = (iH - sh) / 2; }
             bx.drawImage(coverImg, sx, sy, sw, sh, 0, 0, 256, 144);
 
-            // --- Jewel Tone AAA Contrast Transformation ---
-            const imgData = bx.getImageData(0, 0, 256, 144);
-            const data = imgData.data;
-            for (let i = 0; i < data.length; i += 4) {
-              let [h, s, l] = rgbToHsl(data[i], data[i+1], data[i+2]);
-              if (l > 0.25) {
-                l = 0.25; // Clamp lightness for AAA contrast
-                if (s > 0.05) {
-                  s = Math.min(1.0, s * 1.5); // Boost saturation
-                  s = Math.max(s, 0.6); // Guarantee deep color
-                }
-              }
-              const [r, g, b] = hslToRgb(h, s, l);
-              data[i] = r; data[i+1] = g; data[i+2] = b;
-            }
-            bx.putImageData(imgData, 0, 0);
+  // --- Natural Contrast Transformation (Linear RGB Scaling) ---
+  const imgData = bx.getImageData(0, 0, bx.canvas.width, bx.canvas.height);
+  const data = imgData.data;
+  
+  for (let i = 0; i < data.length; i += 4) {
+    let r = data[i], g = data[i+1], b = data[i+2];
+    let luma = 0.299 * r + 0.587 * g + 0.114 * b;
+    if (luma > 70) {
+      const scale = 70 / luma;
+      data[i] = Math.round(r * scale);
+      data[i+1] = Math.round(g * scale);
+      data[i+2] = Math.round(b * scale);
+    }
+  }
+  bx.putImageData(imgData, 0, 0);
 
             processSlides();
           });
