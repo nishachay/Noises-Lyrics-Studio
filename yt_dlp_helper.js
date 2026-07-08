@@ -41,8 +41,8 @@ async function ensureYtdlp() {
 // ── Spawn yt-dlp ─────────────────────────────────────────────────────────────
 function spawnYtdlp(args) {
   return new Promise((resolve, reject) => {
-    // Add a strict 15 second timeout to prevent hanging the server
-    const p = spawn(YTDLP, args, { timeout: 15000 });
+    // Add a strict 120 second timeout to prevent hanging the server
+    const p = spawn(YTDLP, args, { timeout: 120000 });
     let out = '', err = '';
     p.stdout.on('data', d => out += d);
     p.stderr.on('data', d => err += d);
@@ -66,7 +66,7 @@ function spawnYtdlpSingle(args) {
     '--js-runtimes', 'node', 
     '--no-warnings', 
     '--no-playlist',
-    '--extractor-args', 'youtube:player_client=ios,web', // Bypasses slow downloads
+    // '--extractor-args', 'youtube:player_client=ios,web', // Commented out to fix "format not available" error on music videos
     '--concurrent-fragments', '4' // Speeds up segmented downloads
   ];
   return spawnYtdlp([...extras, ...args]);
