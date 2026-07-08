@@ -96,91 +96,37 @@ function drawVignette(ctx, w, h) {
   ctx.restore();
 }
 
-// ── Color extraction ────────────────────────────────────────────────────────
+// ── Color extraction (Average color, Saturation, and Brightness) ─────────────
 function extractColors(img) {
   try {
-    const tmp = createCanvas(64, 64);
+    const tmp = createCanvas(1, 1);
     const c = tmp.getContext('2d');
-    c.drawImage(img, 0, 0, 64, 64);
-    const data = c.getImageData(0, 0, 64, 64).data;
+    c.drawImage(img, 0, 0, 1, 1);
+    const [r, g, b] = c.getImageData(0, 0, 1, 1).data;
     
-    let totalR = 0, totalG = 0, totalB = 0;
-    const colors = [];
-    
-    for (let i = 0; i < data.length; i += 4) {
-      const r = data[i], g = data[i+1], b = data[i+2];
-      totalR += r; totalG += g; totalB += b;
-      
-      const max = Math.max(r, g, b);
-      const min = Math.min(r, g, b);
-      const l = (max + min) / 510;
-      let s = 0;
-      if (max !== min) {
-        s = l > 0.5 ? (max - min) / (510 - max - min) : (max - min) / (max + min);
-      }
-      
-      // Use all colors to get true dominant color (ColorThief logic)
-      colors.push({r, g, b});
+    // Calculate saturation (HSL) and relative luminance
+    const max = Math.max(r, g, b) / 255;
+    const min = Math.min(r, g, b) / 255;
+    const l = (max + min) / 2;
+    let s = 0;
+    if (max !== min) {
+      s = l > 0.5 ? (max - min) / (2 - max - min) : (max - min) / (max + min);
     }
     
-    const avgBrightness = (totalR + totalG + totalB) / (3 * 4096);
-    let palette = [];
-    
-    if (colors.length === 0) {
-      palette = [ {r:40, g:40, b:40}, {r:20, g:20, b:20} ];
-    } else {
-      const clusters = [];
-      const THRESHOLD = 60;
-      
-      for (const col of colors) {
-        let found = false;
-        for (const cluster of clusters) {
-          const dr = cluster.r - col.r;
-          const dg = cluster.g - col.g;
-          const db = cluster.b - col.b;
-          if (Math.sqrt(dr*dr + dg*dg + db*db) < THRESHOLD) {
-            cluster.r = (cluster.r * cluster.count + col.r) / (cluster.count + 1);
-            cluster.g = (cluster.g * cluster.count + col.g) / (cluster.count + 1);
-            cluster.b = (cluster.b * cluster.count + col.b) / (cluster.count + 1);
-            cluster.count++;
-            found = true; break;
-          }
-        }
-        if (!found) clusters.push({ r: col.r, g: col.g, b: col.b, count: 1 });
-      }
-      
-      clusters.sort((a, b) => b.count - a.count);
-      palette = clusters.slice(0, 2).map(col => ({ r: Math.round(col.r), g: Math.round(col.g), b: Math.round(col.b) }));
-      while (palette.length < 2) palette.push(palette[0]);
-    }
-    
-    // AAA contrast enforcement
-    let r = palette[0].r, g = palette[0].g, b = palette[0].b;
+    // Relative Luminance
     let rs = r / 255; let gs = g / 255; let bs = b / 255;
     rs = rs <= 0.03928 ? rs / 12.92 : Math.pow((rs + 0.055) / 1.055, 2.4);
     gs = gs <= 0.03928 ? gs / 12.92 : Math.pow((gs + 0.055) / 1.055, 2.4);
     bs = bs <= 0.03928 ? bs / 12.92 : Math.pow((bs + 0.055) / 1.055, 2.4);
     const L = 0.2126 * rs + 0.7152 * gs + 0.0722 * bs;
-    
-    let safeR = r, safeG = g, safeB = b;
-    if (L > 0.10) {
-      const scale = 0.10 / L;
-      const gammaScale = Math.pow(scale, 1 / 2.2);
-      safeR = Math.min(255, Math.floor(r * gammaScale));
-      safeG = Math.min(255, Math.floor(g * gammaScale));
-      safeB = Math.min(255, Math.floor(b * gammaScale));
-    }
-    
-    return { r: safeR, g: safeG, b: safeB, L, avgBrightness, palette };
+
+    return { r, g, b, saturation: s, brightness: l, L, avgBrightness: l * 255 };
   } catch (e) {
-    return { 
-      r: 40, g: 40, b: 40, L: 0.05, avgBrightness: 40, 
-      palette: [{r:40,g:40,b:40}, {r:20,g:20,b:20}] 
-    };
+    return { r: 40, g: 40, b: 40, saturation: 0, brightness: 0.1, L: 0.05, avgBrightness: 25 };
   }
 }
 
-// ── Animated background (Apple Music style blurred art + Multiply layer) ──────────────────
+// ── Animated background (Apple Music style dynamic blurred art) ───────────────
 function drawBackground(ctx, w, h, coverImg, colors, time, amp) {
   if (_blurCanvas) {
     ctx.save();
@@ -216,22 +162,19 @@ function drawBackground(ctx, w, h, coverImg, colors, time, amp) {
     ctx.drawImage(_blurCanvas, -dw/2, -dw/2, dw, dw);
     ctx.restore();
     
-    // Multiply AAA Safe Tint (only if cover is too bright)
-    if (colors) {
-      const alpha = Math.max(0, Math.min(1, (colors.L - 0.10) / 0.3)); // Fades in between L=0.10 (already dark) and L=0.40 (fully active)
-      if (alpha > 0) {
-        ctx.globalCompositeOperation = 'multiply';
-        ctx.globalAlpha = alpha;
-        ctx.fillStyle = `rgb(${colors.r}, ${colors.g}, ${colors.b})`;
-        ctx.fillRect(0, 0, w, h);
-      }
-    }
-    
     ctx.restore();
   } else {
     ctx.fillStyle = '#111';
     ctx.fillRect(0, 0, w, h);
   }
+
+  // Smart darkening overlay
+  let alpha = 0.25;
+  if (colors) {
+    alpha = 0.25 + Math.min(0.35, colors.brightness * 0.35);
+  }
+  ctx.fillStyle = `rgba(0,0,0,${alpha.toFixed(2)})`;
+  ctx.fillRect(0, 0, w, h);
 
   // Soft vignette drawn under text overlays
   drawVignette(ctx, w, h);
@@ -1095,7 +1038,12 @@ function renderVideo({
           let sx, sy, sw, sh;
           if (ratio > target) { sh = iH; sw = iH * target; sx = (iW - sw) / 2; sy = 0; }
           else                { sw = iW; sh = iW / target; sx = 0; sy = (iH - sh) / 2; }
-          // Filter removed
+          
+          if (colors && colors.saturation > 0.12) {
+            bx.filter = 'saturate(200%) brightness(110%)';
+          } else {
+            bx.filter = 'none';
+          }
           bx.drawImage(coverImg, sx, sy, sw, sh, 0, 0, 256, 144);
           
           console.log('[Renderer] Cover art loaded ✓');
@@ -1485,7 +1433,12 @@ async function renderSlideshow({
             let sx, sy, sw, sh;
             if (ratio > target) { sh = iH; sw = iH * target; sx = (iW - sw) / 2; sy = 0; }
             else                { sw = iW; sh = iW / target; sx = 0; sy = (iH - sh) / 2; }
-            // Filter removed
+            
+            if (colors && colors.saturation > 0.12) {
+              bx.filter = 'saturate(200%) brightness(110%)';
+            } else {
+              bx.filter = 'none';
+            }
             bx.drawImage(coverImg, sx, sy, sw, sh, 0, 0, 256, 144);
             processSlides();
           });
@@ -1515,7 +1468,12 @@ async function generateThumbnailBuffer({ title, artist, artworkUrl, theme, logoP
   let sx, sy, sw, sh;
   if (ratio > target) { sh = iH; sw = iH * target; sx = (iW - sw) / 2; sy = 0; }
   else                { sw = iW; sh = iW / target; sx = 0; sy = (iH - sh) / 2; }
-  // Filter removed
+  
+  if (colors && colors.saturation > 0.12) {
+    bx.filter = 'saturate(200%) brightness(110%)';
+  } else {
+    bx.filter = 'none';
+  }
   bx.drawImage(coverImg, sx, sy, sw, sh, 0, 0, 256, 144);
   
   const font = 'Plus Jakarta Sans", "Noto Sans Devanagari", "Noto Sans KR';

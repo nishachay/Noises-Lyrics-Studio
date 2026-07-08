@@ -351,7 +351,7 @@ let rafId = null;
 
 // Cached rendering resources
 let blurCanvas = null;        // Low-res album art for background blur
-let colorData = null;         // Dominant colors { tl, tr, bl, br, c, rgb }
+let artworkStats = null;      // { saturation, brightness, r, g, b }
 let artImg = null;            // Full artwork Image object
 let logoImg = new Image();    // White logo image for watermarks
 logoImg.src = 'logo_white.png';
@@ -374,13 +374,43 @@ function stopCanvasLoop() {
   if (rafId) { cancelAnimationFrame(rafId); rafId = null; }
 }
 
-// ΓöÇΓöÇ Draw blur background source from album art ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+// ── Draw blur background source from album art ──────────────────────────────────
+function getArtworkStats(img) {
+  try {
+    const tmp = document.createElement('canvas');
+    tmp.width = 1; tmp.height = 1;
+    const ctx = tmp.getContext('2d');
+    ctx.drawImage(img, 0, 0, 1, 1);
+    const [r, g, b] = ctx.getImageData(0, 0, 1, 1).data;
+    
+    // Calculate saturation and brightness
+    const max = Math.max(r, g, b) / 255;
+    const min = Math.min(r, g, b) / 255;
+    const l = (max + min) / 2;
+    let s = 0;
+    if (max !== min) {
+      s = l > 0.5 ? (max - min) / (2 - max - min) : (max - min) / (max + min);
+    }
+    
+    artworkStats = { saturation: s, brightness: l, r, g, b };
+  } catch (e) {
+    artworkStats = { saturation: 0, brightness: 0.1, r: 40, g: 40, b: 40 };
+  }
+}
+
 function prepareBlurSource(img) {
   // 32x18 gives a super soft, premium gradient blur on stretch
   blurCanvas = document.createElement('canvas');
   blurCanvas.width = 32;
   blurCanvas.height = 18;
   const bx = blurCanvas.getContext('2d');
+
+  // Apply dynamic saturation filter based on stats
+  if (artworkStats && artworkStats.saturation > 0.12) {
+    bx.filter = 'saturate(200%) brightness(110%)';
+  } else {
+    bx.filter = 'none';
+  }
 
   const W = img.naturalWidth || 1000;
   const H = img.naturalHeight || 1000;
@@ -392,68 +422,20 @@ function prepareBlurSource(img) {
   bx.drawImage(img, sx, sy, sw, sh, 0, 0, 32, 18);
 }
 
-// ΓöÇΓöÇ Extract dominant colors from album art ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
-function getLuminance(r, g, b) {
-  const [rs, gs, bs] = [r, g, b].map(c => {
-    c = c / 255;
-    return c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
-  });
-  return 0.2126 * rs + 0.7152 * gs + 0.0722 * bs;
-}
-
-
-function extractColors(img) {
-  try {
-    const colorThief = new ColorThief();
-    const dominantColor = colorThief.getColor(img);
-    const r = dominantColor[0];
-    const g = dominantColor[1];
-    const b = dominantColor[2];
-    
-    // AAA contrast enforcement
-    // Calculate relative luminance
-    let rs = r / 255; let gs = g / 255; let bs = b / 255;
-    rs = rs <= 0.03928 ? rs / 12.92 : Math.pow((rs + 0.055) / 1.055, 2.4);
-    gs = gs <= 0.03928 ? gs / 12.92 : Math.pow((gs + 0.055) / 1.055, 2.4);
-    bs = bs <= 0.03928 ? bs / 12.92 : Math.pow((bs + 0.055) / 1.055, 2.4);
-    const L = 0.2126 * rs + 0.7152 * gs + 0.0722 * bs;
-    
-    let safeR = r, safeG = g, safeB = b;
-    
-    // White has L = 1. Contrast ratio = 1.05 / (L + 0.05)
-    // For 7:1 AAA contrast, we need L <= 0.10
-    if (L > 0.10) {
-      const scale = 0.10 / L;
-      const gammaScale = Math.pow(scale, 1 / 2.2);
-      safeR = Math.min(255, Math.floor(r * gammaScale));
-      safeG = Math.min(255, Math.floor(g * gammaScale));
-      safeB = Math.min(255, Math.floor(b * gammaScale));
-    }
-    
-    colorData = {
-      r: safeR, g: safeG, b: safeB, L,
-      rgb: (r, g, b, a) => `rgba(${r},${g},${b},${a})`
-    };
-    
-    document.body.style.setProperty('--art-color', `rgba(${Math.floor(safeR * 0.3)}, ${Math.floor(safeG * 0.3)}, ${Math.floor(safeB * 0.3)}, 0.8)`);
-    document.body.style.setProperty('--art-color-dark', `rgba(${Math.floor(safeR * 0.2)}, ${Math.floor(safeG * 0.2)}, ${Math.floor(safeB * 0.2)}, 0.9)`);
-  } catch(e) { colorData = null; }
-}
-
-// ΓöÇΓöÇ Load artwork image ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+// ── Load artwork image ────────────────────────────────────────────────────────
 function loadArtwork(url) {
-  if (!url) { artImg = null; blurCanvas = null; colorData = null; return; }
+  if (!url) { artImg = null; blurCanvas = null; artworkStats = null; return; }
   const img = new Image();
   img.crossOrigin = 'anonymous';
   img.onload = () => {
     artImg = img;
+    getArtworkStats(img);
     prepareBlurSource(img);
-    extractColors(img);
   };
   img.src = `/api/proxy?url=${encodeURIComponent(url)}`;
 }
 
-// ΓöÇΓöÇ Draw background (Apple Music style blurred art + Multiply layer) ΓöÇΓöÇΓöÇΓöÇ
+// ── Draw background (Apple Music style dynamic blurred art) ───────────────────
 function drawBackground(W, H, t) {
   if (blurCanvas) {
     ctx.save();
@@ -489,22 +471,19 @@ function drawBackground(W, H, t) {
     ctx.drawImage(blurCanvas, -dw/2, -dw/2, dw, dw);
     ctx.restore();
     
-    // Multiply AAA Safe Tint (only if cover is too bright)
-    if (colorData && typeof colorData.L === 'number') {
-      const alpha = Math.max(0, Math.min(1, (colorData.L - 0.10) / 0.3)); // Fades in between L=0.10 (already dark) and L=0.40 (fully active)
-      if (alpha > 0) {
-        ctx.globalCompositeOperation = 'multiply';
-        ctx.globalAlpha = alpha;
-        ctx.fillStyle = `rgb(${colorData.r}, ${colorData.g}, ${colorData.b})`;
-        ctx.fillRect(0, 0, W, H);
-      }
-    }
-    
     ctx.restore();
   } else {
     ctx.fillStyle = '#111';
     ctx.fillRect(0, 0, W, H);
   }
+
+  // Smart darkening overlay
+  let alpha = 0.25;
+  if (artworkStats) {
+    alpha = 0.25 + Math.min(0.35, artworkStats.brightness * 0.35);
+  }
+  ctx.fillStyle = `rgba(0,0,0,${alpha.toFixed(2)})`;
+  ctx.fillRect(0, 0, W, H);
 
   // Soft vignette
   const vig = ctx.createRadialGradient(W/2, H/2, W*0.2, W/2, H/2, W*0.9);
@@ -1718,7 +1697,7 @@ async function fetchMetadataResults(query) {
   S.lyricsType = 'none';
   S.syncOffset = 0;
   S.lastHighlightIdx = -1;
-  artImg = null; blurCanvas = null; colorData = null;
+  artImg = null; blurCanvas = null; artworkStats = null;
   wrapCache.clear();
 
   resolving = true;
