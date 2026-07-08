@@ -98,18 +98,73 @@ function drawVignette(ctx, w, h) {
 
 // ── Color extraction ────────────────────────────────────────────────────────
 function extractColors(img) {
-  const tmp = createCanvas(1, 1);
-  const c   = tmp.getContext('2d');
-  c.drawImage(img, 0, 0, 1, 1);
-  const [r, g, b] = c.getImageData(0, 0, 1, 1).data;
-  
-  // First principles: true average brightness of the image
-  const avgBrightness = (r + g + b) / 3;
-  
-  return { r, g, b, avgBrightness };
+  try {
+    const tmp = createCanvas(64, 64);
+    const c = tmp.getContext('2d');
+    c.drawImage(img, 0, 0, 64, 64);
+    const data = c.getImageData(0, 0, 64, 64).data;
+    
+    let totalR = 0, totalG = 0, totalB = 0;
+    const colors = [];
+    
+    for (let i = 0; i < data.length; i += 4) {
+      const r = data[i], g = data[i+1], b = data[i+2];
+      totalR += r; totalG += g; totalB += b;
+      
+      const max = Math.max(r, g, b);
+      const min = Math.min(r, g, b);
+      const l = (max + min) / 510;
+      let s = 0;
+      if (max !== min) {
+        s = l > 0.5 ? (max - min) / (510 - max - min) : (max - min) / (max + min);
+      }
+      
+      if (s > 0.15 && l > 0.1 && l < 0.9) {
+        colors.push({r, g, b});
+      }
+    }
+    
+    const avgBrightness = (totalR + totalG + totalB) / (3 * 4096);
+    let palette = [];
+    
+    if (colors.length === 0) {
+      palette = [ {r:40, g:40, b:40}, {r:20, g:20, b:20} ];
+    } else {
+      const clusters = [];
+      const THRESHOLD = 60;
+      
+      for (const col of colors) {
+        let found = false;
+        for (const cluster of clusters) {
+          const dr = cluster.r - col.r;
+          const dg = cluster.g - col.g;
+          const db = cluster.b - col.b;
+          if (Math.sqrt(dr*dr + dg*dg + db*db) < THRESHOLD) {
+            cluster.r = (cluster.r * cluster.count + col.r) / (cluster.count + 1);
+            cluster.g = (cluster.g * cluster.count + col.g) / (cluster.count + 1);
+            cluster.b = (cluster.b * cluster.count + col.b) / (cluster.count + 1);
+            cluster.count++;
+            found = true; break;
+          }
+        }
+        if (!found) clusters.push({ r: col.r, g: col.g, b: col.b, count: 1 });
+      }
+      
+      clusters.sort((a, b) => b.count - a.count);
+      palette = clusters.slice(0, 2).map(col => ({ r: Math.round(col.r), g: Math.round(col.g), b: Math.round(col.b) }));
+      while (palette.length < 2) palette.push(palette[0]);
+    }
+    
+    return { r: palette[0].r, g: palette[0].g, b: palette[0].b, avgBrightness, palette };
+  } catch (e) {
+    return { 
+      r: 40, g: 40, b: 40, avgBrightness: 40, 
+      palette: [{r:40,g:40,b:40}, {r:20,g:20,b:20}] 
+    };
+  }
 }
 
-// ── Animated background (blurred album art + colour blobs) ──────────────────
+// ── Animated background (Apple Music style blurred art + Color Orbs) ──────────────────
 function drawBackground(ctx, w, h, coverImg, colors, time, amp) {
   if (_blurCanvas) {
     ctx.save();
@@ -144,6 +199,37 @@ function drawBackground(ctx, w, h, coverImg, colors, time, amp) {
     ctx.scale(2.2, 2.2);
     ctx.drawImage(_blurCanvas, -dw/2, -dw/2, dw, dw);
     ctx.restore();
+    
+    // NEW: Hybrid Color Lighting (Draws glowing orbs on top of the blur)
+    if (colors && colors.palette) {
+      const pal = colors.palette;
+      ctx.globalCompositeOperation = 'overlay';
+      ctx.globalAlpha = 0.7;
+      
+      const maxDim = Math.max(w, h);
+      
+      // Orb 1 (Top right)
+      const c1 = pal[0];
+      const x1 = w * 0.7 + Math.sin(time * 0.2) * w * 0.3;
+      const y1 = h * 0.2 + Math.cos(time * 0.25) * h * 0.3;
+      const r1 = maxDim * 0.8;
+      const g1 = ctx.createRadialGradient(x1, y1, 0, x1, y1, r1);
+      g1.addColorStop(0, `rgba(${c1.r}, ${c1.g}, ${c1.b}, 1)`);
+      g1.addColorStop(1, `rgba(${c1.r}, ${c1.g}, ${c1.b}, 0)`);
+      ctx.fillStyle = g1;
+      ctx.fillRect(0, 0, w, h);
+      
+      // Orb 2 (Bottom left)
+      const c2 = pal[1] || pal[0];
+      const x2 = w * 0.2 + Math.cos(time * 0.15) * w * 0.3;
+      const y2 = h * 0.8 + Math.sin(time * 0.18) * h * 0.3;
+      const r2 = maxDim * 0.9;
+      const g2 = ctx.createRadialGradient(x2, y2, 0, x2, y2, r2);
+      g2.addColorStop(0, `rgba(${c2.r}, ${c2.g}, ${c2.b}, 1)`);
+      g2.addColorStop(1, `rgba(${c2.r}, ${c2.g}, ${c2.b}, 0)`);
+      ctx.fillStyle = g2;
+      ctx.fillRect(0, 0, w, h);
+    }
     
     ctx.restore();
   } else {
