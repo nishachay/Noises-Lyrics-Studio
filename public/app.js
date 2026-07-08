@@ -382,9 +382,6 @@ function prepareBlurSource(img) {
   blurCanvas.height = 18;
   const bx = blurCanvas.getContext('2d');
 
-  // Apply a saturation filter so that accent colors POP instead of turning muddy gray
-  bx.filter = 'saturate(350%) brightness(120%)';
-
   const W = img.naturalWidth || 1000;
   const H = img.naturalHeight || 1000;
   const target = 32 / 18;
@@ -493,7 +490,7 @@ function drawBackground(W, H, t) {
     ctx.restore();
     
     // Multiply AAA Safe Tint (only if cover is too bright)
-    if (colorData) {
+    if (colorData && typeof colorData.L === 'number') {
       const alpha = Math.max(0, Math.min(1, (colorData.L - 0.10) / 0.3)); // Fades in between L=0.10 (already dark) and L=0.40 (fully active)
       if (alpha > 0) {
         ctx.globalCompositeOperation = 'multiply';

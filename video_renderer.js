@@ -1095,7 +1095,7 @@ function renderVideo({
           let sx, sy, sw, sh;
           if (ratio > target) { sh = iH; sw = iH * target; sx = (iW - sw) / 2; sy = 0; }
           else                { sw = iW; sh = iW / target; sx = 0; sy = (iH - sh) / 2; }
-          bx.filter = 'saturate(350%) brightness(120%)';
+          // Filter removed
           bx.drawImage(coverImg, sx, sy, sw, sh, 0, 0, 256, 144);
           
           console.log('[Renderer] Cover art loaded ✓');
@@ -1485,7 +1485,7 @@ async function renderSlideshow({
             let sx, sy, sw, sh;
             if (ratio > target) { sh = iH; sw = iH * target; sx = (iW - sw) / 2; sy = 0; }
             else                { sw = iW; sh = iW / target; sx = 0; sy = (iH - sh) / 2; }
-            bx.filter = 'saturate(350%) brightness(120%)';
+            // Filter removed
             bx.drawImage(coverImg, sx, sy, sw, sh, 0, 0, 256, 144);
             processSlides();
           });
@@ -1515,7 +1515,7 @@ async function generateThumbnailBuffer({ title, artist, artworkUrl, theme, logoP
   let sx, sy, sw, sh;
   if (ratio > target) { sh = iH; sw = iH * target; sx = (iW - sw) / 2; sy = 0; }
   else                { sw = iW; sh = iW / target; sx = 0; sy = (iH - sh) / 2; }
-  bx.filter = 'saturate(350%) brightness(120%)';
+  // Filter removed
   bx.drawImage(coverImg, sx, sy, sw, sh, 0, 0, 256, 144);
   
   const font = 'Plus Jakarta Sans", "Noto Sans Devanagari", "Noto Sans KR';
