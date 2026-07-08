@@ -151,7 +151,13 @@ function drawBackground(ctx, w, h, coverImg, colors, time, amp) {
     ctx.fillRect(0, 0, w, h);
   }
 
-  // No black overlay needed; the blur source is natively darkened (Jewel Tone algorithm)
+  // Smart darkening overlay for readability
+  let baseAlpha = 0.4;
+  if (colors && colors.avgBrightness > 100) {
+    baseAlpha += Math.min(0.35, ((colors.avgBrightness - 100) / 155) * 0.35);
+  }
+  ctx.fillStyle = `rgba(0,0,0,${baseAlpha.toFixed(2)})`;
+  ctx.fillRect(0, 0, w, h);
 
   // Soft vignette drawn under text overlays
   drawVignette(ctx, w, h);
@@ -379,10 +385,16 @@ function drawAlbumPanel(ctx, img, title, artist, W, H, font, songTime, duration)
 
     cctx.font = `bold ${tSz}px "Plus Jakarta Sans", "Noto Sans Devanagari", "Noto Sans KR"`;
     cctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
+    cctx.shadowColor = 'rgba(0, 0, 0, 0.8)';
+    cctx.shadowBlur = 8;
+    cctx.shadowOffsetY = 2;
     cctx.fillText(title, tx, titleY);
 
     cctx.font = `${aSz}px "Plus Jakarta Sans", "Noto Sans Devanagari", "Noto Sans KR"`;
-    cctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
+    cctx.fillStyle = 'rgba(255, 255, 255, 0.65)';
+    cctx.shadowColor = 'rgba(0, 0, 0, 0.7)';
+    cctx.shadowBlur = 6;
+    cctx.shadowOffsetY = 2;
     cctx.fillText(artist, tx, artistY);
     cctx.restore();
   }
@@ -554,11 +566,6 @@ function drawLyricsPanel(ctx, W, H, time, wrappedLyrics, font, alignment, durati
           cctx.textAlign = textAlign;
           cctx.textBaseline = 'middle';
           
-          cctx.shadowColor = glowColor;
-          cctx.shadowBlur = 15;
-          cctx.shadowOffsetY = 0;
-          cctx.fillStyle = primaryColor;
-          cctx.fillText(text, ccx, y);
 
           cctx.shadowColor = 'rgba(0, 0, 0, 0.8)';
           cctx.shadowBlur = 10;
@@ -675,11 +682,6 @@ function drawLyricsPanel(ctx, W, H, time, wrappedLyrics, font, alignment, durati
       cctx.textAlign = textAlign;
       cctx.textBaseline = 'middle';
       
-      cctx.shadowColor = glowColor;
-      cctx.shadowBlur = 15;
-      cctx.shadowOffsetY = 0;
-      cctx.fillStyle = primaryColor;
-      cctx.fillText(text, ccx, y);
 
       cctx.shadowColor = 'rgba(0, 0, 0, 0.8)';
       cctx.shadowBlur = 10;
@@ -809,13 +811,13 @@ function generateThumbnail(coverImg, colors, title, artist, font, alignment, wra
   drawBackground(ctx, W, H, coverImg, colors, 10.0, 0.0);
 
   // 2. Draw centered Album Cover Art
-  const artSz = Math.round(H * 0.55);
+  const artSz = Math.round(H * 0.39); // scales perfectly (e.g. 280 for 720p, 420 for 1080p)
   const radius = Math.round(artSz * 0.06);
 
   const ax = Math.round((W - artSz) / 2);
-  const titleSz = Math.round(H * 0.095);
-  const artistSz = Math.round(H * 0.048);
-  const gap1 = Math.round(H * 0.05);
+  const titleSz = Math.round(H * 0.072);
+  const artistSz = Math.round(H * 0.033);
+  const gap1 = Math.round(H * 0.06);
   const gap2 = Math.round(H * 0.02);
 
   // Set the font to measure title
@@ -870,19 +872,34 @@ function generateThumbnail(coverImg, colors, title, artist, font, alignment, wra
     ctx.save();
     ctx.imageSmoothingEnabled = true;
     ctx.imageSmoothingQuality = 'high';
-    ctx.shadowColor = 'rgba(0, 0, 0, 0.55)';
-    ctx.shadowBlur = 40;
-    ctx.shadowOffsetY = 16;
+    // Drop shadow
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.65)';
+    ctx.shadowBlur = 50;
+    ctx.shadowOffsetY = 15;
 
+    ctx.beginPath();
+    ctx.roundRect(ax, ay, artSz, artSz, radius);
+    ctx.clip();
     ctx.drawImage(coverImg, ax, ay, artSz, artSz);
+    ctx.restore();
+
+    // Subtle white inner border
+    ctx.save();
+    ctx.beginPath();
+    ctx.roundRect(ax, ay, artSz, artSz, radius);
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
     ctx.restore();
   } else {
     ctx.save();
     ctx.fillStyle = '#111115';
-    ctx.shadowColor = 'rgba(0, 0, 0, 0.55)';
-    ctx.shadowBlur = 40;
-    ctx.shadowOffsetY = 16;
-    ctx.fillRect(ax, ay, artSz, artSz);
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.65)';
+    ctx.shadowBlur = 50;
+    ctx.shadowOffsetY = 15;
+    ctx.beginPath();
+    ctx.roundRect(ax, ay, artSz, artSz, radius);
+    ctx.fill();
     ctx.restore();
   }
 
@@ -892,18 +909,18 @@ function generateThumbnail(coverImg, colors, title, artist, font, alignment, wra
   ctx.textBaseline = 'top';
   ctx.font = `bold ${finalTitleSz}px "Plus Jakarta Sans", "Noto Sans Devanagari", "Noto Sans KR"`;
   ctx.fillStyle = '#ffffff';
-  ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
-  ctx.shadowBlur = 10;
-  ctx.shadowOffsetY = 4;
+  ctx.shadowColor = 'rgba(0, 0, 0, 0.8)';
+  ctx.shadowBlur = 8;
+  ctx.shadowOffsetY = 2;
 
   for (let i = 0; i < titleLines.length; i++) {
     ctx.fillText(titleLines[i], W / 2, titleY + i * titleLineHeight);
   }
 
   // Draw Artist Name
-  ctx.font = `600 ${artistSz}px "Plus Jakarta Sans", "Noto Sans Devanagari", "Noto Sans KR"`;
-  ctx.fillStyle = 'rgba(255, 255, 255, 0.85)';
-  ctx.shadowColor = 'rgba(0, 0, 0, 0.4)';
+  ctx.font = `${artistSz}px "Plus Jakarta Sans", "Noto Sans Devanagari", "Noto Sans KR"`;
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.65)';
+  ctx.shadowColor = 'rgba(0, 0, 0, 0.7)';
   ctx.shadowBlur = 6;
   ctx.shadowOffsetY = 2;
   ctx.fillText(artist, W / 2, artistY);
@@ -911,6 +928,15 @@ function generateThumbnail(coverImg, colors, title, artist, font, alignment, wra
 
   // Draw watermark logo in the corner (at static time = 0.0)
   drawWatermark(ctx, W, H, 0.0, logoImg);
+
+  // Film grain overlay
+  const nc  = getNoiseCanvas();
+  const pat = ctx.createPattern(nc, 'repeat');
+  ctx.save();
+  ctx.fillStyle = pat;
+  ctx.translate(24, 42);
+  ctx.fillRect(-24, -42, W + 24, H + 42);
+  ctx.restore();
 
   return tc.toBuffer('image/jpeg', { quality: 96 });
 }
@@ -995,23 +1021,8 @@ function renderVideo({
           let sx, sy, sw, sh;
           if (ratio > target) { sh = iH; sw = iH * target; sx = (iW - sw) / 2; sy = 0; }
           else                { sw = iW; sh = iW / target; sx = 0; sy = (iH - sh) / 2; }
+          bx.filter = 'saturate(350%) brightness(120%)';
           bx.drawImage(coverImg, sx, sy, sw, sh, 0, 0, 256, 144);
-
-  // --- Natural Contrast Transformation (Linear RGB Scaling) ---
-  const imgData = bx.getImageData(0, 0, bx.canvas.width, bx.canvas.height);
-  const data = imgData.data;
-  
-  for (let i = 0; i < data.length; i += 4) {
-    let r = data[i], g = data[i+1], b = data[i+2];
-    let luma = 0.299 * r + 0.587 * g + 0.114 * b;
-    if (luma > 70) {
-      const scale = 70 / luma;
-      data[i] = Math.round(r * scale);
-      data[i+1] = Math.round(g * scale);
-      data[i+2] = Math.round(b * scale);
-    }
-  }
-  bx.putImageData(imgData, 0, 0);
           
           console.log('[Renderer] Cover art loaded ✓');
         } catch (e) { console.error('[Renderer] Cover art:', e.message); }
@@ -1363,7 +1374,7 @@ async function renderSlideshow({
               for (const l of transLines) {
                 ctx.font = `bold ${Math.round(activeSz * 0.5)}px "${FONT}"`;
                 ctx.fillStyle = '#ffffff';
-                ctx.shadowColor = 'rgba(255,255,255,0.4)';
+                ctx.shadowColor = 'rgba(0,0,0,0.8)';
                 ctx.shadowBlur = 10;
                 ctx.fillText(l, W / 2, ay);
                 ctx.shadowBlur = 0;
@@ -1400,24 +1411,8 @@ async function renderSlideshow({
             let sx, sy, sw, sh;
             if (ratio > target) { sh = iH; sw = iH * target; sx = (iW - sw) / 2; sy = 0; }
             else                { sw = iW; sh = iW / target; sx = 0; sy = (iH - sh) / 2; }
+            bx.filter = 'saturate(350%) brightness(120%)';
             bx.drawImage(coverImg, sx, sy, sw, sh, 0, 0, 256, 144);
-
-  // --- Natural Contrast Transformation (Linear RGB Scaling) ---
-  const imgData = bx.getImageData(0, 0, bx.canvas.width, bx.canvas.height);
-  const data = imgData.data;
-  
-  for (let i = 0; i < data.length; i += 4) {
-    let r = data[i], g = data[i+1], b = data[i+2];
-    let luma = 0.299 * r + 0.587 * g + 0.114 * b;
-    if (luma > 70) {
-      const scale = 70 / luma;
-      data[i] = Math.round(r * scale);
-      data[i+1] = Math.round(g * scale);
-      data[i+2] = Math.round(b * scale);
-    }
-  }
-  bx.putImageData(imgData, 0, 0);
-
             processSlides();
           });
         } else {
@@ -1433,13 +1428,28 @@ async function renderSlideshow({
 
 async function generateThumbnailBuffer({ title, artist, artworkUrl, theme, logoPath }) {
   const coverImg = await loadImage(artworkUrl);
-  const tc = createCanvas(1280, 720);
-  const ctx = tc.getContext('2d');
+  const logoImg = logoPath ? await loadImage(logoPath).catch(()=>null) : null;
   
-  // Just draw the cover art directly as a clean, high-quality background (no vintage text/shadows)
-  ctx.drawImage(coverImg, 0, 0, 1280, 720);
+  const colors = extractColors(coverImg);
   
-  return tc.toBuffer('image/jpeg', { quality: 100 });
+  _blurCanvas = createCanvas(256, 144);
+  const bx = _blurCanvas.getContext('2d');
+  const iW = coverImg.width || 1000;
+  const iH = coverImg.height || 1000;
+  const target = 256 / 144;
+  const ratio = iW / iH;
+  let sx, sy, sw, sh;
+  if (ratio > target) { sh = iH; sw = iH * target; sx = (iW - sw) / 2; sy = 0; }
+  else                { sw = iW; sh = iW / target; sx = 0; sy = (iH - sh) / 2; }
+  bx.filter = 'saturate(350%) brightness(120%)';
+  bx.drawImage(coverImg, sx, sy, sw, sh, 0, 0, 256, 144);
+  
+  const font = 'Plus Jakarta Sans", "Noto Sans Devanagari", "Noto Sans KR';
+  const buf = generateThumbnail(coverImg, colors, title, artist, font, 'center', [], 0, logoImg, 1280, 720);
+  
+  _blurCanvas = null;
+  
+  return buf;
 }
 
 module.exports = {

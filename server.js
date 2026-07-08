@@ -1622,7 +1622,7 @@ app.get('/api/todays-plan', async (req, res) => {
       fetchKworb('https://kworb.net/charts/itunes/us.html'), // Using US iTunes for Pop proxy
       fetchYouTubeKworb('https://kworb.net/youtube/'),       // Global YouTube for HipHop/Global hits proxy
       fetchKworb('https://kworb.net/charts/itunes/in.html'), // India iTunes for Hindi/DHH
-      fetchKworb('https://kworb.net/charts/itunes/kr.html')  // Korea iTunes for K-Pop
+      fetchKworb('https://kworb.net/youtube/topvideos_korean.html') // Korean YouTube for K-Pop
     ]);
 
     res.json({

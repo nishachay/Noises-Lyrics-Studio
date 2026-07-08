@@ -382,7 +382,9 @@ function prepareBlurSource(img) {
   blurCanvas.height = 18;
   const bx = blurCanvas.getContext('2d');
 
-  // Cover-fit crop
+  // Apply a saturation filter so that accent colors POP instead of turning muddy gray
+  bx.filter = 'saturate(350%) brightness(120%)';
+
   const W = img.naturalWidth || 1000;
   const H = img.naturalHeight || 1000;
   const target = 32 / 18;
@@ -391,22 +393,6 @@ function prepareBlurSource(img) {
   if (ratio > target) { sh = H; sw = H * target; sx = (W - sw) / 2; sy = 0; }
   else                { sw = W; sh = W / target; sx = 0; sy = (H - sh) / 2; }
   bx.drawImage(img, sx, sy, sw, sh, 0, 0, 32, 18);
-
-  // --- Natural Contrast Transformation (Linear RGB Scaling) ---
-  const imgData = bx.getImageData(0, 0, bx.canvas.width, bx.canvas.height);
-  const data = imgData.data;
-  
-  for (let i = 0; i < data.length; i += 4) {
-    let r = data[i], g = data[i+1], b = data[i+2];
-    let luma = 0.299 * r + 0.587 * g + 0.114 * b;
-    if (luma > 70) {
-      const scale = 70 / luma;
-      data[i] = Math.round(r * scale);
-      data[i+1] = Math.round(g * scale);
-      data[i+2] = Math.round(b * scale);
-    }
-  }
-  bx.putImageData(imgData, 0, 0);
 }
 
 // ΓöÇΓöÇ Extract dominant colors from album art ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
@@ -497,7 +483,13 @@ function drawBackground(W, H, t) {
     ctx.fillRect(0, 0, W, H);
   }
 
-  // No black overlay needed; the blur source is natively darkened (Jewel Tone algorithm)
+  // Smart darkening overlay for readability
+  let baseAlpha = 0.4;
+  if (colorData && colorData.avgBrightness > 100) {
+    baseAlpha += Math.min(0.35, ((colorData.avgBrightness - 100) / 155) * 0.35);
+  }
+  ctx.fillStyle = `rgba(0,0,0,${baseAlpha.toFixed(2)})`;
+  ctx.fillRect(0, 0, W, H);
 
   // Soft vignette
   const vig = ctx.createRadialGradient(W/2, H/2, W*0.2, W/2, H/2, W*0.9);
@@ -569,10 +561,16 @@ function drawSongInfo(W, H) {
 
   ctx.font = `700 ${tSz}px ${FONT}, sans-serif`;
   ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
+  ctx.shadowColor = 'rgba(0, 0, 0, 0.8)';
+  ctx.shadowBlur = 8;
+  ctx.shadowOffsetY = 2;
   ctx.fillText(S.track.title || '', tx, titleY);
 
   ctx.font = `500 ${aSz}px ${FONT}, sans-serif`;
-  ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.65)';
+  ctx.shadowColor = 'rgba(0, 0, 0, 0.7)';
+  ctx.shadowBlur = 6;
+  ctx.shadowOffsetY = 2;
   ctx.fillText(S.track.artist || '', tx, artistY);
   ctx.restore();
 
@@ -814,13 +812,17 @@ function drawLeftSplitLayout(W, H, songTime) {
   ctx.textAlign = 'center';
   ctx.textBaseline = 'top';
   ctx.fillStyle = '#ffffff';
-  ctx.shadowColor = 'rgba(0, 0, 0, 0.4)';
-  ctx.shadowBlur = 4;
+  ctx.shadowColor = 'rgba(0, 0, 0, 0.8)';
+  ctx.shadowBlur = 8;
+  ctx.shadowOffsetY = 2;
   ctx.fillText(S.track.title || '', textX, titleY);
 
   // Artist Name
   ctx.font = `600 ${artistSz}px ${FONT}, sans-serif`;
-  ctx.fillStyle = 'rgba(255, 255, 255, 0.85)';
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.65)';
+  ctx.shadowColor = 'rgba(0, 0, 0, 0.7)';
+  ctx.shadowBlur = 6;
+  ctx.shadowOffsetY = 2;
   ctx.fillText(S.track.artist || '', textX, titleY + titleSz + 8);
   ctx.restore();
 
@@ -942,12 +944,6 @@ function drawLyrics(W, H, songTime) {
         ctx.textAlign = textAlign;
         ctx.textBaseline = 'middle';
         ctx.globalAlpha = finalOpacity * lineOpacityMult * opacityMult;
-        
-        ctx.shadowColor = glowColor;
-        ctx.shadowBlur = isLineActive ? 15 : 0;
-        ctx.shadowOffsetY = 0;
-        ctx.fillStyle = primaryColor;
-        ctx.fillText(text, 0, y);
 
         ctx.shadowColor = 'rgba(0, 0, 0, 0.8)';
         ctx.shadowBlur = 10;
@@ -955,8 +951,11 @@ function drawLyrics(W, H, songTime) {
         ctx.fillText(text, 0, y);
 
         ctx.shadowColor = 'transparent';
+        ctx.fillStyle = primaryColor;
         ctx.fillText(text, 0, y);
       };
+
+
 
       let segmentY = curY;
       line.wrapped.forEach((seg) => {
@@ -1088,18 +1087,13 @@ function drawLyrics(W, H, songTime) {
     ctx.font = fontStr;
     ctx.globalAlpha = opacity * layoutAlpha * opacityMult;
     
-    ctx.shadowColor = glowColor;
-    ctx.shadowBlur = 15;
-    ctx.shadowOffsetY = 0;
-    ctx.fillStyle = primaryColor;
-    ctx.fillText(text, 0, y);
-
     ctx.shadowColor = 'rgba(0, 0, 0, 0.8)';
     ctx.shadowBlur = 10;
     ctx.shadowOffsetY = 2;
     ctx.fillText(text, 0, y);
 
     ctx.shadowColor = 'transparent';
+    ctx.fillStyle = primaryColor;
     ctx.fillText(text, 0, y);
   };
 
@@ -1288,13 +1282,17 @@ function drawIntroLayout(W, H, now) {
   ctx.textAlign = 'center';
   ctx.textBaseline = 'top';
   ctx.fillStyle = '#ffffff';
-  ctx.shadowColor = 'rgba(0, 0, 0, 0.4)';
-  ctx.shadowBlur = 4;
+  ctx.shadowColor = 'rgba(0, 0, 0, 0.8)';
+  ctx.shadowBlur = 8;
+  ctx.shadowOffsetY = 2;
   ctx.fillText(S.track.title || '', W / 2, titleY);
 
   // Artist Name
   ctx.font = `${artistSz}px ${FONT}, sans-serif`;
-  ctx.fillStyle = 'rgba(255, 255, 255, 0.55)';
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.65)';
+  ctx.shadowColor = 'rgba(0, 0, 0, 0.7)';
+  ctx.shadowBlur = 6;
+  ctx.shadowOffsetY = 2;
   ctx.fillText(S.track.artist || '', W / 2, titleY + titleSz + 10);
 
   ctx.restore();
@@ -3143,7 +3141,9 @@ if (btnMapTranslations) {
           delete lyricObj.translation;
         }
       });
+      precomputeLyricsLayout(canvas.width, canvas.height, selectAlign.value);
       renderLyricsList();
+      saveProjectState();
       alert(`Mapped ${mapped} translation lines successfully!`);
     }
   });
@@ -3870,10 +3870,27 @@ if (btnPreviewThumb) {
     if (btnThumbDownload) btnThumbDownload.style.display = 'none';
 
     try {
-      // Draw 1 frame instantly to ensure it is visually up to date
-      if (typeof drawFrame === 'function') drawFrame();
+      // Call the backend API to generate the exact thumbnail
+      const res = await fetch('/api/thumbnail-preview', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: S.track.title,
+          artist: S.track.artist,
+          artworkUrl: S.track.artworkUrl,
+          theme: 'dark', // the default theme for video
+          logoPath: 'public/logo_white.png'
+        })
+      });
       
-      const dataUrl = canvas.toDataURL('image/jpeg', 0.95);
+      if (!res.ok) {
+        const errText = await res.text().catch(()=>res.statusText);
+        throw new Error('Failed to generate thumbnail from server: ' + errText);
+      }
+      
+      const blob = await res.blob();
+      const dataUrl = URL.createObjectURL(blob);
+      
       thumbImage.src = dataUrl;
       thumbImage.onload = () => {
         thumbLoading.style.display = 'none';
