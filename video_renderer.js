@@ -882,13 +882,13 @@ function generateThumbnail(coverImg, colors, title, artist, font, alignment, wra
   drawBackground(ctx, W, H, coverImg, colors, 10.0, 0.0);
 
   // 2. Draw centered Album Cover Art
-  const artSz = Math.round(H * 0.39); // scales perfectly (e.g. 280 for 720p, 420 for 1080p)
+  const artSz = Math.round(H * 0.55); // Increased for high quality!
   const radius = Math.round(artSz * 0.06);
 
   const ax = Math.round((W - artSz) / 2);
-  const titleSz = Math.round(H * 0.072);
-  const artistSz = Math.round(H * 0.033);
-  const gap1 = Math.round(H * 0.06);
+  const titleSz = Math.round(H * 0.095); // Much bigger title
+  const artistSz = Math.round(H * 0.048); // Bigger artist
+  const gap1 = Math.round(H * 0.05);
   const gap2 = Math.round(H * 0.02);
 
   // Set the font to measure title
@@ -980,7 +980,7 @@ function generateThumbnail(coverImg, colors, title, artist, font, alignment, wra
   ctx.textBaseline = 'top';
   ctx.font = `bold ${finalTitleSz}px "Plus Jakarta Sans", "Noto Sans Devanagari", "Noto Sans KR"`;
   ctx.fillStyle = '#ffffff';
-  ctx.shadowColor = 'rgba(0, 0, 0, 0.8)';
+  ctx.shadowColor = 'rgba(0, 0, 0, 0.4)';
   ctx.shadowBlur = 8;
   ctx.shadowOffsetY = 2;
 
@@ -989,11 +989,11 @@ function generateThumbnail(coverImg, colors, title, artist, font, alignment, wra
   }
 
   // Draw Artist Name
-  ctx.font = `${artistSz}px "Plus Jakarta Sans", "Noto Sans Devanagari", "Noto Sans KR"`;
-  ctx.fillStyle = 'rgba(255, 255, 255, 0.65)';
-  ctx.shadowColor = 'rgba(0, 0, 0, 0.7)';
-  ctx.shadowBlur = 6;
-  ctx.shadowOffsetY = 2;
+  ctx.font = `600 ${artistSz}px "Plus Jakarta Sans", "Noto Sans Devanagari", "Noto Sans KR"`;
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.85)';
+  ctx.shadowColor = 'rgba(0, 0, 0, 0.3)';
+  ctx.shadowBlur = 4;
+  ctx.shadowOffsetY = 1;
   ctx.fillText(artist, W / 2, artistY);
   ctx.restore();
 
