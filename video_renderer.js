@@ -1391,7 +1391,9 @@ async function renderSlideshow({
               ctx.fillStyle = '#ffffff';
                 ctx.shadowColor = 'rgba(0, 0, 0, 0.8)';
                 ctx.shadowBlur = 10;
+                ctx.shadowOffsetY = 2;
                 ctx.fillText(l, W / 2, ay);
+                ctx.shadowOffsetY = 0;
                 ctx.shadowBlur = 0;
               ay += activeSz;
             }
@@ -1403,7 +1405,9 @@ async function renderSlideshow({
                 ctx.fillStyle = '#ffffff';
                 ctx.shadowColor = 'rgba(0,0,0,0.8)';
                 ctx.shadowBlur = 10;
+                ctx.shadowOffsetY = 2;
                 ctx.fillText(l, W / 2, ay);
+                ctx.shadowOffsetY = 0;
                 ctx.shadowBlur = 0;
                 ay += (activeSz * 0.5);
               }
