@@ -1156,7 +1156,7 @@ app.get('/api/render', async (req, res) => {
     const fallbackTags = `${songArtist}, ${songTitle}, Lyrics, Pop, Music`;
     const youtubeTags = seoKeywords.length > 0 ? seoKeywords.join(', ') + `, ${fallbackTags}` : fallbackTags;
 
-    send({ status: 'completed', progress: 100, fileId: `${outputId}${isSlideshow ? '.zip' : '.mp4'}`, thumbnailId: `${outputId}_thumbnail.jpg`, youtubeTitle, youtubeDescription, youtubeTags });
+    send({ status: 'completed', progress: 100, fileId: `${outputId}${isSlideshow ? '.zip' : '.mp4'}`, thumbnailIdA: `${outputId}_thumbnail_A.jpg`, thumbnailIdB: `${outputId}_thumbnail_B.jpg`, youtubeTitle, youtubeDescription, youtubeTags });
     res.end();
 
   } catch (err) {

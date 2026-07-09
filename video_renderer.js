@@ -824,7 +824,7 @@ function wrapText(ctx, text, fontSize, maxW, fontFam) {
 }
 
 // ΓöÇΓöÇ THUMBNAIL ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
-function generateThumbnail(coverImg, colors, title, artist, font, alignment, wrappedLyrics, duration, logoImg, W = 1280, H = 720) {
+function generateThumbnail(coverImg, colors, title, artist, font, alignment, wrappedLyrics, duration, logoImg, W = 1280, H = 720, style = 'A') {
   const tc  = createCanvas(W, H);
   const ctx = tc.getContext('2d');
 
@@ -832,7 +832,11 @@ function generateThumbnail(coverImg, colors, title, artist, font, alignment, wra
   drawBackground(ctx, W, H, coverImg, colors, 10.0, 0.0);
 
   // 2. Draw centered Album Cover Art
-  drawSharedIntro(ctx, W, H, coverImg, title, artist, font);
+  if (style === 'B') {
+    drawThumbnailBContent(ctx, W, H, title, artist, font);
+  } else {
+    drawSharedIntro(ctx, W, H, coverImg, title, artist, font);
+  }
 
   // Draw watermark logo removed from thumbnail
   // drawWatermark(ctx, W, H, 0.0, logoImg);
@@ -963,8 +967,11 @@ function renderVideo({
       console.log(`[Renderer] Pre-wrapped ${wrappedLyrics.length} lyric lines ✓`);
 
       // ── Save thumbnail & metadata ───────────────────────────────
-      const thumbPath = outputPath.replace('.mp4', '_thumbnail.jpg');
-      fs.writeFileSync(thumbPath, generateThumbnail(coverImg, colors, songTitle, songArtist, FONT, alignment, wrappedLyrics, duration, logoImg, W, H));
+      const thumbPath = outputPath.replace('.mp4', '_thumbnail_A.jpg');
+      fs.writeFileSync(thumbPath, generateThumbnail(coverImg, colors, songTitle, songArtist, FONT, alignment, wrappedLyrics, duration, logoImg, W, H, 'A'));
+
+      const thumbPathB = outputPath.replace('.mp4', '_thumbnail_B.jpg');
+      fs.writeFileSync(thumbPathB, generateThumbnail(coverImg, colors, songTitle, songArtist, FONT, alignment, wrappedLyrics, duration, logoImg, W, H, 'B'));
       console.log(`[Renderer] Thumbnail saved ✓`);
 
       const txtPath = outputPath.replace('.mp4', '_metadata.txt');
@@ -1253,6 +1260,12 @@ async function renderSlideshow({
             progressCallback(Math.floor((i / lyrics.length) * 100));
           }
           
+                    // Generate thumbnails for slideshow
+          const thumbPathA = outputPath.replace('.zip', '_thumbnail_A.jpg');
+          fs.writeFileSync(thumbPathA, generateThumbnail(coverImg, colors, songTitle, songArtist, FONT, alignment, [], 0, logoImg, W, H, 'A'));
+          const thumbPathB = outputPath.replace('.zip', '_thumbnail_B.jpg');
+          fs.writeFileSync(thumbPathB, generateThumbnail(coverImg, colors, songTitle, songArtist, FONT, alignment, [], 0, logoImg, W, H, 'B'));
+          
           zip.writeZip(outputPath);
           console.log(`[Slideshow] Done → ${outputPath}`);
           resolve(outputPath);
@@ -1438,3 +1451,53 @@ function drawSharedIntro(ctx, W, H, coverImg, title, artist, font) {
   ctx.restore();
 }
 
+
+function drawThumbnailBContent(ctx, W, H, title, artist, font) {
+  const titleSz = Math.round(H * 0.15);
+  const artistSz = Math.round(H * 0.05);
+  const gap = Math.round(H * 0.04);
+
+  ctx.font = `bold ${titleSz}px ${font}`;
+
+  const maxTitleWidth = Math.round(W * 0.85);
+  const words = title.split(' ');
+  const titleLines = [];
+  let currentLine = '';
+  for (const w of words) {
+    const testLine = currentLine ? `${currentLine} ${w}` : w;
+    if (ctx.measureText(testLine).width <= maxTitleWidth) {
+      currentLine = testLine;
+    } else {
+      if (currentLine) titleLines.push(currentLine);
+      currentLine = w;
+    }
+  }
+  if (currentLine) titleLines.push(currentLine);
+
+  const titleLineHeight = Math.round(titleSz * 1.25);
+  const totalH = (titleLines.length * titleLineHeight) + gap + artistSz;
+  const ay = Math.round((H - totalH) / 2);
+  const titleY = ay;
+  const artistY = titleY + (titleLines.length * titleLineHeight) + gap;
+
+  ctx.save();
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'top';
+  ctx.font = `bold ${titleSz}px ${font}`;
+  ctx.fillStyle = '#ffffff';
+  ctx.shadowColor = 'rgba(0, 0, 0, 0.6)';
+  ctx.shadowBlur = 12;
+  ctx.shadowOffsetY = 4;
+
+  for (let i = 0; i < titleLines.length; i++) {
+    ctx.fillText(titleLines[i], W / 2, titleY + i * titleLineHeight);
+  }
+
+  ctx.font = `600 ${artistSz}px ${font}`;
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+  ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
+  ctx.shadowBlur = 8;
+  ctx.shadowOffsetY = 2;
+  ctx.fillText(artist, W / 2, artistY);
+  ctx.restore();
+}

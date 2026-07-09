@@ -2746,9 +2746,19 @@ function logLine(text, cls = '') {
   progLog.scrollTop = progLog.scrollHeight;
 }
 
+let lastThumbnailA = null;
+let lastThumbnailB = null;
+
 function showDone(msg) {
   btnDlVideo.href = `/api/download/${msg.fileId}`;
-  btnDlThumb.href = `/api/download/${msg.thumbnailId}`;
+  
+  const btnDlThumbA = document.getElementById('btn-dl-thumb-a');
+  const btnDlThumbB = document.getElementById('btn-dl-thumb-b');
+  if (btnDlThumbA && msg.thumbnailIdA) btnDlThumbA.href = `/api/download/${msg.thumbnailIdA}`;
+  if (btnDlThumbB && msg.thumbnailIdB) btnDlThumbB.href = `/api/download/${msg.thumbnailIdB}`;
+
+  lastThumbnailA = msg.thumbnailIdA;
+  lastThumbnailB = msg.thumbnailIdB;
   
   ytTitle.value = msg.youtubeTitle || '';
   ytDesc.value  = msg.youtubeDescription || '';
@@ -3612,7 +3622,10 @@ if (localAudioUpload) {
 async function publishToYouTube(channel) {
   const statusEl = document.getElementById('yt-publish-status');
   const videoBtn = document.getElementById('btn-dl-video');
-  const thumbBtn = document.getElementById('btn-dl-thumb');
+  const thumbBtnA = document.getElementById('btn-dl-thumb-a');
+  const thumbBtnB = document.getElementById('btn-dl-thumb-b');
+  const selStyle = document.querySelector('input[name="yt-thumb-sel"]:checked')?.value;
+  const thumbBtn = selStyle === 'B' ? thumbBtnB : thumbBtnA;
   const titleEl = document.getElementById('yt-title');
   const descEl = document.getElementById('yt-desc');
   const tagsEl = document.getElementById('yt-tags');
