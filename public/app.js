@@ -1255,67 +1255,7 @@ function drawIntroLayout(W, H, now) {
   const a = now < 1 ? now : now < 2 ? 1 : 3 - now;
   ctx.save();
   ctx.globalAlpha = Math.max(0, Math.min(1, a));
-
-  // Draw centered Cover Art (Render dimensions)
-  const artSz = Math.round(H * 0.55);
-  const titleSz = Math.round(H * 0.08);
-  const artistSz = Math.round(H * 0.038);
-  const totalH = artSz + 40 + titleSz + 15 + artistSz;
-
-  const ax = Math.round((W - artSz) / 2);
-  const ay = Math.round((H - totalH) / 2);
-  const radius = Math.round(artSz * 0.06);
-
-  if (artImg && artImg.complete) {
-    ctx.save();
-    ctx.shadowColor = 'rgba(0, 0, 0, 0.65)';
-    ctx.shadowBlur = 40;
-    ctx.shadowOffsetY = 12;
-    
-    ctx.beginPath();
-    ctx.roundRect(ax, ay, artSz, artSz, radius);
-    ctx.clip();
-    ctx.drawImage(artImg, ax, ay, artSz, artSz);
-    ctx.restore();
-
-    ctx.save();
-    ctx.beginPath();
-    ctx.roundRect(ax, ay, artSz, artSz, radius);
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
-    ctx.lineWidth = 1.5;
-    ctx.stroke();
-    ctx.restore();
-  } else {
-    ctx.save();
-    ctx.fillStyle = '#111115';
-    ctx.shadowColor = 'rgba(0, 0, 0, 0.65)';
-    ctx.shadowBlur = 40;
-    ctx.beginPath();
-    ctx.roundRect(ax, ay, artSz, artSz, radius);
-    ctx.fill();
-    ctx.restore();
-  }
-
-  const titleY = ay + artSz + 30;
-
-  // Song Title
-  ctx.font = `bold ${titleSz}px ${FONT}, sans-serif`;
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'top';
-  ctx.fillStyle = '#ffffff';
-  ctx.shadowColor = 'rgba(0, 0, 0, 0.8)';
-  ctx.shadowBlur = 8;
-  ctx.shadowOffsetY = 2;
-  ctx.fillText(S.track.title || '', W / 2, titleY);
-
-  // Artist Name
-  ctx.font = `${artistSz}px ${FONT}, sans-serif`;
-  ctx.fillStyle = 'rgba(255, 255, 255, 0.65)';
-  ctx.shadowColor = 'rgba(0, 0, 0, 0.7)';
-  ctx.shadowBlur = 6;
-  ctx.shadowOffsetY = 2;
-  ctx.fillText(S.track.artist || '', W / 2, titleY + titleSz + 10);
-
+  drawSharedIntro(ctx, W, H, artImg, S.track.title || '', S.track.artist || '', FONT);
   ctx.restore();
 }
 
