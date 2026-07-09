@@ -22,7 +22,7 @@
 // 1. STATE
 // ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
 
-const FONT = 'Plus Jakarta Sans, Noto Sans Devanagari';
+const FONT = '"Plus Jakarta Sans", "Noto Sans Devanagari"';
 
 const S = {
   // Track metadata
@@ -561,7 +561,7 @@ function drawSongInfo(W, H) {
   ctx.fillText(S.track.title || '', tx, titleY);
 
   ctx.font = `500 ${aSz}px ${FONT}, sans-serif`;
-  ctx.fillStyle = 'rgba(255, 255, 255, 0.65)';
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.85)';
   ctx.shadowColor = 'rgba(0, 0, 0, 0.7)';
   ctx.shadowBlur = 6;
   ctx.shadowOffsetY = 2;
@@ -662,12 +662,12 @@ function precomputeLyricsLayout(W, H, alignment) {
 
   const N = selectLinesPerScreen ? parseInt(selectLinesPerScreen.value, 10) || 1 : 1;
 
-  // Active line font size: ~42px
-  let activeSz = Math.min(Math.round(H * 0.065), 72);
+  // Active line font size: larger base for impact
+  let activeSz = Math.min(Math.round(H * 0.080), 86);
   if (N >= 4) {
-    activeSz = Math.min(Math.round(H * 0.048), 50);
+    activeSz = Math.min(Math.round(H * 0.052), 56);
   } else if (N >= 3) {
-    activeSz = Math.min(Math.round(H * 0.055), 60);
+    activeSz = Math.min(Math.round(H * 0.060), 65);
   }
   const fontSpec = `700 ${activeSz}px ${FONT}, sans-serif`;
 
@@ -703,18 +703,45 @@ function precomputeLyricsLayout(W, H, alignment) {
     const isHindi = /[\u0900-\u097F]/.test(line.text);
     if (isHindi) lineActiveSz *= 1.25;
 
-    const lineFontSpec = `700 ${lineActiveSz}px ${FONT}, sans-serif`;
-    const wText = wrapLine(line.text, lineFontSpec);
-    const transSz = lineActiveSz * 0.60;
-    const wTrans = line.translation ? wrapLine('(' + line.translation + ')', `600 ${transSz}px ${FONT}, sans-serif`) : [];
+    let wText = [];
+    let wTrans = [];
+    let lineFontSpec = '';
+    let transSz = 0;
+
+    // Loop to shrink font size if text/translation wrapping is too long
+    while (lineActiveSz >= 20) {
+      lineFontSpec = `700 ${Math.round(lineActiveSz)}px ${FONT}, sans-serif`;
+      wText = wrapLine(line.text, lineFontSpec);
+      
+      transSz = lineActiveSz * 0.60;
+      wTrans = line.translation ? wrapLine('(' + line.translation + ')', `600 ${Math.round(transSz)}px ${FONT}, sans-serif`) : [];
+
+      // Calculate estimated total height
+      const lh = lineActiveSz * 1.38;
+      const lhTrans = transSz * 1.38;
+      const transGap = lineActiveSz * 0.3;
+      let totalH = wText.length * lh;
+      if (wTrans.length > 0) {
+        totalH += transGap + wTrans.length * lhTrans;
+      }
+
+      // Check if it fits comfortably within the height limit
+      if (totalH <= H * 0.38 && wText.length + wTrans.length <= 4) {
+        break; // It fits!
+      }
+      
+      // If it doesn't fit, shrink font size by 8% and retry
+      lineActiveSz *= 0.92;
+    }
+
     return {
       time: line.time,
       text: line.text,
       translation: line.translation,
       wrapped: wText,
       wrappedTrans: wTrans,
-      activeSz: lineActiveSz,
-      transSz: transSz
+      activeSz: Math.round(lineActiveSz),
+      transSz: Math.round(transSz)
     };
   });
   ctx.restore();
@@ -813,7 +840,7 @@ function drawLeftSplitLayout(W, H, songTime) {
 
   // Artist Name
   ctx.font = `600 ${artistSz}px ${FONT}, sans-serif`;
-  ctx.fillStyle = 'rgba(255, 255, 255, 0.65)';
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.85)';
   ctx.shadowColor = 'rgba(0, 0, 0, 0.7)';
   ctx.shadowBlur = 6;
   ctx.shadowOffsetY = 2;

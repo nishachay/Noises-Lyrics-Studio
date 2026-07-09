@@ -330,7 +330,7 @@ function drawLeftSplitLayout(ctx, coverImg, title, artist, W, H, songTime, durat
     cctx.fillText(title, textX, titleY);
 
     cctx.font = `600 ${artistSz}px "Plus Jakarta Sans", "Noto Sans Devanagari", "Noto Sans KR"`;
-    cctx.fillStyle = 'rgba(255, 255, 255, 0.55)';
+    cctx.fillStyle = 'rgba(255, 255, 255, 0.85)';
     cctx.fillText(artist, textX, titleY + titleSz + 8);
     cctx.restore();
   }
@@ -408,7 +408,7 @@ function drawAlbumPanel(ctx, img, title, artist, W, H, font, songTime, duration)
     cctx.fillText(title, tx, titleY);
 
     cctx.font = `${aSz}px "Plus Jakarta Sans", "Noto Sans Devanagari", "Noto Sans KR"`;
-    cctx.fillStyle = 'rgba(255, 255, 255, 0.65)';
+    cctx.fillStyle = 'rgba(255, 255, 255, 0.85)';
     cctx.shadowColor = 'rgba(0, 0, 0, 0.7)';
     cctx.shadowBlur = 6;
     cctx.shadowOffsetY = 2;
@@ -935,16 +935,16 @@ function generateThumbnail(coverImg, colors, title, artist, font, alignment, wra
   }
 
   // Draw Artist Name
-  ctx.font = `600 ${artistSz}px "Plus Jakarta Sans", "Noto Sans Devanagari", "Noto Sans KR"`;
-  ctx.fillStyle = 'rgba(255, 255, 255, 0.85)';
-  ctx.shadowColor = 'rgba(0, 0, 0, 0.3)';
-  ctx.shadowBlur = 4;
-  ctx.shadowOffsetY = 1;
+  ctx.font = `600 ${Math.round(artistSz * 1.08)}px "Plus Jakarta Sans", "Noto Sans Devanagari", "Noto Sans KR"`;
+  ctx.fillStyle = '#ffffff';
+  ctx.shadowColor = 'rgba(0, 0, 0, 0.4)';
+  ctx.shadowBlur = 6;
+  ctx.shadowOffsetY = 2;
   ctx.fillText(artist, W / 2, artistY);
   ctx.restore();
 
-  // Draw watermark logo in the corner (at static time = 0.0)
-  drawWatermark(ctx, W, H, 0.0, logoImg);
+  // Draw watermark logo removed from thumbnail
+  // drawWatermark(ctx, W, H, 0.0, logoImg);
 
   // Film grain overlay
   const nc  = getNoiseCanvas();
@@ -1325,9 +1325,9 @@ async function renderSlideshow({
     try {
       const W   = 1080;
       const H   = 1080; // Force 1:1 cross-platform square for IG/TikTok
-      const FONT = 'Plus Jakarta Sans", "Noto Sans Devanagari", "Noto Sans KR';
+      const FONT = '"Plus Jakarta Sans", "Noto Sans Devanagari", "Noto Sans KR"';
       
-      const ACT_SZ  = Math.min(Math.round(W * 0.085), 90);
+      const ACT_SZ  = Math.min(Math.round(W * 0.095), 105);
       const maxWidth = Math.round(W * 0.85);
 
       const canvas = createCanvas(W, H);
