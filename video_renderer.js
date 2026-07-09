@@ -1346,29 +1346,95 @@ module.exports = {
   renderSlideshow
 };
 function drawSharedIntro(ctx, W, H, coverImg, title, artist, font) {
-  const artSz = Math.round(H * 0.55);
-  const radius = Math.round(artSz * 0.06);
+    const artSz = Math.round(H * 0.55);
+    const radius = Math.round(artSz * 0.06);
+  
+    const ax = Math.round((W - artSz) / 2);
+    
+    // Baseline font sizes
+    let titleSz = Math.round(H * 0.095);
+    let artistSz = Math.round(H * 0.048);
+    
+    const gap1 = Math.round(H * 0.05);
+    const gap2 = Math.round(H * 0.02);
+    const maxTextWidth = Math.round(W * 0.92);
 
-  const ax = Math.round((W - artSz) / 2);
-  const titleSz = Math.round(H * 0.095);
-  const artistSz = Math.round(H * 0.048);
-  const gap1 = Math.round(H * 0.05);
-  const gap2 = Math.round(H * 0.02);
-
-  ctx.font = `bold ${titleSz}px ${font}`;
-
-  const maxTitleWidth = Math.round(W * 0.68);
-  const words = title.split(' ');
-  const titleLines = [];
-  let currentLine = '';
-  for (const w of words) {
-    const testLine = currentLine ? `${currentLine} ${w}` : w;
-    if (ctx.measureText(testLine).width <= maxTitleWidth) {
-      currentLine = testLine;
-    } else {
-      if (currentLine) titleLines.push(currentLine);
-      currentLine = w;
+    // Smart Fit: Title
+    ctx.font = `bold ${titleSz}px ${font}`;
+    let titleWidth = ctx.measureText(title).width;
+    if (titleWidth > maxTextWidth) {
+      titleSz = Math.floor(titleSz * (maxTextWidth / titleWidth));
+      ctx.font = `bold ${titleSz}px ${font}`;
+      titleWidth = ctx.measureText(title).width;
     }
+    
+    // Smart Fit: Artist
+    ctx.font = `bold ${artistSz}px ${font}`;
+    let artistWidth = ctx.measureText(artist).width;
+    if (artistWidth > maxTextWidth) {
+      artistSz = Math.floor(artistSz * (maxTextWidth / artistWidth));
+      ctx.font = `bold ${artistSz}px ${font}`;
+      artistWidth = ctx.measureText(artist).width;
+    }
+
+    const titleLineHeight = Math.round(titleSz * 1.25);
+    const totalH = artSz + gap1 + titleLineHeight + gap2 + artistSz;
+    const ay = Math.round((H - totalH) / 2);
+    const titleY = ay + artSz + gap1;
+    const artistY = titleY + titleLineHeight + gap2;
+  
+    // Draw Album Art
+    if (coverImg) {
+      ctx.save();
+      ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
+      ctx.shadowBlur = 40;
+      ctx.shadowOffsetY = 15;
+      
+      ctx.beginPath();
+      ctx.moveTo(ax + radius, ay);
+      ctx.lineTo(ax + artSz - radius, ay);
+      ctx.quadraticCurveTo(ax + artSz, ay, ax + artSz, ay + radius);
+      ctx.lineTo(ax + artSz, ay + artSz - radius);
+      ctx.quadraticCurveTo(ax + artSz, ay + artSz, ax + artSz - radius, ay + artSz);
+      ctx.lineTo(ax + radius, ay + artSz);
+      ctx.quadraticCurveTo(ax, ay + artSz, ax, ay + artSz - radius);
+      ctx.lineTo(ax, ay + radius);
+      ctx.quadraticCurveTo(ax, ay, ax + radius, ay);
+      ctx.closePath();
+      
+      ctx.fill();
+      ctx.clip();
+      ctx.drawImage(coverImg, ax, ay, artSz, artSz);
+      ctx.restore();
+    }
+  
+    // Helper function for multi-layer drop shadow text
+    const drawPremiumText = (text, yPos, fontSize) => {
+      ctx.font = `bold ${fontSize}px ${font}`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'top';
+      
+      // Ambient shadow (Dark Halo)
+      ctx.shadowColor = 'rgba(0, 0, 0, 0.7)';
+      ctx.shadowBlur = 30;
+      ctx.shadowOffsetY = 0;
+      ctx.fillStyle = '#ffffff';
+      ctx.fillText(text, W / 2, yPos);
+      
+      // Core intense shadow
+      ctx.shadowColor = 'rgba(0, 0, 0, 0.9)';
+      ctx.shadowBlur = 18;
+      ctx.shadowOffsetY = 6;
+      ctx.fillText(text, W / 2, yPos);
+      
+      // Clean highlight pass
+      ctx.shadowColor = 'transparent';
+      ctx.fillText(text, W / 2, yPos);
+    };
+
+    // Draw Texts
+    drawPremiumText(title, titleY, titleSz);
+    drawPremiumText(artist, artistY, artistSz);
   }
   if (currentLine) titleLines.push(currentLine);
 
@@ -1453,24 +1519,62 @@ function drawSharedIntro(ctx, W, H, coverImg, title, artist, font) {
 
 
 function drawThumbnailBContent(ctx, W, H, title, artist, font) {
-  const titleSz = Math.round(H * 0.15);
-  const artistSz = Math.round(H * 0.05);
-  const gap = Math.round(H * 0.04);
-
-  ctx.font = `bold ${titleSz}px ${font}`;
-
-  const maxTitleWidth = Math.round(W * 0.85);
-  const words = title.split(' ');
-  const titleLines = [];
-  let currentLine = '';
-  for (const w of words) {
-    const testLine = currentLine ? `${currentLine} ${w}` : w;
-    if (ctx.measureText(testLine).width <= maxTitleWidth) {
-      currentLine = testLine;
-    } else {
-      if (currentLine) titleLines.push(currentLine);
-      currentLine = w;
+    let titleSz = Math.round(H * 0.15);
+    let artistSz = Math.round(H * 0.08);
+    const maxTextWidth = Math.round(W * 0.92);
+    const gap = Math.round(H * 0.03);
+    
+    // Smart Fit: Title
+    ctx.font = `bold ${titleSz}px ${font}`;
+    let titleWidth = ctx.measureText(title).width;
+    if (titleWidth > maxTextWidth) {
+      titleSz = Math.floor(titleSz * (maxTextWidth / titleWidth));
+      ctx.font = `bold ${titleSz}px ${font}`;
+      titleWidth = ctx.measureText(title).width;
     }
+    
+    // Smart Fit: Artist
+    ctx.font = `bold ${artistSz}px ${font}`;
+    let artistWidth = ctx.measureText(artist).width;
+    if (artistWidth > maxTextWidth) {
+      artistSz = Math.floor(artistSz * (maxTextWidth / artistWidth));
+      ctx.font = `bold ${artistSz}px ${font}`;
+      artistWidth = ctx.measureText(artist).width;
+    }
+
+    const titleLineHeight = Math.round(titleSz * 1.25);
+    const totalH = titleLineHeight + gap + artistSz;
+    const ay = Math.round((H - totalH) / 2);
+    
+    const titleY = ay;
+    const artistY = ay + titleLineHeight + gap;
+
+    // Helper function for multi-layer drop shadow text
+    const drawPremiumText = (text, yPos, fontSize) => {
+      ctx.font = `bold ${fontSize}px ${font}`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'top';
+      
+      // Ambient shadow (Dark Halo)
+      ctx.shadowColor = 'rgba(0, 0, 0, 0.8)';
+      ctx.shadowBlur = 40;
+      ctx.shadowOffsetY = 0;
+      ctx.fillStyle = '#ffffff';
+      ctx.fillText(text, W / 2, yPos);
+      
+      // Core intense shadow
+      ctx.shadowColor = 'rgba(0, 0, 0, 0.9)';
+      ctx.shadowBlur = 20;
+      ctx.shadowOffsetY = 8;
+      ctx.fillText(text, W / 2, yPos);
+      
+      // Clean highlight pass
+      ctx.shadowColor = 'transparent';
+      ctx.fillText(text, W / 2, yPos);
+    };
+
+    drawPremiumText(title, titleY, titleSz);
+    drawPremiumText(artist, artistY, artistSz);
   }
   if (currentLine) titleLines.push(currentLine);
 
