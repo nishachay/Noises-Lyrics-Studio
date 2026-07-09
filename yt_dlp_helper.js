@@ -66,7 +66,8 @@ function spawnYtdlpSingle(args) {
     '--js-runtimes', 'node', 
     '--no-warnings', 
     '--no-playlist',
-    // '--extractor-args', 'youtube:player_client=ios,web', // Commented out to fix "format not available" error on music videos
+    ...getAuthArgs(),
+    '--extractor-args', 'youtube:player_client=ios,web',
     '--concurrent-fragments', '4' // Speeds up segmented downloads
   ];
   return spawnYtdlp([...extras, ...args]);
@@ -197,6 +198,16 @@ async function downloadArtwork(artworkUrl, id) {
   return null;
 }
 
+// ── GET AUTH ARGS ──────────────────────────────────────────────────────────────
+function getAuthArgs() {
+  const cookiePath = path.join(__dirname, 'cookies.txt');
+  if (fs.existsSync(cookiePath)) {
+    console.log('[yt-dlp] Using local cookies.txt for authentication bypass');
+    return ['--cookies', cookiePath];
+  }
+  return [];
+}
+
 // ── DOWNLOAD AUDIO ───────────────────────────────────────────────────────────
 async function downloadAudio(id, url) {
   const audioPath = path.join(TEMP_DIR, `${id}.m4a`);
@@ -211,6 +222,7 @@ async function downloadAudio(id, url) {
     '-x', '--audio-format', 'm4a',
     '--ffmpeg-location', ffmpegInstaller.path,
     '-o', out,
+    ...getAuthArgs(),
     url,
   ];
 
@@ -240,6 +252,7 @@ async function getDirectAudioUrl(url) {
   const baseArgs = [
     '-f', 'bestaudio[ext=m4a]/bestaudio/best',
     '-g',
+    ...getAuthArgs(),
     url
   ];
 
