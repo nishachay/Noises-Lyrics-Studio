@@ -3817,9 +3817,6 @@ async function updateSchedulePreview(channel) {
 // --- Thumbnail Preview Modal ---
 const btnPreviewThumb = document.getElementById('btn-preview-thumb');
 const thumbModal = document.getElementById('thumb-modal');
-const thumbImage = document.getElementById('thumb-image');
-const thumbLoading = document.getElementById('thumb-loading');
-const btnThumbDownload = document.getElementById('btn-thumb-download');
 
 document.getElementById('btn-thumb-modal-close')?.addEventListener('click', () => {
   thumbModal.classList.add('hidden');
@@ -3839,48 +3836,74 @@ if (btnPreviewThumb) {
     if (publishModal) publishModal.classList.add('hidden');
     
     thumbModal.classList.remove('hidden');
-    thumbImage.style.opacity = '0';
-    thumbLoading.style.display = 'block';
-    if (btnThumbDownload) btnThumbDownload.style.display = 'none';
 
-    try {
-      // Call the backend API to generate the exact thumbnail
-      const res = await fetch('/api/thumbnail-preview', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          title: S.track.title,
-          artist: S.track.artist,
-          artworkUrl: S.track.artworkUrl,
-          theme: 'dark', // the default theme for video
-          logoPath: 'public/logo_white.png'
-        })
-      });
-      
-      if (!res.ok) {
-        const errText = await res.text().catch(()=>res.statusText);
-        throw new Error('Failed to generate thumbnail from server: ' + errText);
-      }
-      
-      const blob = await res.blob();
-      const dataUrl = URL.createObjectURL(blob);
-      
-      thumbImage.src = dataUrl;
-      thumbImage.onload = () => {
-        thumbLoading.style.display = 'none';
-        thumbImage.style.opacity = '1';
-        // Show download button
-        if (btnThumbDownload) {
-          btnThumbDownload.href = dataUrl;
-          btnThumbDownload.download = `${S.track.artist} - ${S.track.title} Thumbnail.jpg`;
-          btnThumbDownload.style.display = 'flex';
+    const thumbImageA = document.getElementById('thumb-image-A');
+    const thumbLoadingA = document.getElementById('thumb-loading-A');
+    const btnThumbDownloadA = document.getElementById('btn-thumb-download-A');
+
+    const thumbImageB = document.getElementById('thumb-image-B');
+    const thumbLoadingB = document.getElementById('thumb-loading-B');
+    const btnThumbDownloadB = document.getElementById('btn-thumb-download-B');
+
+    if (thumbImageA) thumbImageA.style.opacity = '0';
+    if (thumbLoadingA) thumbLoadingA.style.display = 'block';
+    if (btnThumbDownloadA) btnThumbDownloadA.style.display = 'none';
+
+    if (thumbImageB) thumbImageB.style.opacity = '0';
+    if (thumbLoadingB) thumbLoadingB.style.display = 'block';
+    if (btnThumbDownloadB) btnThumbDownloadB.style.display = 'none';
+
+    // Helper to load a thumbnail style
+    const loadStyle = async (style, imgEl, loadingEl, dlBtnEl) => {
+      try {
+        const res = await fetch('/api/thumbnail-preview', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            title: S.track.title,
+            artist: S.track.artist,
+            artworkUrl: S.track.artworkUrl,
+            theme: 'dark',
+            logoPath: 'public/logo_white.png',
+            style
+          })
+        });
+
+        if (!res.ok) {
+          const errText = await res.text().catch(()=>res.statusText);
+          throw new Error('Failed: ' + errText);
         }
-      };
-    } catch (e) {
-      thumbLoading.style.display = 'none';
-      thumbModal.classList.add('hidden');
-      alert('Error previewing thumbnail: ' + e.message);
-    }
+
+        const blob = await res.blob();
+        const dataUrl = URL.createObjectURL(blob);
+
+        if (imgEl) {
+          imgEl.src = dataUrl;
+          imgEl.onload = () => {
+            if (loadingEl) loadingEl.style.display = 'none';
+            imgEl.style.opacity = '1';
+            if (dlBtnEl) {
+              dlBtnEl.href = dataUrl;
+              dlBtnEl.download = `${S.track.artist} - ${S.track.title} Thumbnail ${style}.jpg`;
+              dlBtnEl.style.display = 'flex';
+            }
+          };
+        }
+      } catch (e) {
+        if (loadingEl) {
+          loadingEl.style.display = 'block';
+          loadingEl.textContent = 'Error: ' + e.message;
+        }
+      }
+    };
+
+    // Load both styles in parallel
+    Promise.all([
+      loadStyle('A', thumbImageA, thumbLoadingA, btnThumbDownloadA),
+      loadStyle('B', thumbImageB, thumbLoadingB, btnThumbDownloadB)
+    ]).catch(err => {
+      console.error('Error fetching preview styles:', err);
+    });
   });
 }
 

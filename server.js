@@ -139,7 +139,7 @@ app.get('/api/schedule-preview', (req, res) => {
 
 app.post('/api/thumbnail-preview', async (req, res) => {
   try {
-    const { title, artist, artworkUrl, theme, logoPath } = req.body;
+    const { title, artist, artworkUrl, theme, logoPath, style } = req.body;
     if (!title || !artworkUrl) return res.status(400).send('Missing fields');
     
     // We need to generate just the thumbnail buffer
@@ -149,7 +149,7 @@ app.post('/api/thumbnail-preview', async (req, res) => {
       artist,
       artworkUrl,
       theme,
-      logoPath: logoPath || path.join(__dirname, 'public', 'logo.png')
+      logoPath: logoPath || path.join(__dirname, 'public', 'logo.png'), style
     });
     
     res.set('Content-Type', 'image/jpeg');
