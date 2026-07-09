@@ -1,4 +1,3 @@
-const archiver = require('archiver');
 'use strict';
 
 // ════════════════════════════════════════════════════════════════
@@ -1427,33 +1426,40 @@ function drawSharedIntro(ctx, W, H, coverImg, title, artist, font) {
     }
 
   
-    // Helper function for multi-layer drop shadow text
-    const drawPremiumText = (text, yPos, fontSize) => {
-      ctx.font = `bold ${fontSize}px ${font}`;
+    // Multi-layer drop shadow text helper
+    const drawPremiumText = (text, yPos, fontSize, weight = 'bold') => {
+      ctx.save();
+      ctx.font = `${weight} ${fontSize}px ${font}`;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'top';
-      
-      // Ambient shadow (Dark Halo)
+      ctx.fillStyle = '#ffffff';
+
+      // Layer 1: Wide ambient dark halo (no offset, just spread)
       ctx.shadowColor = 'rgba(0, 0, 0, 0.7)';
       ctx.shadowBlur = 30;
+      ctx.shadowOffsetX = 0;
       ctx.shadowOffsetY = 0;
-      ctx.fillStyle = '#ffffff';
       ctx.fillText(text, W / 2, yPos);
       
-      // Core intense shadow
+      // Layer 2: Sharp core drop shadow
       ctx.shadowColor = 'rgba(0, 0, 0, 0.9)';
       ctx.shadowBlur = 18;
+      ctx.shadowOffsetX = 0;
       ctx.shadowOffsetY = 6;
       ctx.fillText(text, W / 2, yPos);
       
-      // Clean highlight pass
+      // Layer 3: Clean crisp white text on top
       ctx.shadowColor = 'transparent';
+      ctx.shadowBlur = 0;
+      ctx.shadowOffsetX = 0;
+      ctx.shadowOffsetY = 0;
       ctx.fillText(text, W / 2, yPos);
+      ctx.restore();
     };
 
-    // Draw Texts
-    drawPremiumText(title, titleY, titleSz);
-    drawPremiumText(artist, artistY, artistSz);
+    // Draw Texts — artist uses weight 600 (lighter) to contrast bold title
+    drawPremiumText(title, titleY, titleSz, 'bold');
+    drawPremiumText(artist, artistY, artistSz, '600');
   }
 
 
@@ -1488,30 +1494,38 @@ function drawThumbnailBContent(ctx, W, H, title, artist, font) {
     const titleY = ay;
     const artistY = ay + titleLineHeight + gap;
 
-    // Helper function for multi-layer drop shadow text
-    const drawPremiumText = (text, yPos, fontSize) => {
-      ctx.font = `bold ${fontSize}px ${font}`;
+    // Multi-layer drop shadow text helper
+    const drawPremiumText = (text, yPos, fontSize, weight = 'bold') => {
+      ctx.save();
+      ctx.font = `${weight} ${fontSize}px ${font}`;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'top';
-      
-      // Ambient shadow (Dark Halo)
+      ctx.fillStyle = '#ffffff';
+
+      // Layer 1: Wide ambient dark halo
       ctx.shadowColor = 'rgba(0, 0, 0, 0.8)';
       ctx.shadowBlur = 40;
+      ctx.shadowOffsetX = 0;
       ctx.shadowOffsetY = 0;
-      ctx.fillStyle = '#ffffff';
       ctx.fillText(text, W / 2, yPos);
       
-      // Core intense shadow
+      // Layer 2: Sharp core drop shadow
       ctx.shadowColor = 'rgba(0, 0, 0, 0.9)';
       ctx.shadowBlur = 20;
+      ctx.shadowOffsetX = 0;
       ctx.shadowOffsetY = 8;
       ctx.fillText(text, W / 2, yPos);
       
-      // Clean highlight pass
+      // Layer 3: Clean crisp white text on top
       ctx.shadowColor = 'transparent';
+      ctx.shadowBlur = 0;
+      ctx.shadowOffsetX = 0;
+      ctx.shadowOffsetY = 0;
       ctx.fillText(text, W / 2, yPos);
+      ctx.restore();
     };
 
-    drawPremiumText(title, titleY, titleSz);
-    drawPremiumText(artist, artistY, artistSz);
+    // Artist uses 600 weight to contrast the bold title
+    drawPremiumText(title, titleY, titleSz, 'bold');
+    drawPremiumText(artist, artistY, artistSz, '600');
   }
