@@ -1305,7 +1305,7 @@ async function renderSlideshow({
   });
 }
 
-async function generateThumbnailBuffer({ title, artist, artworkUrl, theme, logoPath }) {
+async function generateThumbnailBuffer({ title, artist, artworkUrl, theme, logoPath, style = 'A' }) {
   const coverImg = await loadImage(artworkUrl);
   const logoImg = logoPath ? await loadImage(logoPath).catch(()=>null) : null;
   
@@ -1329,7 +1329,7 @@ async function generateThumbnailBuffer({ title, artist, artworkUrl, theme, logoP
   bx.drawImage(coverImg, sx, sy, sw, sh, 0, 0, 32, 18);
   
   const font = '"Plus Jakarta Sans", "Noto Sans Devanagari", "Noto Sans KR"';
-  const buf = generateThumbnail(coverImg, colors, title, artist, font, 'center', [], 0, logoImg, 1280, 720);
+  const buf = generateThumbnail(coverImg, colors, title, artist, font, 'center', [], 0, logoImg, 1280, 720, style);
   
   _blurCanvas = null;
   
