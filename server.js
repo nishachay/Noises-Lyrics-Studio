@@ -72,6 +72,11 @@ app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 app.use('/temp', express.static(path.join(__dirname, 'temp')));
 
+app.get('/api/version', (req, res) => {
+  const p = require('./package.json');
+  res.json({ version: p.version });
+});
+
 const ytAuth = require('./youtube_auth');
 
 // ══════════════════════════════════════════════════════════════

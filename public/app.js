@@ -4373,3 +4373,7 @@ window.addEventListener('load', () => {
   loadTodos();
 });
 
+
+
+// Auto-fetch version
+fetch('/api/version').then(r => r.json()).then(d => { const el = document.getElementById('app-version'); if(el) el.textContent = 'v' + d.version; }).catch(e => console.error(e));
