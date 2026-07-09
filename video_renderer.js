@@ -823,14 +823,54 @@ function wrapText(ctx, text, fontSize, maxW, fontFam) {
 }
 
 // ΓöÇΓöÇ THUMBNAIL ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+function drawCoverBackground(ctx, W, H, coverImg) {
+  if (!coverImg) {
+    ctx.fillStyle = '#111115';
+    ctx.fillRect(0, 0, W, H);
+    return;
+  }
+  ctx.save();
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = 'high';
+  
+  // Crop & scale to cover 16:9 canvas
+  const iW = coverImg.width;
+  const iH = coverImg.height;
+  const targetRatio = W / H;
+  const currentRatio = iW / iH;
+  let sx, sy, sw, sh;
+  if (currentRatio > targetRatio) {
+    sh = iH;
+    sw = iH * targetRatio;
+    sx = (iW - sw) / 2;
+    sy = 0;
+  } else {
+    sw = iW;
+    sh = iW / targetRatio;
+    sx = 0;
+    sy = (iH - sh) / 2;
+  }
+  ctx.drawImage(coverImg, sx, sy, sw, sh, 0, 0, W, H);
+  
+  // Draw a dark semi-transparent overlay to ensure text readability (55% opacity black)
+  ctx.fillStyle = 'rgba(0, 0, 0, 0.55)';
+  ctx.fillRect(0, 0, W, H);
+  ctx.restore();
+}
+
 function generateThumbnail(coverImg, colors, title, artist, font, alignment, wrappedLyrics, duration, logoImg, W = 1280, H = 720, style = 'A') {
   const tc  = createCanvas(W, H);
   const ctx = tc.getContext('2d');
 
-  // 1. Draw background (Apple Music style mesh gradient)
-  drawBackground(ctx, W, H, coverImg, colors, 10.0, 0.0);
+  // 1. Draw background
+  if (style === 'B') {
+    drawCoverBackground(ctx, W, H, coverImg);
+  } else {
+    drawBackground(ctx, W, H, coverImg, colors, 10.0, 0.0);
+  }
 
-  // 2. Draw centered Album Cover Art
+  // 2. Draw content
   if (style === 'B') {
     drawThumbnailBContent(ctx, W, H, title, artist, font);
   } else {
