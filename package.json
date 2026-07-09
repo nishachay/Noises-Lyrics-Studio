@@ -1,6 +1,6 @@
 {
   "name": "noises-lyrics-studio",
-  "version": "9.0.0",
+  "version": "9.0.1",
   "description": "Lyric video generator and publishing tool",
   "main": "server.js",
   "scripts": {
@@ -33,6 +33,7 @@
     "sharp": "^0.35.3",
     "spotify-url-info": "^3.3.0",
     "youtube-sr": "^4.3.12",
+    "ytdl-core": "^4.11.5",
     "ytmusic-api": "^5.3.1"
   }
 }
