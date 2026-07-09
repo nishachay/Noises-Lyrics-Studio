@@ -554,15 +554,15 @@ function drawSongInfo(W, H) {
   ctx.textBaseline = 'middle';
 
   ctx.font = `700 ${tSz}px ${FONT}, sans-serif`;
-  ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
-  ctx.shadowColor = 'rgba(0, 0, 0, 0.8)';
+  ctx.fillStyle = '#ffffff';
+  ctx.shadowColor = 'rgba(0, 0, 0, 0.9)';
   ctx.shadowBlur = 8;
   ctx.shadowOffsetY = 2;
   ctx.fillText(S.track.title || '', tx, titleY);
 
   ctx.font = `500 ${aSz}px ${FONT}, sans-serif`;
-  ctx.fillStyle = 'rgba(255, 255, 255, 0.85)';
-  ctx.shadowColor = 'rgba(0, 0, 0, 0.7)';
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
+  ctx.shadowColor = 'rgba(0, 0, 0, 0.8)';
   ctx.shadowBlur = 6;
   ctx.shadowOffsetY = 2;
   ctx.fillText(S.track.artist || '', tx, artistY);

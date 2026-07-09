@@ -325,12 +325,16 @@ function drawLeftSplitLayout(ctx, coverImg, title, artist, W, H, songTime, durat
     cctx.textAlign = 'center';
     cctx.textBaseline = 'top';
     cctx.fillStyle = '#ffffff';
-    cctx.shadowColor = 'rgba(0, 0, 0, 0.4)';
-    cctx.shadowBlur = 4;
+    cctx.shadowColor = 'rgba(0, 0, 0, 0.9)';
+    cctx.shadowBlur = 8;
+    cctx.shadowOffsetY = 2;
     cctx.fillText(title, textX, titleY);
 
     cctx.font = `600 ${artistSz}px "Plus Jakarta Sans", "Noto Sans Devanagari", "Noto Sans KR"`;
-    cctx.fillStyle = 'rgba(255, 255, 255, 0.85)';
+    cctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
+    cctx.shadowColor = 'rgba(0, 0, 0, 0.8)';
+    cctx.shadowBlur = 6;
+    cctx.shadowOffsetY = 2;
     cctx.fillText(artist, textX, titleY + titleSz + 8);
     cctx.restore();
   }
