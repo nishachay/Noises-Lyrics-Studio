@@ -1385,28 +1385,47 @@ function drawSharedIntro(ctx, W, H, coverImg, title, artist, font) {
   
     // Draw Album Art
     if (coverImg) {
+      // Shadow first (drawn before clip so shadow spreads outside)
       ctx.save();
-      ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
-      ctx.shadowBlur = 40;
+      ctx.shadowColor = 'rgba(0, 0, 0, 0.65)';
+      ctx.shadowBlur = 50;
       ctx.shadowOffsetY = 15;
-      
+      ctx.fillStyle = 'rgba(0,0,0,0)';
       ctx.beginPath();
-      ctx.moveTo(ax + radius, ay);
-      ctx.lineTo(ax + artSz - radius, ay);
-      ctx.quadraticCurveTo(ax + artSz, ay, ax + artSz, ay + radius);
-      ctx.lineTo(ax + artSz, ay + artSz - radius);
-      ctx.quadraticCurveTo(ax + artSz, ay + artSz, ax + artSz - radius, ay + artSz);
-      ctx.lineTo(ax + radius, ay + artSz);
-      ctx.quadraticCurveTo(ax, ay + artSz, ax, ay + artSz - radius);
-      ctx.lineTo(ax, ay + radius);
-      ctx.quadraticCurveTo(ax, ay, ax + radius, ay);
-      ctx.closePath();
-      
+      ctx.roundRect(ax, ay, artSz, artSz, radius);
       ctx.fill();
+      ctx.restore();
+
+      // Clipped image
+      ctx.save();
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = 'high';
+      ctx.beginPath();
+      ctx.roundRect(ax, ay, artSz, artSz, radius);
       ctx.clip();
       ctx.drawImage(coverImg, ax, ay, artSz, artSz);
       ctx.restore();
+
+      // Subtle white border ring
+      ctx.save();
+      ctx.beginPath();
+      ctx.roundRect(ax, ay, artSz, artSz, radius);
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+      ctx.restore();
+    } else {
+      ctx.save();
+      ctx.fillStyle = '#111115';
+      ctx.shadowColor = 'rgba(0, 0, 0, 0.65)';
+      ctx.shadowBlur = 50;
+      ctx.shadowOffsetY = 15;
+      ctx.beginPath();
+      ctx.roundRect(ax, ay, artSz, artSz, radius);
+      ctx.fill();
+      ctx.restore();
     }
+
   
     // Helper function for multi-layer drop shadow text
     const drawPremiumText = (text, yPos, fontSize) => {
@@ -1436,86 +1455,6 @@ function drawSharedIntro(ctx, W, H, coverImg, title, artist, font) {
     drawPremiumText(title, titleY, titleSz);
     drawPremiumText(artist, artistY, artistSz);
   }
-  if (currentLine) titleLines.push(currentLine);
-
-  let finalTitleSz = titleSz;
-  if (titleLines.length > 2) {
-    finalTitleSz = Math.round(H * 0.061);
-    ctx.font = `bold ${finalTitleSz}px ${font}`;
-    titleLines.length = 0;
-    currentLine = '';
-    for (const w of words) {
-      const testLine = currentLine ? `${currentLine} ${w}` : w;
-      if (ctx.measureText(testLine).width <= maxTitleWidth) {
-        currentLine = testLine;
-      } else {
-        if (currentLine) titleLines.push(currentLine);
-        currentLine = w;
-      }
-    }
-    if (currentLine) titleLines.push(currentLine);
-  }
-
-  const titleLineHeight = Math.round(finalTitleSz * 1.25);
-  const totalH = artSz + gap1 + (titleLines.length * titleLineHeight) + gap2 + artistSz;
-  const ay = Math.round((H - totalH) / 2);
-  const titleY = ay + artSz + gap1;
-  const artistY = titleY + (titleLines.length * titleLineHeight) + gap2;
-
-  if (coverImg) {
-    ctx.save();
-    ctx.imageSmoothingEnabled = true;
-    ctx.imageSmoothingQuality = 'high';
-    ctx.shadowColor = 'rgba(0, 0, 0, 0.65)';
-    ctx.shadowBlur = 50;
-    ctx.shadowOffsetY = 15;
-
-    ctx.beginPath();
-    ctx.roundRect(ax, ay, artSz, artSz, radius);
-    ctx.clip();
-    ctx.drawImage(coverImg, ax, ay, artSz, artSz);
-    ctx.restore();
-
-    ctx.save();
-    ctx.beginPath();
-    ctx.roundRect(ax, ay, artSz, artSz, radius);
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
-    ctx.lineWidth = 1.5;
-    ctx.stroke();
-    ctx.restore();
-  } else {
-    ctx.save();
-    ctx.fillStyle = '#111115';
-    ctx.shadowColor = 'rgba(0, 0, 0, 0.65)';
-    ctx.shadowBlur = 50;
-    ctx.shadowOffsetY = 15;
-    ctx.beginPath();
-    ctx.roundRect(ax, ay, artSz, artSz, radius);
-    ctx.fill();
-    ctx.restore();
-  }
-
-  ctx.save();
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'top';
-  ctx.font = `bold ${finalTitleSz}px ${font}`;
-  ctx.fillStyle = '#ffffff';
-  ctx.shadowColor = 'rgba(0, 0, 0, 0.4)';
-  ctx.shadowBlur = 8;
-  ctx.shadowOffsetY = 2;
-
-  for (let i = 0; i < titleLines.length; i++) {
-    ctx.fillText(titleLines[i], W / 2, titleY + i * titleLineHeight);
-  }
-
-  ctx.font = `600 ${Math.round(artistSz * 1.08)}px ${font}`;
-  ctx.fillStyle = '#ffffff';
-  ctx.shadowColor = 'rgba(0, 0, 0, 0.4)';
-  ctx.shadowBlur = 6;
-  ctx.shadowOffsetY = 2;
-  ctx.fillText(artist, W / 2, artistY);
-  ctx.restore();
-}
 
 
 function drawThumbnailBContent(ctx, W, H, title, artist, font) {
@@ -1576,32 +1515,3 @@ function drawThumbnailBContent(ctx, W, H, title, artist, font) {
     drawPremiumText(title, titleY, titleSz);
     drawPremiumText(artist, artistY, artistSz);
   }
-  if (currentLine) titleLines.push(currentLine);
-
-  const titleLineHeight = Math.round(titleSz * 1.25);
-  const totalH = (titleLines.length * titleLineHeight) + gap + artistSz;
-  const ay = Math.round((H - totalH) / 2);
-  const titleY = ay;
-  const artistY = titleY + (titleLines.length * titleLineHeight) + gap;
-
-  ctx.save();
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'top';
-  ctx.font = `bold ${titleSz}px ${font}`;
-  ctx.fillStyle = '#ffffff';
-  ctx.shadowColor = 'rgba(0, 0, 0, 0.6)';
-  ctx.shadowBlur = 12;
-  ctx.shadowOffsetY = 4;
-
-  for (let i = 0; i < titleLines.length; i++) {
-    ctx.fillText(titleLines[i], W / 2, titleY + i * titleLineHeight);
-  }
-
-  ctx.font = `600 ${artistSz}px ${font}`;
-  ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
-  ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
-  ctx.shadowBlur = 8;
-  ctx.shadowOffsetY = 2;
-  ctx.fillText(artist, W / 2, artistY);
-  ctx.restore();
-}
