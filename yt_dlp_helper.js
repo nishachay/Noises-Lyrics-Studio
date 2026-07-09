@@ -67,7 +67,6 @@ function spawnYtdlpSingle(args) {
     '--no-warnings', 
     '--no-playlist',
     ...getAuthArgs(),
-    '--extractor-args', 'youtube:player_client=ios,web',
     '--concurrent-fragments', '4' // Speeds up segmented downloads
   ];
   return spawnYtdlp([...extras, ...args]);
@@ -222,7 +221,6 @@ async function downloadAudio(id, url) {
     '-x', '--audio-format', 'm4a',
     '--ffmpeg-location', ffmpegInstaller.path,
     '-o', out,
-    ...getAuthArgs(),
     url,
   ];
 
@@ -252,7 +250,6 @@ async function getDirectAudioUrl(url) {
   const baseArgs = [
     '-f', 'bestaudio[ext=m4a]/bestaudio/best',
     '-g',
-    ...getAuthArgs(),
     url
   ];
 
