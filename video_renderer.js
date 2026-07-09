@@ -996,7 +996,7 @@ function renderVideo({
       const W   = isShort ? (resolution === '1080' ? 1080 : 720) : (resolution === '1080' ? 1920 : 1280);
       const H   = isShort ? (resolution === '1080' ? 1920 : 1280) : (resolution === '1080' ? 1080 : 720);
       const FPS = parseInt(fps, 10) || 24;
-      const FONT = 'Plus Jakarta Sans", "Noto Sans Devanagari", "Noto Sans KR';
+      const FONT = '"Plus Jakarta Sans", "Noto Sans Devanagari", "Noto Sans KR"';
 
       // Shorts need slightly smaller text (around 80-90px) to prevent excessive wrapping
       const ACT_SZ  = isShort ? Math.min(Math.round(W * 0.085), 95) : Math.min(Math.round(H * 0.065), 72);
@@ -1476,7 +1476,7 @@ async function generateThumbnailBuffer({ title, artist, artworkUrl, theme, logoP
   }
   bx.drawImage(coverImg, sx, sy, sw, sh, 0, 0, 32, 18);
   
-  const font = 'Plus Jakarta Sans", "Noto Sans Devanagari", "Noto Sans KR';
+  const font = '"Plus Jakarta Sans", "Noto Sans Devanagari", "Noto Sans KR"';
   const buf = generateThumbnail(coverImg, colors, title, artist, font, 'center', [], 0, logoImg, 1280, 720);
   
   _blurCanvas = null;
