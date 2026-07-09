@@ -1387,18 +1387,19 @@ async function renderSlideshow({
             ctx.textBaseline = 'middle';
 
             for (const l of lines) {
-              ctx.font = `bold ${Math.round(activeSz * 0.8)}px "${FONT}"`;
+              ctx.font = `bold ${Math.round(activeSz * 0.8)}px ${FONT}`;
               ctx.fillStyle = '#ffffff';
-              /* removed vintage text shadow */
-              ctx.fillText(l, W / 2, ay);
-              ctx.shadowBlur = 0;
+                ctx.shadowColor = 'rgba(0, 0, 0, 0.8)';
+                ctx.shadowBlur = 10;
+                ctx.fillText(l, W / 2, ay);
+                ctx.shadowBlur = 0;
               ay += activeSz;
             }
             
             if (line.translation) {
               ay += (activeSz * 0.5);
               for (const l of transLines) {
-                ctx.font = `bold ${Math.round(activeSz * 0.5)}px "${FONT}"`;
+                ctx.font = `bold ${Math.round(activeSz * 0.5)}px ${FONT}`;
                 ctx.fillStyle = '#ffffff';
                 ctx.shadowColor = 'rgba(0,0,0,0.8)';
                 ctx.shadowBlur = 10;
