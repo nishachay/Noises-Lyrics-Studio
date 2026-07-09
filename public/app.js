@@ -159,12 +159,12 @@ const btnCancel  = $('btn-cancel');
 // Done view
 const doneSub      = $('done-sub');
 const btnDlVideo   = $('btn-dl-video');
-const btnDlThumb   = $('btn-dl-thumb');
+
 const ytTitle      = $('yt-title');
 const ytDesc       = $('yt-desc');
 const btnAgain     = $('btn-again');
-const donePreviewImage = $('done-preview-image');
-const donePreviewLoader = $('done-preview-loader');
+
+
 
 // Settings
 const selectRes   = $('select-res');

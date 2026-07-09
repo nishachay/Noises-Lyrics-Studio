@@ -585,7 +585,7 @@ function drawLyricsPanel(ctx, W, H, time, wrappedLyrics, font, alignment, durati
           cctx.font = fontStr;
           cctx.textAlign = textAlign;
           cctx.textBaseline = 'middle';
-          
+          cctx.fillStyle = primaryColor || '#ffffff';
 
           cctx.shadowColor = 'rgba(0, 0, 0, 0.8)';
           cctx.shadowBlur = 10;
@@ -701,7 +701,7 @@ function drawLyricsPanel(ctx, W, H, time, wrappedLyrics, font, alignment, durati
       cctx.font = fontStr;
       cctx.textAlign = textAlign;
       cctx.textBaseline = 'middle';
-      
+      cctx.fillStyle = primaryColor || '#ffffff';
 
       cctx.shadowColor = 'rgba(0, 0, 0, 0.8)';
       cctx.shadowBlur = 10;
@@ -1338,11 +1338,9 @@ async function generateThumbnailBuffer({ title, artist, artworkUrl, theme, logoP
 
 module.exports = {
   renderVideo,
+  renderSlideshow,
   generateThumbnail,
   generateThumbnailBuffer,
-  getAudioAmplitude,
-  detectAudioStart,
-  renderSlideshow
 };
 function drawSharedIntro(ctx, W, H, coverImg, title, artist, font) {
     const artSz = Math.round(H * 0.55);
