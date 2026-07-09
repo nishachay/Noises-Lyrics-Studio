@@ -832,120 +832,7 @@ function generateThumbnail(coverImg, colors, title, artist, font, alignment, wra
   drawBackground(ctx, W, H, coverImg, colors, 10.0, 0.0);
 
   // 2. Draw centered Album Cover Art
-  const artSz = Math.round(H * 0.55); // Increased for high quality!
-  const radius = Math.round(artSz * 0.06);
-
-  const ax = Math.round((W - artSz) / 2);
-  const titleSz = Math.round(H * 0.095); // Much bigger title
-  const artistSz = Math.round(H * 0.048); // Bigger artist
-  const gap1 = Math.round(H * 0.05);
-  const gap2 = Math.round(H * 0.02);
-
-  // Set the font to measure title
-  ctx.font = `bold ${titleSz}px "Plus Jakarta Sans", "Noto Sans Devanagari", "Noto Sans KR"`;
-
-  // Wrap the title if it is too wide
-  const maxTitleWidth = Math.round(W * 0.68);
-  const words = title.split(' ');
-  const titleLines = [];
-  let currentLine = '';
-  for (const w of words) {
-    const testLine = currentLine ? `${currentLine} ${w}` : w;
-    if (ctx.measureText(testLine).width <= maxTitleWidth) {
-      currentLine = testLine;
-    } else {
-      if (currentLine) titleLines.push(currentLine);
-      currentLine = w;
-    }
-  }
-  if (currentLine) titleLines.push(currentLine);
-
-  // If there are too many lines or it's very long, shrink font size
-  let finalTitleSz = titleSz;
-  if (titleLines.length > 2) {
-    finalTitleSz = Math.round(H * 0.061);
-    ctx.font = `bold ${finalTitleSz}px "Plus Jakarta Sans", "Noto Sans Devanagari", "Noto Sans KR"`;
-    titleLines.length = 0;
-    currentLine = '';
-    for (const w of words) {
-      const testLine = currentLine ? `${currentLine} ${w}` : w;
-      if (ctx.measureText(testLine).width <= maxTitleWidth) {
-        currentLine = testLine;
-      } else {
-        if (currentLine) titleLines.push(currentLine);
-        currentLine = w;
-      }
-    }
-    if (currentLine) titleLines.push(currentLine);
-  }
-
-  // Draw wrapped title lines
-  const titleLineHeight = Math.round(finalTitleSz * 1.25);
-  
-  // Calculate total height of elements and center them vertically
-  const totalH = artSz + gap1 + (titleLines.length * titleLineHeight) + gap2 + artistSz;
-  const ay = Math.round((H - totalH) / 2);
-  const titleY = ay + artSz + gap1;
-  const artistY = titleY + (titleLines.length * titleLineHeight) + gap2;
-
-  // Draw Cover Art
-  if (coverImg) {
-    ctx.save();
-    ctx.imageSmoothingEnabled = true;
-    ctx.imageSmoothingQuality = 'high';
-    // Drop shadow
-    ctx.shadowColor = 'rgba(0, 0, 0, 0.65)';
-    ctx.shadowBlur = 50;
-    ctx.shadowOffsetY = 15;
-
-    ctx.beginPath();
-    ctx.roundRect(ax, ay, artSz, artSz, radius);
-    ctx.clip();
-    ctx.drawImage(coverImg, ax, ay, artSz, artSz);
-    ctx.restore();
-
-    // Subtle white inner border
-    ctx.save();
-    ctx.beginPath();
-    ctx.roundRect(ax, ay, artSz, artSz, radius);
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
-    ctx.lineWidth = 1.5;
-    ctx.stroke();
-    ctx.restore();
-  } else {
-    ctx.save();
-    ctx.fillStyle = '#111115';
-    ctx.shadowColor = 'rgba(0, 0, 0, 0.65)';
-    ctx.shadowBlur = 50;
-    ctx.shadowOffsetY = 15;
-    ctx.beginPath();
-    ctx.roundRect(ax, ay, artSz, artSz, radius);
-    ctx.fill();
-    ctx.restore();
-  }
-
-  // Draw Song Title
-  ctx.save();
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'top';
-  ctx.font = `bold ${finalTitleSz}px "Plus Jakarta Sans", "Noto Sans Devanagari", "Noto Sans KR"`;
-  ctx.fillStyle = '#ffffff';
-  ctx.shadowColor = 'rgba(0, 0, 0, 0.4)';
-  ctx.shadowBlur = 8;
-  ctx.shadowOffsetY = 2;
-
-  for (let i = 0; i < titleLines.length; i++) {
-    ctx.fillText(titleLines[i], W / 2, titleY + i * titleLineHeight);
-  }
-
-  // Draw Artist Name
-  ctx.font = `600 ${Math.round(artistSz * 1.08)}px "Plus Jakarta Sans", "Noto Sans Devanagari", "Noto Sans KR"`;
-  ctx.fillStyle = '#ffffff';
-  ctx.shadowColor = 'rgba(0, 0, 0, 0.4)';
-  ctx.shadowBlur = 6;
-  ctx.shadowOffsetY = 2;
-  ctx.fillText(artist, W / 2, artistY);
-  ctx.restore();
+  drawSharedIntro(ctx, W, H, coverImg, title, artist, font);
 
   // Draw watermark logo removed from thumbnail
   // drawWatermark(ctx, W, H, 0.0, logoImg);
@@ -1177,66 +1064,10 @@ function renderVideo({
 
           // Fade in Intro Text
           if (!_introCache) {
-            _introCache = createCanvas(W, H);
-            const cctx = _introCache.getContext('2d');
-            const titleSz = Math.round(H * 0.08);
-            const artistSz = Math.round(H * 0.038);
-            const artSz = Math.round(H * 0.55);
-
-            cctx.save();
-            const totalH = artSz + 40 + titleSz + 15 + artistSz;
-
-            const ax = Math.round((W - artSz) / 2);
-            const ay = Math.round((H - totalH) / 2);
-            const radius = Math.round(artSz * 0.06);
-
-            if (coverImg) {
-              cctx.save();
-              cctx.imageSmoothingEnabled = true;
-              cctx.imageSmoothingQuality = 'high';
-              cctx.shadowColor = 'rgba(0, 0, 0, 0.65)';
-              cctx.shadowBlur = 40;
-              cctx.shadowOffsetY = 12;
-              
-              cctx.beginPath();
-              cctx.roundRect(ax, ay, artSz, artSz, radius);
-              cctx.clip();
-              cctx.drawImage(coverImg, ax, ay, artSz, artSz);
-              cctx.restore();
-
-              cctx.save();
-              cctx.beginPath();
-              cctx.roundRect(ax, ay, artSz, artSz, radius);
-              cctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
-              cctx.lineWidth = 1.5;
-              cctx.stroke();
-              cctx.restore();
-            } else {
-              cctx.save();
-              cctx.fillStyle = '#111115';
-              cctx.shadowColor = 'rgba(0, 0, 0, 0.65)';
-              cctx.shadowBlur = 40;
-              cctx.beginPath();
-              cctx.roundRect(ax, ay, artSz, artSz, radius);
-              cctx.fill();
-              cctx.restore();
+              _introCache = createCanvas(W, H);
+              const cctx = _introCache.getContext('2d');
+              drawSharedIntro(cctx, W, H, coverImg, songTitle, songArtist, FONT);
             }
-
-            const titleY = ay + artSz + 30;
-
-            cctx.font = `bold ${titleSz}px "Plus Jakarta Sans", "Noto Sans Devanagari", "Noto Sans KR"`;
-            cctx.textAlign = 'center';
-            cctx.textBaseline = 'top';
-            cctx.fillStyle = '#ffffff';
-            cctx.shadowColor = 'rgba(0, 0, 0, 0.4)';
-            cctx.shadowBlur = 4;
-            cctx.fillText(songTitle, W / 2, titleY);
-
-            cctx.font = `${artistSz}px "Plus Jakarta Sans", "Noto Sans Devanagari", "Noto Sans KR"`;
-            cctx.fillStyle = 'rgba(255, 255, 255, 0.55)';
-            cctx.fillText(songArtist, W / 2, titleY + titleSz + 10);
-            cctx.restore();
-          }
           ctx.drawImage(_introCache, 0, 0);
           ctx.restore();
 
@@ -1500,4 +1331,110 @@ module.exports = {
   getAudioAmplitude,
   detectAudioStart,
   renderSlideshow
-};
+};
+function drawSharedIntro(ctx, W, H, coverImg, title, artist, font) {
+  const artSz = Math.round(H * 0.55);
+  const radius = Math.round(artSz * 0.06);
+
+  const ax = Math.round((W - artSz) / 2);
+  const titleSz = Math.round(H * 0.095);
+  const artistSz = Math.round(H * 0.048);
+  const gap1 = Math.round(H * 0.05);
+  const gap2 = Math.round(H * 0.02);
+
+  ctx.font = `bold ${titleSz}px ${font}`;
+
+  const maxTitleWidth = Math.round(W * 0.68);
+  const words = title.split(' ');
+  const titleLines = [];
+  let currentLine = '';
+  for (const w of words) {
+    const testLine = currentLine ? `${currentLine} ${w}` : w;
+    if (ctx.measureText(testLine).width <= maxTitleWidth) {
+      currentLine = testLine;
+    } else {
+      if (currentLine) titleLines.push(currentLine);
+      currentLine = w;
+    }
+  }
+  if (currentLine) titleLines.push(currentLine);
+
+  let finalTitleSz = titleSz;
+  if (titleLines.length > 2) {
+    finalTitleSz = Math.round(H * 0.061);
+    ctx.font = `bold ${finalTitleSz}px ${font}`;
+    titleLines.length = 0;
+    currentLine = '';
+    for (const w of words) {
+      const testLine = currentLine ? `${currentLine} ${w}` : w;
+      if (ctx.measureText(testLine).width <= maxTitleWidth) {
+        currentLine = testLine;
+      } else {
+        if (currentLine) titleLines.push(currentLine);
+        currentLine = w;
+      }
+    }
+    if (currentLine) titleLines.push(currentLine);
+  }
+
+  const titleLineHeight = Math.round(finalTitleSz * 1.25);
+  const totalH = artSz + gap1 + (titleLines.length * titleLineHeight) + gap2 + artistSz;
+  const ay = Math.round((H - totalH) / 2);
+  const titleY = ay + artSz + gap1;
+  const artistY = titleY + (titleLines.length * titleLineHeight) + gap2;
+
+  if (coverImg) {
+    ctx.save();
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.65)';
+    ctx.shadowBlur = 50;
+    ctx.shadowOffsetY = 15;
+
+    ctx.beginPath();
+    ctx.roundRect(ax, ay, artSz, artSz, radius);
+    ctx.clip();
+    ctx.drawImage(coverImg, ax, ay, artSz, artSz);
+    ctx.restore();
+
+    ctx.save();
+    ctx.beginPath();
+    ctx.roundRect(ax, ay, artSz, artSz, radius);
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+    ctx.restore();
+  } else {
+    ctx.save();
+    ctx.fillStyle = '#111115';
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.65)';
+    ctx.shadowBlur = 50;
+    ctx.shadowOffsetY = 15;
+    ctx.beginPath();
+    ctx.roundRect(ax, ay, artSz, artSz, radius);
+    ctx.fill();
+    ctx.restore();
+  }
+
+  ctx.save();
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'top';
+  ctx.font = `bold ${finalTitleSz}px ${font}`;
+  ctx.fillStyle = '#ffffff';
+  ctx.shadowColor = 'rgba(0, 0, 0, 0.4)';
+  ctx.shadowBlur = 8;
+  ctx.shadowOffsetY = 2;
+
+  for (let i = 0; i < titleLines.length; i++) {
+    ctx.fillText(titleLines[i], W / 2, titleY + i * titleLineHeight);
+  }
+
+  ctx.font = `600 ${Math.round(artistSz * 1.08)}px ${font}`;
+  ctx.fillStyle = '#ffffff';
+  ctx.shadowColor = 'rgba(0, 0, 0, 0.4)';
+  ctx.shadowBlur = 6;
+  ctx.shadowOffsetY = 2;
+  ctx.fillText(artist, W / 2, artistY);
+  ctx.restore();
+}
+

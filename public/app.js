@@ -4377,3 +4377,109 @@ window.addEventListener('load', () => {
 
 // Auto-fetch version
 fetch('/api/version').then(r => r.json()).then(d => { const el = document.getElementById('app-version'); if(el) el.textContent = 'v' + d.version; }).catch(e => console.error(e));
+
+function drawSharedIntro(ctx, W, H, coverImg, title, artist, font) {
+  const artSz = Math.round(H * 0.55);
+  const radius = Math.round(artSz * 0.06);
+
+  const ax = Math.round((W - artSz) / 2);
+  const titleSz = Math.round(H * 0.095);
+  const artistSz = Math.round(H * 0.048);
+  const gap1 = Math.round(H * 0.05);
+  const gap2 = Math.round(H * 0.02);
+
+  ctx.font = `bold ${titleSz}px ${font}`;
+
+  const maxTitleWidth = Math.round(W * 0.68);
+  const words = title.split(' ');
+  const titleLines = [];
+  let currentLine = '';
+  for (const w of words) {
+    const testLine = currentLine ? `${currentLine} ${w}` : w;
+    if (ctx.measureText(testLine).width <= maxTitleWidth) {
+      currentLine = testLine;
+    } else {
+      if (currentLine) titleLines.push(currentLine);
+      currentLine = w;
+    }
+  }
+  if (currentLine) titleLines.push(currentLine);
+
+  let finalTitleSz = titleSz;
+  if (titleLines.length > 2) {
+    finalTitleSz = Math.round(H * 0.061);
+    ctx.font = `bold ${finalTitleSz}px ${font}`;
+    titleLines.length = 0;
+    currentLine = '';
+    for (const w of words) {
+      const testLine = currentLine ? `${currentLine} ${w}` : w;
+      if (ctx.measureText(testLine).width <= maxTitleWidth) {
+        currentLine = testLine;
+      } else {
+        if (currentLine) titleLines.push(currentLine);
+        currentLine = w;
+      }
+    }
+    if (currentLine) titleLines.push(currentLine);
+  }
+
+  const titleLineHeight = Math.round(finalTitleSz * 1.25);
+  const totalH = artSz + gap1 + (titleLines.length * titleLineHeight) + gap2 + artistSz;
+  const ay = Math.round((H - totalH) / 2);
+  const titleY = ay + artSz + gap1;
+  const artistY = titleY + (titleLines.length * titleLineHeight) + gap2;
+
+  if (coverImg) {
+    ctx.save();
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.65)';
+    ctx.shadowBlur = 50;
+    ctx.shadowOffsetY = 15;
+
+    ctx.beginPath();
+    ctx.roundRect(ax, ay, artSz, artSz, radius);
+    ctx.clip();
+    ctx.drawImage(coverImg, ax, ay, artSz, artSz);
+    ctx.restore();
+
+    ctx.save();
+    ctx.beginPath();
+    ctx.roundRect(ax, ay, artSz, artSz, radius);
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+    ctx.restore();
+  } else {
+    ctx.save();
+    ctx.fillStyle = '#111115';
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.65)';
+    ctx.shadowBlur = 50;
+    ctx.shadowOffsetY = 15;
+    ctx.beginPath();
+    ctx.roundRect(ax, ay, artSz, artSz, radius);
+    ctx.fill();
+    ctx.restore();
+  }
+
+  ctx.save();
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'top';
+  ctx.font = `bold ${finalTitleSz}px ${font}`;
+  ctx.fillStyle = '#ffffff';
+  ctx.shadowColor = 'rgba(0, 0, 0, 0.4)';
+  ctx.shadowBlur = 8;
+  ctx.shadowOffsetY = 2;
+
+  for (let i = 0; i < titleLines.length; i++) {
+    ctx.fillText(titleLines[i], W / 2, titleY + i * titleLineHeight);
+  }
+
+  ctx.font = `600 ${Math.round(artistSz * 1.08)}px ${font}`;
+  ctx.fillStyle = '#ffffff';
+  ctx.shadowColor = 'rgba(0, 0, 0, 0.4)';
+  ctx.shadowBlur = 6;
+  ctx.shadowOffsetY = 2;
+  ctx.fillText(artist, W / 2, artistY);
+  ctx.restore();
+}
