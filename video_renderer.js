@@ -1518,10 +1518,11 @@ function drawThumbnailBContent(ctx, W, H, title, artist, font) {
     }
     
     let titleSz = baseTitleSz;
-    // Base artist size is relative to the ideal title size, not the squished one!
-    let artistSz = Math.max(Math.round(baseTitleSz * 0.35), Math.round(H * 0.06)); 
+    // Increase artist size relative to title (45% instead of 35%) for better hierarchy
+    let artistSz = Math.round(baseTitleSz * 0.45); 
     const maxTextWidth = Math.round(W * 0.88);
-    const gap = Math.round(H * 0.05);
+    // Increase gap for better breathing room
+    const gap = Math.round(H * 0.07);
 
     // Smart Fit: Title — scale down if too wide
     ctx.font = `bold ${titleSz}px ${font}`;
@@ -1529,7 +1530,8 @@ function drawThumbnailBContent(ctx, W, H, title, artist, font) {
     if (titleWidth > maxTextWidth) {
       titleSz = Math.floor(titleSz * (maxTextWidth / titleWidth));
       ctx.font = `bold ${titleSz}px ${font}`;
-      // DO NOT shrink the artist size here. Let it stay legible!
+      // Make sure artist size doesn't become larger than the shrunk title
+      artistSz = Math.min(artistSz, Math.round(titleSz * 0.8));
     }
     
     // Get true visual height of title for perfect centering
@@ -1550,19 +1552,16 @@ function drawThumbnailBContent(ctx, W, H, title, artist, font) {
     let artistTrueH = artistMetrics.actualBoundingBoxAscent + artistMetrics.actualBoundingBoxDescent;
     let artistAscent = artistMetrics.actualBoundingBoxAscent;
 
-    // The title acts as the absolute anchor in the dead center of the screen
-    // This prevents the title from jumping up and down when font sizes change
-    const titleTop = (H / 2) - (titleTrueH / 2);
-    const titleBottom = (H / 2) + (titleTrueH / 2);
-    
-    const titleY = titleTop + titleAscent;
-    const artistY = titleBottom + gap + artistAscent;
-    
+    // Treat them as a single group box again and center the group for vertical symmetry
+    const totalGroupH = titleTrueH + gap + artistTrueH;
+    const groupTop    = (H - totalGroupH) / 2;  
+
+    const titleY  = groupTop + titleAscent;
+    const artistY = groupTop + titleTrueH + gap + artistAscent;
+
     // Draw a dark gradient band behind the text for perfect separation
-    // We cover from slightly above the title to slightly below the artist
     ctx.save();
-    const totalVisH = (artistY - artistAscent + artistTrueH) - titleTop;
-    const bgGradient = ctx.createLinearGradient(0, titleTop - H*0.15, 0, titleTop + totalVisH + H*0.15);
+    const bgGradient = ctx.createLinearGradient(0, groupTop - H*0.15, 0, groupTop + totalGroupH + H*0.15);
     bgGradient.addColorStop(0, 'rgba(0, 0, 0, 0.0)');
     bgGradient.addColorStop(0.2, 'rgba(0, 0, 0, 0.15)');
     bgGradient.addColorStop(0.5, 'rgba(0, 0, 0, 0.35)');
