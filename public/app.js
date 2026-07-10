@@ -2768,19 +2768,46 @@ function showDone(msg) {
 
   doneSub.textContent = `${S.track.artist} · ${S.track.title}`;
 
-  // Load thumbnail preview
-  donePreviewImage.classList.remove('loaded');
-  donePreviewImage.src = '';
-  donePreviewLoader.style.display = 'block';
+  // Load thumbnail preview A
+  const imgA = document.getElementById('done-preview-image-A');
+  const loaderA = document.getElementById('done-preview-loader-A');
+  if (imgA) {
+    imgA.classList.remove('loaded');
+    imgA.src = '';
+    if (loaderA) {
+      loaderA.style.display = 'block';
+      loaderA.textContent = 'Generating A...';
+    }
+    if (msg.thumbnailIdA) {
+      imgA.onload = () => {
+        if (loaderA) loaderA.style.display = 'none';
+        imgA.classList.add('loaded');
+      };
+      imgA.src = `/api/preview/${msg.thumbnailIdA}`;
+    } else {
+      if (loaderA) loaderA.textContent = 'Preview unavailable';
+    }
+  }
 
-  if (msg.thumbnailId) {
-    donePreviewImage.onload = () => {
-      donePreviewLoader.style.display = 'none';
-      donePreviewImage.classList.add('loaded');
-    };
-    donePreviewImage.src = `/api/preview/${msg.thumbnailId}`;
-  } else {
-    donePreviewLoader.textContent = 'Preview unavailable';
+  // Load thumbnail preview B
+  const imgB = document.getElementById('done-preview-image-B');
+  const loaderB = document.getElementById('done-preview-loader-B');
+  if (imgB) {
+    imgB.classList.remove('loaded');
+    imgB.src = '';
+    if (loaderB) {
+      loaderB.style.display = 'block';
+      loaderB.textContent = 'Generating B...';
+    }
+    if (msg.thumbnailIdB) {
+      imgB.onload = () => {
+        if (loaderB) loaderB.style.display = 'none';
+        imgB.classList.add('loaded');
+      };
+      imgB.src = `/api/preview/${msg.thumbnailIdB}`;
+    } else {
+      if (loaderB) loaderB.textContent = 'Preview unavailable';
+    }
   }
 
   showView('done');
@@ -2793,7 +2820,8 @@ function showDone(msg) {
   }
 }
 
-// ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+
+
 // 10. EVENT LISTENERS
 // ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
 
