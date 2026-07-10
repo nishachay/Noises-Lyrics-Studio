@@ -1593,9 +1593,9 @@ app.get('/api/todays-plan', async (req, res) => {
       const response = await axios.get(url, { headers: { 'User-Agent': 'Mozilla/5.0' } });
       const html = response.data;
       
-      // Extract the first 3 songs from the Kworb table
-      // Kworb rows: <tr><td class="pos">1</td><td><div><a href="...">Artist - Title</a>...</div></td></tr>
-      const matches = [...html.matchAll(/<td class="text"><div[^>]*><a href="[^"]*">([^<]+)<\/a><\/div>/g)];
+      // Robust regex that matches both iTunes and YouTube Kworb table layouts (escaped for string write)
+      const regex = /<td class="[^"]*text[^"]*"><div>(?:<a href="[^"]*">)?([^<]+)(?:<\/a>)?<\/div><\/td>/g;
+      const matches = [...html.matchAll(regex)];
       
       return matches.slice(0, 3).map(m => {
         const text = m[1].replace(/&amp;/g, '&');
@@ -1607,29 +1607,12 @@ app.get('/api/todays-plan', async (req, res) => {
       });
     };
 
-    const fetchYouTubeKworb = async (url) => {
-      const response = await axios.get(url, { headers: { 'User-Agent': 'Mozilla/5.0' } });
-      const html = response.data;
-      // YouTube kworb rows: <tr><td class="pos">1</td><td><a href="...">Artist - Title</a></td></tr>
-      const matches = [...html.matchAll(/<td class="text"><a href="[^"]*">([^<]+)<\/a>/g)];
-      
-      return matches.slice(0, 3).map(m => {
-        const text = m[1].replace(/&amp;/g, '&');
-        const parts = text.split(' - ');
-        return {
-          artist: parts[0] ? parts[0].trim() : 'Unknown Artist',
-          title: parts[1] ? parts.slice(1).join(' - ').trim() : text
-        };
-      });
-    }
-
     const [pop, hiphop, hindi, kpop] = await Promise.all([
-      fetchKworb('https://kworb.net/charts/itunes/us.html'), // Using US iTunes for Pop proxy
-      fetchYouTubeKworb('https://kworb.net/youtube/'),       // Global YouTube for HipHop/Global hits proxy
-      fetchKworb('https://kworb.net/charts/itunes/in.html'), // India iTunes for Hindi/DHH
-      fetchKworb('https://kworb.net/youtube/topvideos_korean.html') // Korean YouTube for K-Pop
+      fetchKworb('https://kworb.net/charts/itunes/us.html'),
+      fetchKworb('https://kworb.net/youtube/'),
+      fetchKworb('https://kworb.net/charts/itunes/in.html'),
+      fetchKworb('https://kworb.net/youtube/topvideos_korean.html')
     ]);
-
     res.json({
       success: true,
       data: {
