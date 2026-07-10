@@ -1550,13 +1550,19 @@ function drawThumbnailBContent(ctx, W, H, title, artist, font) {
     let artistTrueH = artistMetrics.actualBoundingBoxAscent + artistMetrics.actualBoundingBoxDescent;
     let artistAscent = artistMetrics.actualBoundingBoxAscent;
 
-    // Compute true vertical center for the whole text group
-    const totalGroupH = titleTrueH + gap + artistTrueH;
-    const groupTop    = (H - totalGroupH) / 2;  
-
+    // The title acts as the absolute anchor in the dead center of the screen
+    // This prevents the title from jumping up and down when font sizes change
+    const titleTop = (H / 2) - (titleTrueH / 2);
+    const titleBottom = (H / 2) + (titleTrueH / 2);
+    
+    const titleY = titleTop + titleAscent;
+    const artistY = titleBottom + gap + artistAscent;
+    
     // Draw a dark gradient band behind the text for perfect separation
+    // We cover from slightly above the title to slightly below the artist
     ctx.save();
-    const bgGradient = ctx.createLinearGradient(0, groupTop - H*0.15, 0, groupTop + totalGroupH + H*0.15);
+    const totalVisH = (artistY - artistAscent + artistTrueH) - titleTop;
+    const bgGradient = ctx.createLinearGradient(0, titleTop - H*0.15, 0, titleTop + totalVisH + H*0.15);
     bgGradient.addColorStop(0, 'rgba(0, 0, 0, 0.0)');
     bgGradient.addColorStop(0.2, 'rgba(0, 0, 0, 0.15)');
     bgGradient.addColorStop(0.5, 'rgba(0, 0, 0, 0.35)');
@@ -1565,10 +1571,6 @@ function drawThumbnailBContent(ctx, W, H, title, artist, font) {
     ctx.fillStyle = bgGradient;
     ctx.fillRect(0, 0, W, H);
     ctx.restore();
-
-    // To position text by its true visual top, calculate where the baseline should be
-    const titleY  = groupTop + titleAscent;
-    const artistY = groupTop + titleTrueH + gap + artistAscent;
 
     // Multi-layer drop shadow text helper (uses alphabetic baseline for true precision)
     const drawPremiumText = (text, yPos, fontSize, weight = 'bold') => {
