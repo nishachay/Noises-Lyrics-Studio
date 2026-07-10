@@ -1519,7 +1519,7 @@ function drawThumbnailBContent(ctx, W, H, title, artist, font) {
     
     let titleSz = baseTitleSz;
     // Increase artist size relative to title (45% instead of 35%) for better hierarchy
-    let artistSz = Math.round(baseTitleSz * 0.45); 
+    let artistSz = Math.round(baseTitleSz * 0.35); 
     const maxTextWidth = Math.round(W * 0.88);
     // Increase gap for better breathing room
     const gap = Math.round(H * 0.07);
