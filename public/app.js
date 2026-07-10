@@ -1494,9 +1494,63 @@ const publishModal = document.getElementById('publish-modal');
 const btnPublishModal = document.getElementById('btn-publish-modal');
 const btnPublishClose = document.getElementById('btn-publish-close');
 
+// ─── Pre-render metadata generator ──────────────────────────────────────
+async function fetchAndFillMetadata() {
+  if (!S.track || !S.track.title) return;
+
+  const statusEl = document.getElementById('meta-status');
+  const pmTitle  = document.getElementById('pm-yt-title');
+  const pmDesc   = document.getElementById('pm-yt-desc');
+  const pmTags   = document.getElementById('pm-yt-tags');
+  const regenBtn = document.getElementById('btn-regen-meta');
+  if (!pmTitle) return;
+
+  if (statusEl) statusEl.textContent = '⏳ Fetching…';
+  if (regenBtn) regenBtn.disabled = true;
+
+  try {
+    const hasTranslation = S.lyrics && S.lyrics.some(l => l.translation && l.translation.trim() !== '');
+    const lyrics = (S.lyrics || []).map(l => l.text || '');
+    const videoUrl = S.track.youtubeId
+      ? `https://www.youtube.com/watch?v=${S.track.youtubeId}`
+      : '';
+
+    const res = await fetch('/api/generate-metadata', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ songArtist: S.track.artist, songTitle: S.track.title, videoUrl, lyrics, hasTranslation })
+    });
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+
+    pmTitle.value = data.youtubeTitle       || '';
+    pmDesc.value  = data.youtubeDescription || '';
+    pmTags.value  = data.youtubeTags        || '';
+
+    // Also pre-fill done-view fields so they're ready after rendering
+    const ytTitleEl = document.getElementById('yt-title');
+    const ytDescEl  = document.getElementById('yt-desc');
+    const ytTagsEl  = document.getElementById('yt-tags');
+    if (ytTitleEl) ytTitleEl.value = data.youtubeTitle       || '';
+    if (ytDescEl)  ytDescEl.value  = data.youtubeDescription || '';
+    if (ytTagsEl)  ytTagsEl.value  = data.youtubeTags        || '';
+
+    if (statusEl) {
+      statusEl.textContent = '✓ Ready';
+      setTimeout(() => { statusEl.textContent = ''; }, 3000);
+    }
+  } catch (err) {
+    console.error('[Metadata]', err);
+    if (statusEl) statusEl.textContent = '✗ Failed';
+  } finally {
+    if (regenBtn) regenBtn.disabled = false;
+  }
+}
+
 if (btnPublishModal && publishModal) {
   btnPublishModal.addEventListener('click', () => {
     publishModal.classList.remove('hidden');
+    fetchAndFillMetadata();   // Auto-fetch on every open
   });
 }
 
@@ -1504,6 +1558,11 @@ if (btnPublishClose && publishModal) {
   btnPublishClose.addEventListener('click', () => {
     publishModal.classList.add('hidden');
   });
+}
+
+const btnRegenMeta = document.getElementById('btn-regen-meta');
+if (btnRegenMeta) {
+  btnRegenMeta.addEventListener('click', fetchAndFillMetadata);
 }
 
 document.querySelectorAll('.trending-tab').forEach(tab => {

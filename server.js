@@ -1169,6 +1169,47 @@ app.get('/api/render', async (req, res) => {
 // proxyAudioStream removed in favor of native browser redirect
 
 // ══════════════════════════════════════════════════════════════
+// POST /api/generate-metadata  (pre-render YouTube info)
+// Body JSON: { songArtist, songTitle, videoUrl, lyrics, hasTranslation }
+// Returns : { youtubeTitle, youtubeDescription, youtubeTags }
+// ══════════════════════════════════════════════════════════════
+app.post('/api/generate-metadata', express.json(), async (req, res) => {
+  try {
+    const { songArtist = '', songTitle = '', videoUrl = '', lyrics = [], hasTranslation = false } = req.body;
+
+    // Auto-generate SEO Tags from YouTube autocomplete
+    let seoKeywords = [];
+    try {
+      const q = encodeURIComponent(`${songArtist} ${songTitle}`);
+      const { data } = await axios.get(`http://suggestqueries.google.com/complete/search?client=firefox&ds=yt&q=${q}`);
+      if (data && data[1] && data[1].length > 0) seoKeywords = data[1];
+    } catch (e) {
+      console.log('[SEO/meta] Could not fetch autocomplete tags:', e.message);
+    }
+
+    const youtubeTitle = `${songArtist} - ${songTitle} (Lyrics${hasTranslation ? ' & English Translation' : ''})`;
+    const lyricLines   = lyrics.map(l => (typeof l === 'string' ? l : l.text || '')).join('\n');
+
+    const tags          = `#${songArtist.replace(/\s+/g,'')} #${songTitle.replace(/\s+/g,'')} #Lyrics #NoisesMusic`;
+    const seoBlock      = seoKeywords.length > 0 ? `\n\nSearch terms:\n${seoKeywords.join(', ')}` : '';
+    const disclaimer    = `\n\n────────────────────────────────────────────────────────────\n⚠️ COPYRIGHT DISCLAIMER:\nWe do not own the rights to this song. All credits go to the original artists and their respective record labels. This video is created for entertainment purposes only.\n────────────────────────────────────────────────────────────`;
+    const networkBlock  = `\n\n🌐 Follow Our Network:\n- Noises Music: https://www.youtube.com/@NoisesMusic\n- Noises HipHop: https://www.youtube.com/@NoisesHipHop\n- Noises DHH: https://www.youtube.com/@NoisesDHH\n- Noises Kpop: https://www.youtube.com/@NoisesKpop\n- Noises Geet: https://www.youtube.com/@NoisesGeet`;
+
+    const youtubeDescription = `🎵 ${songArtist} - ${songTitle} (Lyrics Video)\n\n${decodeURIComponent(videoUrl)}\n\n${lyricLines}\n\n${tags}${seoBlock}${networkBlock}${disclaimer}`;
+
+    const fallbackTags = `${songArtist}, ${songTitle}, Lyrics, Pop, Music`;
+    const youtubeTags  = seoKeywords.length > 0 ? seoKeywords.join(', ') + `, ${fallbackTags}` : fallbackTags;
+
+    res.json({ youtubeTitle, youtubeDescription, youtubeTags });
+  } catch (err) {
+    console.error('[Metadata] Error:', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+
+
+// ══════════════════════════════════════════════════════════════
 // GET /api/stream/:videoId
 // Serves the completely downloaded audio file statically to the browser
 // ══════════════════════════════════════════════════════════════

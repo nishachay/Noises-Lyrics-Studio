@@ -1510,66 +1510,63 @@ function drawSharedIntro(ctx, W, H, coverImg, title, artist, font) {
 function drawThumbnailBContent(ctx, W, H, title, artist, font) {
     let titleSz = Math.round(H * 0.20);
     let artistSz = Math.round(H * 0.08);
-    const maxTextWidth = Math.round(W * 0.92);
-    const gap = Math.round(H * 0.03);
-    
-    // Smart Fit: Title
+    const maxTextWidth = Math.round(W * 0.88);
+    const gap = Math.round(H * 0.035);
+
+    // Smart Fit: Title — scale down if too wide
     ctx.font = `bold ${titleSz}px ${font}`;
     let titleWidth = ctx.measureText(title).width;
     if (titleWidth > maxTextWidth) {
       titleSz = Math.floor(titleSz * (maxTextWidth / titleWidth));
       ctx.font = `bold ${titleSz}px ${font}`;
-      titleWidth = ctx.measureText(title).width;
     }
-    
+
     // Smart Fit: Artist
-    ctx.font = `bold ${artistSz}px ${font}`;
+    ctx.font = `600 ${artistSz}px ${font}`;
     let artistWidth = ctx.measureText(artist).width;
     if (artistWidth > maxTextWidth) {
       artistSz = Math.floor(artistSz * (maxTextWidth / artistWidth));
-      ctx.font = `bold ${artistSz}px ${font}`;
-      artistWidth = ctx.measureText(artist).width;
+      ctx.font = `600 ${artistSz}px ${font}`;
     }
 
-    const titleLineHeight = Math.round(titleSz * 1.25);
-    const totalH = titleLineHeight + gap + artistSz;
-    const ay = Math.round((H - totalH) / 2);
-    
-    const titleY = ay;
-    const artistY = ay + titleLineHeight + gap;
+    // Compute true vertical center for the whole text group
+    // Using textBaseline=middle so yPos is the exact vertical midpoint of each text line
+    const totalGroupH = titleSz + gap + artistSz;
+    const groupTop    = (H - totalGroupH) / 2;  // top of group
+    const titleY  = groupTop + titleSz / 2;      // midpoint of title line
+    const artistY = groupTop + titleSz + gap + artistSz / 2; // midpoint of artist line
 
-    // Multi-layer drop shadow text helper
+    // Multi-layer drop shadow text helper (uses middle baseline for true centering)
     const drawPremiumText = (text, yPos, fontSize, weight = 'bold') => {
       ctx.save();
       ctx.font = `${weight} ${fontSize}px ${font}`;
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'top';
+      ctx.textAlign    = 'center';
+      ctx.textBaseline = 'middle';   // ← true vertical centering
       ctx.fillStyle = '#ffffff';
 
       // Layer 1: Wide ambient dark halo
-      ctx.shadowColor = 'rgba(0, 0, 0, 0.8)';
-      ctx.shadowBlur = 40;
+      ctx.shadowColor   = 'rgba(0,0,0,0.85)';
+      ctx.shadowBlur    = 48;
       ctx.shadowOffsetX = 0;
       ctx.shadowOffsetY = 0;
       ctx.fillText(text, W / 2, yPos);
-      
+
       // Layer 2: Sharp core drop shadow
-      ctx.shadowColor = 'rgba(0, 0, 0, 0.9)';
-      ctx.shadowBlur = 20;
+      ctx.shadowColor   = 'rgba(0,0,0,0.95)';
+      ctx.shadowBlur    = 20;
       ctx.shadowOffsetX = 0;
-      ctx.shadowOffsetY = 8;
+      ctx.shadowOffsetY = 6;
       ctx.fillText(text, W / 2, yPos);
-      
-      // Layer 3: Clean crisp white text on top
-      ctx.shadowColor = 'transparent';
-      ctx.shadowBlur = 0;
+
+      // Layer 3: Clean crisp white on top (no shadow)
+      ctx.shadowColor   = 'transparent';
+      ctx.shadowBlur    = 0;
       ctx.shadowOffsetX = 0;
       ctx.shadowOffsetY = 0;
       ctx.fillText(text, W / 2, yPos);
       ctx.restore();
     };
 
-    // Artist uses 600 weight to contrast the bold title
-    drawPremiumText(title, titleY, titleSz, 'bold');
+    drawPremiumText(title,  titleY,  titleSz,  'bold');
     drawPremiumText(artist, artistY, artistSz, '600');
   }

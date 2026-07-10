@@ -607,10 +607,35 @@
               Export Slides
             </button>
           </div>
-          
+
           <button id="btn-preview-thumb" class="btn-compile" disabled style="width: 100%; justify-content: center; background: var(--surface-2); border: 1px solid var(--border); margin-top: 2px; color: var(--text-2); height: 34px; font-size: 12px;" title="Preview Thumbnail before exporting">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:4px;"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
             Generate Custom Thumbnail
+          </button>
+        </div>
+      </div>
+
+      <!-- YouTube Upload Info (available before rendering) -->
+      <div>
+        <div style="font-size: 11px; font-weight: 600; color: var(--text-2); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; display:flex; align-items:center; gap:6px;">
+          3. YouTube Upload Info
+          <span id="meta-status" style="font-size:10px; font-weight:400; color:var(--text-3); text-transform:none; letter-spacing:0;"></span>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 8px;">
+          <div class="meta-field">
+            <label style="font-size:10px; color:var(--text-3); display:block; margin-bottom:3px;">Title</label>
+            <div class="copy-row"><input id="pm-yt-title" type="text" readonly placeholder="Load a song first..."><button class="btn-copy" data-target="pm-yt-title">Copy</button></div>
+          </div>
+          <div class="meta-field">
+            <label style="font-size:10px; color:var(--text-3); display:block; margin-bottom:3px;">Description</label>
+            <div class="copy-row"><textarea id="pm-yt-desc" rows="4" readonly placeholder="Load a song first..."></textarea><button class="btn-copy" data-target="pm-yt-desc">Copy</button></div>
+          </div>
+          <div class="meta-field">
+            <label style="font-size:10px; color:var(--text-3); display:block; margin-bottom:3px;">Tags (comma separated)</label>
+            <div class="copy-row"><textarea id="pm-yt-tags" rows="2" readonly placeholder="Load a song first..."></textarea><button class="btn-copy" data-target="pm-yt-tags">Copy</button></div>
+          </div>
+          <button id="btn-regen-meta" class="btn-compile" style="width:100%; justify-content:center; background:var(--surface-2); border:1px solid var(--border); color:var(--text-2); height:32px; font-size:11px; margin-top:2px;">
+            ↺ Regenerate Metadata
           </button>
         </div>
       </div>
