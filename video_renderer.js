@@ -1518,7 +1518,8 @@ function drawThumbnailBContent(ctx, W, H, title, artist, font) {
     }
     
     let titleSz = baseTitleSz;
-    let artistSz = Math.round(titleSz * 0.35); // Proportional artist size
+    // Base artist size is relative to the ideal title size, not the squished one!
+    let artistSz = Math.max(Math.round(baseTitleSz * 0.35), Math.round(H * 0.06)); 
     const maxTextWidth = Math.round(W * 0.88);
     const gap = Math.round(H * 0.05);
 
@@ -1528,7 +1529,7 @@ function drawThumbnailBContent(ctx, W, H, title, artist, font) {
     if (titleWidth > maxTextWidth) {
       titleSz = Math.floor(titleSz * (maxTextWidth / titleWidth));
       ctx.font = `bold ${titleSz}px ${font}`;
-      artistSz = Math.round(titleSz * 0.35); // Update artist proportionally
+      // DO NOT shrink the artist size here. Let it stay legible!
     }
     
     // Get true visual height of title for perfect centering
