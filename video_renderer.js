@@ -1508,8 +1508,17 @@ function drawSharedIntro(ctx, W, H, coverImg, title, artist, font) {
 
 
 function drawThumbnailBContent(ctx, W, H, title, artist, font) {
-    let titleSz = Math.round(H * 0.20);
-    let artistSz = Math.round(H * 0.08);
+    const titleLen = title.length;
+    let baseTitleSz = Math.round(H * 0.28); // Very big default for short titles
+    if (titleLen > 12) {
+        baseTitleSz = Math.round(H * 0.22); // Standard size for medium titles
+    }
+    if (titleLen > 25) {
+        baseTitleSz = Math.round(H * 0.16); // Smaller size for long titles
+    }
+    
+    let titleSz = baseTitleSz;
+    let artistSz = Math.round(titleSz * 0.35); // Proportional artist size
     const maxTextWidth = Math.round(W * 0.88);
     const gap = Math.round(H * 0.035);
 
@@ -1519,7 +1528,13 @@ function drawThumbnailBContent(ctx, W, H, title, artist, font) {
     if (titleWidth > maxTextWidth) {
       titleSz = Math.floor(titleSz * (maxTextWidth / titleWidth));
       ctx.font = `bold ${titleSz}px ${font}`;
+      artistSz = Math.round(titleSz * 0.35); // Update artist proportionally
     }
+    
+    // Get true visual height of title for perfect centering
+    let titleMetrics = ctx.measureText(title);
+    let titleTrueH = titleMetrics.actualBoundingBoxAscent + titleMetrics.actualBoundingBoxDescent;
+    let titleAscent = titleMetrics.actualBoundingBoxAscent;
 
     // Smart Fit: Artist
     ctx.font = `600 ${artistSz}px ${font}`;
@@ -1528,20 +1543,38 @@ function drawThumbnailBContent(ctx, W, H, title, artist, font) {
       artistSz = Math.floor(artistSz * (maxTextWidth / artistWidth));
       ctx.font = `600 ${artistSz}px ${font}`;
     }
+    
+    // Get true visual height of artist
+    let artistMetrics = ctx.measureText(artist);
+    let artistTrueH = artistMetrics.actualBoundingBoxAscent + artistMetrics.actualBoundingBoxDescent;
+    let artistAscent = artistMetrics.actualBoundingBoxAscent;
 
     // Compute true vertical center for the whole text group
-    // Using textBaseline=middle so yPos is the exact vertical midpoint of each text line
-    const totalGroupH = titleSz + gap + artistSz;
-    const groupTop    = (H - totalGroupH) / 2;  // top of group
-    const titleY  = groupTop + titleSz / 2;      // midpoint of title line
-    const artistY = groupTop + titleSz + gap + artistSz / 2; // midpoint of artist line
+    const totalGroupH = titleTrueH + gap + artistTrueH;
+    const groupTop    = (H - totalGroupH) / 2;  
 
-    // Multi-layer drop shadow text helper (uses middle baseline for true centering)
+    // Draw a dark gradient band behind the text for perfect separation
+    ctx.save();
+    const bgGradient = ctx.createLinearGradient(0, groupTop - H*0.15, 0, groupTop + totalGroupH + H*0.15);
+    bgGradient.addColorStop(0, 'rgba(0, 0, 0, 0.0)');
+    bgGradient.addColorStop(0.2, 'rgba(0, 0, 0, 0.4)');
+    bgGradient.addColorStop(0.5, 'rgba(0, 0, 0, 0.6)');
+    bgGradient.addColorStop(0.8, 'rgba(0, 0, 0, 0.4)');
+    bgGradient.addColorStop(1, 'rgba(0, 0, 0, 0.0)');
+    ctx.fillStyle = bgGradient;
+    ctx.fillRect(0, 0, W, H);
+    ctx.restore();
+
+    // To position text by its true visual top, calculate where the baseline should be
+    const titleY  = groupTop + titleAscent;
+    const artistY = groupTop + titleTrueH + gap + artistAscent;
+
+    // Multi-layer drop shadow text helper (uses alphabetic baseline for true precision)
     const drawPremiumText = (text, yPos, fontSize, weight = 'bold') => {
       ctx.save();
       ctx.font = `${weight} ${fontSize}px ${font}`;
       ctx.textAlign    = 'center';
-      ctx.textBaseline = 'middle';   // ← true vertical centering
+      ctx.textBaseline = 'alphabetic'; // ← we manually offset the baseline
       ctx.fillStyle = '#ffffff';
 
       // Layer 1: Wide ambient dark halo
@@ -1569,4 +1602,4 @@ function drawThumbnailBContent(ctx, W, H, title, artist, font) {
 
     drawPremiumText(title,  titleY,  titleSz,  'bold');
     drawPremiumText(artist, artistY, artistSz, '600');
-  }
+}
