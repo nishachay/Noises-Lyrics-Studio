@@ -834,6 +834,9 @@ function drawCoverBackground(ctx, W, H, coverImg) {
   ctx.imageSmoothingEnabled = true;
   ctx.imageSmoothingQuality = 'high';
   
+  // Apply a soft blur and slight dim to cover art details/competing text
+  ctx.filter = 'blur(10px) brightness(85%)';
+  
   // Crop & scale to cover 16:9 canvas
   const iW = coverImg.width;
   const iH = coverImg.height;
@@ -851,10 +854,13 @@ function drawCoverBackground(ctx, W, H, coverImg) {
     sx = 0;
     sy = (iH - sh) / 2;
   }
-  ctx.drawImage(coverImg, sx, sy, sw, sh, 0, 0, W, H);
+  // Expand slightly by 20px on each side to prevent transparent edges from blur
+  ctx.drawImage(coverImg, sx, sy, sw, sh, -20, -20, W + 40, H + 40);
+  ctx.restore();
   
-  // Draw a dark semi-transparent overlay to ensure text readability (55% opacity black)
-  ctx.fillStyle = 'rgba(0, 0, 0, 0.55)';
+  // Draw a dark overlay (40% opacity black is enough with the blur and brightness filter)
+  ctx.save();
+  ctx.fillStyle = 'rgba(0, 0, 0, 0.40)';
   ctx.fillRect(0, 0, W, H);
   ctx.restore();
 }
@@ -1502,7 +1508,7 @@ function drawSharedIntro(ctx, W, H, coverImg, title, artist, font) {
 
 
 function drawThumbnailBContent(ctx, W, H, title, artist, font) {
-    let titleSz = Math.round(H * 0.15);
+    let titleSz = Math.round(H * 0.20);
     let artistSz = Math.round(H * 0.08);
     const maxTextWidth = Math.round(W * 0.92);
     const gap = Math.round(H * 0.03);
