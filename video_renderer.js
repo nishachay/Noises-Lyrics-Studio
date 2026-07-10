@@ -1489,7 +1489,7 @@ function drawSharedIntro(ctx, W, H, coverImg, title, artist, font) {
       ctx.shadowColor = 'rgba(0, 0, 0, 0.9)';
       ctx.shadowBlur = 18;
       ctx.shadowOffsetX = 0;
-      ctx.shadowOffsetY = 6;
+      ctx.shadowOffsetY = 4;
       ctx.fillText(text, W / 2, yPos);
       
       // Layer 3: Clean crisp white text on top
@@ -1520,7 +1520,7 @@ function drawThumbnailBContent(ctx, W, H, title, artist, font) {
     let titleSz = baseTitleSz;
     let artistSz = Math.round(titleSz * 0.35); // Proportional artist size
     const maxTextWidth = Math.round(W * 0.88);
-    const gap = Math.round(H * 0.035);
+    const gap = Math.round(H * 0.05);
 
     // Smart Fit: Title — scale down if too wide
     ctx.font = `bold ${titleSz}px ${font}`;
@@ -1557,9 +1557,9 @@ function drawThumbnailBContent(ctx, W, H, title, artist, font) {
     ctx.save();
     const bgGradient = ctx.createLinearGradient(0, groupTop - H*0.15, 0, groupTop + totalGroupH + H*0.15);
     bgGradient.addColorStop(0, 'rgba(0, 0, 0, 0.0)');
-    bgGradient.addColorStop(0.2, 'rgba(0, 0, 0, 0.4)');
-    bgGradient.addColorStop(0.5, 'rgba(0, 0, 0, 0.6)');
-    bgGradient.addColorStop(0.8, 'rgba(0, 0, 0, 0.4)');
+    bgGradient.addColorStop(0.2, 'rgba(0, 0, 0, 0.15)');
+    bgGradient.addColorStop(0.5, 'rgba(0, 0, 0, 0.35)');
+    bgGradient.addColorStop(0.8, 'rgba(0, 0, 0, 0.15)');
     bgGradient.addColorStop(1, 'rgba(0, 0, 0, 0.0)');
     ctx.fillStyle = bgGradient;
     ctx.fillRect(0, 0, W, H);
@@ -1578,15 +1578,15 @@ function drawThumbnailBContent(ctx, W, H, title, artist, font) {
       ctx.fillStyle = '#ffffff';
 
       // Layer 1: Wide ambient dark halo
-      ctx.shadowColor   = 'rgba(0,0,0,0.85)';
-      ctx.shadowBlur    = 48;
+      ctx.shadowColor   = 'rgba(0,0,0,0.65)';
+      ctx.shadowBlur    = 40;
       ctx.shadowOffsetX = 0;
       ctx.shadowOffsetY = 0;
       ctx.fillText(text, W / 2, yPos);
 
       // Layer 2: Sharp core drop shadow
-      ctx.shadowColor   = 'rgba(0,0,0,0.95)';
-      ctx.shadowBlur    = 20;
+      ctx.shadowColor   = 'rgba(0,0,0,0.75)';
+      ctx.shadowBlur    = 16;
       ctx.shadowOffsetX = 0;
       ctx.shadowOffsetY = 6;
       ctx.fillText(text, W / 2, yPos);
