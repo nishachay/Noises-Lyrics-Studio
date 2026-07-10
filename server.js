@@ -1195,7 +1195,7 @@ app.post('/api/generate-metadata', express.json(), async (req, res) => {
     const disclaimer    = `\n\n────────────────────────────────────────────────────────────\n⚠️ COPYRIGHT DISCLAIMER:\nWe do not own the rights to this song. All credits go to the original artists and their respective record labels. This video is created for entertainment purposes only.\n────────────────────────────────────────────────────────────`;
     const networkBlock  = `\n\n🌐 Follow Our Network:\n- Noises Music: https://www.youtube.com/@NoisesMusic\n- Noises HipHop: https://www.youtube.com/@NoisesHipHop\n- Noises DHH: https://www.youtube.com/@NoisesDHH\n- Noises Kpop: https://www.youtube.com/@NoisesKpop\n- Noises Geet: https://www.youtube.com/@NoisesGeet`;
 
-    const youtubeDescription = `🎵 ${songArtist} - ${songTitle} (Lyrics Video)\n\n${decodeURIComponent(videoUrl)}\n\n${lyricLines}\n\n${tags}${seoBlock}${networkBlock}${disclaimer}`;
+    const youtubeDescription = `🎵 ${songArtist} - ${songTitle} (Lyrics Video)\n\n${videoUrl}\n\n${lyricLines}\n\n${tags}${seoBlock}${networkBlock}${disclaimer}`;
 
     const fallbackTags = `${songArtist}, ${songTitle}, Lyrics, Pop, Music`;
     const youtubeTags  = seoKeywords.length > 0 ? seoKeywords.join(', ') + `, ${fallbackTags}` : fallbackTags;
