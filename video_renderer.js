@@ -1517,22 +1517,30 @@ function drawThumbnailBContent(ctx, W, H, title, artist, font) {
         baseTitleSz = Math.round(H * 0.16); // Smaller size for long titles
     }
     
-    let titleSz = baseTitleSz;
-    // Increase artist size relative to title (45% instead of 35%) for better hierarchy
-    let artistSz = Math.round(baseTitleSz * 0.35); 
     const maxTextWidth = Math.round(W * 0.88);
-    // Increase gap for better breathing room
     const gap = Math.round(H * 0.07);
 
-    // Smart Fit: Title — scale down if too wide
+    let titleSz = baseTitleSz;
+
+    // Step 1: Squish Title to fit max width
     ctx.font = `bold ${titleSz}px ${font}`;
     let titleWidth = ctx.measureText(title).width;
     if (titleWidth > maxTextWidth) {
       titleSz = Math.floor(titleSz * (maxTextWidth / titleWidth));
       ctx.font = `bold ${titleSz}px ${font}`;
-      // Make sure artist size doesn't become larger than the shrunk title
-      artistSz = Math.min(artistSz, Math.round(titleSz * 0.8));
     }
+
+    // Step 2: Bulletproof Artist Scaling Math
+    // Ideal is 35% of the final title size (for premium typography hierarchy)
+    let idealArtistSz = Math.round(titleSz * 0.35);
+    // Legibility floor: shouldn't go below ~6% of canvas height (e.g. 43px on 720p)
+    let floorArtistSz = Math.round(H * 0.06);
+    // Hierarchy ceiling: NEVER be bigger than 75% of the title size (so it's always secondary)
+    let ceilArtistSz = Math.round(titleSz * 0.75);
+
+    // Apply floor, then ceiling
+    let artistSz = Math.max(idealArtistSz, floorArtistSz);
+    artistSz = Math.min(artistSz, ceilArtistSz);
     
     // Get true visual height of title for perfect centering
     let titleMetrics = ctx.measureText(title);
