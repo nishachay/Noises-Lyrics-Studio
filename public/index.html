@@ -431,40 +431,43 @@
 ════════════════════════════════════════════════ -->
 <div id="view-done" class="view-overlay hidden">
   <div class="overlay-card done-card">
-    <div class="done-icon-row">
-      <div class="done-check">✓</div>
-      <div>
-        <h2 class="done-title">Video Ready</h2>
-        <p id="done-sub" class="done-sub">—</p>
-      </div>
-    </div>
-
-    <div class="done-preview-container" style="display:flex; gap:10px;">
-        <div style="flex:1;">
-          <h4 style="font-size:11px; text-align:center; color:var(--text-3); margin-bottom:4px;">Style A</h4>
-          <div id="done-preview-loader-A" class="done-preview-placeholder">Generating A...</div>
-          <img id="done-preview-image-A" class="done-preview-img" alt="Thumbnail A">
+    <div class="done-split-layout">
+      <!-- LEFT COLUMN -->
+      <div class="done-left-col">
+        <div class="done-icon-row">
+          <div class="done-check">✓</div>
+          <div>
+            <h2 class="done-title">Video Ready</h2>
+            <p id="done-sub" class="done-sub">—</p>
+          </div>
         </div>
-        <div style="flex:1;">
-          <h4 style="font-size:11px; text-align:center; color:var(--text-3); margin-bottom:4px;">Style B (Text)</h4>
-          <div id="done-preview-loader-B" class="done-preview-placeholder">Generating B...</div>
-          <img id="done-preview-image-B" class="done-preview-img" alt="Thumbnail B">
+
+        <div class="done-preview-container" style="display:flex; gap:10px;">
+          <div style="flex:1;">
+            <h4 style="font-size:11px; text-align:center; color:var(--text-3); margin-bottom:4px;">Style A</h4>
+            <div id="done-preview-loader-A" class="done-preview-placeholder">Generating A...</div>
+            <img id="done-preview-image-A" class="done-preview-img" alt="Thumbnail A">
+          </div>
+          <div style="flex:1;">
+            <h4 style="font-size:11px; text-align:center; color:var(--text-3); margin-bottom:4px;">Style B (Text)</h4>
+            <div id="done-preview-loader-B" class="done-preview-placeholder">Generating B...</div>
+            <img id="done-preview-image-B" class="done-preview-img" alt="Thumbnail B">
+          </div>
         </div>
       </div>
-    </div>
 
-    <div class="done-grid">
-      <div class="done-downloads" style="flex-direction: column; gap: 0;">
-        
-        <!-- Local Download Section -->
-        <div style="background: var(--surface-2); padding: 16px; border-radius: 8px; border: 1px solid var(--border); margin-bottom: 12px;">
-          <h3 style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-3); margin-bottom: 12px;">Local Download</h3>
-          <div style="display:flex; gap:10px;">
-            <a id="btn-dl-video" href="#" class="btn-dl primary" style="flex:1;">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-              Download MP4
-            </a>
-            <a id="btn-dl-thumb-a" href="#" class="btn-dl secondary" style="flex:1; padding:10px 4px; font-size:11px;">
+      <!-- RIGHT COLUMN -->
+      <div class="done-right-col">
+        <div class="done-downloads" style="flex-direction: column; gap: 0;">
+          <!-- Local Download Section -->
+          <div style="background: var(--surface-2); padding: 16px; border-radius: 8px; border: 1px solid var(--border); margin-bottom: 20px;">
+            <h3 style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-3); margin-bottom: 12px;">Local Download</h3>
+            <div style="display:flex; gap:10px;">
+              <a id="btn-dl-video" href="#" class="btn-dl primary" style="flex:1;">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                Download MP4
+              </a>
+              <a id="btn-dl-thumb-a" href="#" class="btn-dl secondary" style="flex:1; padding:10px 4px; font-size:11px;">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
                 Thumb A
               </a>
@@ -472,24 +475,32 @@
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
                 Thumb B
               </a>
+            </div>
           </div>
         </div>
 
-        <!-- Auto-Publish Section Removed -->
-
-      </div>
-      <div class="done-meta">
-        <div class="meta-field">
-          <label>YouTube Title</label>
-          <div class="copy-row"><input id="yt-title" type="text" readonly><button class="btn-copy" data-target="yt-title">Copy</button></div>
-        </div>
-        <div class="meta-field">
-          <label>Description</label>
-          <div class="copy-row"><textarea id="yt-desc" rows="4" readonly></textarea><button class="btn-copy" data-target="yt-desc">Copy</button></div>
-        </div>
-        <div class="meta-field">
-          <label>Tags (Comma separated)</label>
-          <div class="copy-row"><textarea id="yt-tags" rows="3" readonly></textarea><button class="btn-copy" data-target="yt-tags">Copy</button></div>
+        <div class="done-meta">
+          <div class="meta-field">
+            <label>YouTube Title</label>
+            <div class="meta-field-wrapper">
+              <input id="yt-title" type="text" readonly>
+              <button class="btn-copy-abs" data-target="yt-title">Copy</button>
+            </div>
+          </div>
+          <div class="meta-field">
+            <label>Description</label>
+            <div class="meta-field-wrapper">
+              <textarea id="yt-desc" rows="5" readonly></textarea>
+              <button class="btn-copy-abs" data-target="yt-desc">Copy</button>
+            </div>
+          </div>
+          <div class="meta-field">
+            <label>Tags (Comma separated)</label>
+            <div class="meta-field-wrapper">
+              <textarea id="yt-tags" rows="3" readonly></textarea>
+              <button class="btn-copy-abs" data-target="yt-tags">Copy</button>
+            </div>
+          </div>
         </div>
       </div>
     </div>
