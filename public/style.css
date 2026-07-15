@@ -1050,7 +1050,7 @@ body {
 .done-card { max-width: 960px; width: 95%; max-height: 90vh; overflow-y: auto; }
 .done-split-layout {
   display: grid;
-  grid-template-columns: 55% 45%;
+  grid-template-columns: 1.15fr 1fr;
   gap: 32px;
 }
 @media (max-width: 850px) {
