@@ -1144,7 +1144,7 @@ app.get('/api/render', async (req, res) => {
     
 
     
-    const tags               = `#${songArtist.replace(/\s+/g,'')} #${songTitle.replace(/\s+/g,'')} #Lyrics #NoisesMusic`;
+    const tags               = `#${songArtist.replace(/\s+/g,'')} #${songTitle.replace(/\s+/g,'')} #Lyrics #NoisesMusic #NoisesHipHop #NoisesDHH #NoisesKpop #NoisesGeet`;
     const seoBlock           = seoKeywords.length > 0 ? `\n\nSearch terms:\n${seoKeywords.join(', ')}` : '';
     const disclaimer         = `\n\n────────────────────────────────────────────────────────────\n⚠️ COPYRIGHT DISCLAIMER:\nWe do not own the rights to this song. All credits go to the original artists and their respective record labels. This video is created for entertainment purposes only.\n────────────────────────────────────────────────────────────`;
     
@@ -1190,7 +1190,7 @@ app.post('/api/generate-metadata', express.json(), async (req, res) => {
     const youtubeTitle = `${songArtist} - ${songTitle} (Lyrics${hasTranslation ? ' & English Translation' : ''})`;
     const lyricLines   = lyrics.map(l => (typeof l === 'string' ? l : l.text || '')).join('\n');
 
-    const tags          = `#${songArtist.replace(/\s+/g,'')} #${songTitle.replace(/\s+/g,'')} #Lyrics #NoisesMusic`;
+    const tags          = `#${songArtist.replace(/\s+/g,'')} #${songTitle.replace(/\s+/g,'')} #Lyrics #NoisesMusic #NoisesHipHop #NoisesDHH #NoisesKpop #NoisesGeet`;
     const seoBlock      = seoKeywords.length > 0 ? `\n\nSearch terms:\n${seoKeywords.join(', ')}` : '';
     const disclaimer    = `\n\n────────────────────────────────────────────────────────────\n⚠️ COPYRIGHT DISCLAIMER:\nWe do not own the rights to this song. All credits go to the original artists and their respective record labels. This video is created for entertainment purposes only.\n────────────────────────────────────────────────────────────`;
     const networkBlock  = `\n\n🌐 Follow Our Network:\n- Noises Music: https://youtube.com/@NoisesMusic\n- Noises HipHop: https://youtube.com/@NoisesHipHop\n- Noises DHH: https://youtube.com/@NoisesDHH\n- Noises Kpop: https://youtube.com/@NoisesKpop\n- Noises Geet: https://youtube.com/@NoisesGeet`;
