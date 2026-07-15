@@ -1100,6 +1100,21 @@ body {
 .meta-field { display: flex; flex-direction: column; gap: 6px; }
 .meta-field label { font-size: 10.5px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-3); }
 
+/* Legacy copy row for publish modal */
+.copy-row { display: flex; gap: 6px; }
+.copy-row input, .copy-row textarea {
+  flex: 1;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text-1);
+  font-family: var(--mono);
+  font-size: 11.5px;
+  padding: 7px 10px;
+  outline: none;
+  resize: none;
+}
+
 /* Absolute copy button layout */
 .meta-field-wrapper {
   position: relative;
@@ -1118,14 +1133,30 @@ body {
   resize: none;
   width: 100%;
 }
-.meta-field-wrapper textarea {
-  padding-right: 64px; /* Space for the absolute button */
-}
-.meta-field-wrapper input {
-  padding-right: 64px;
-}
+.meta-field-wrapper textarea { padding-right: 64px; }
+.meta-field-wrapper input { padding-right: 64px; }
 
 .btn-copy {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text-2);
+  cursor: pointer;
+  font-family: var(--sans);
+  font-size: 11px;
+  font-weight: 600;
+  padding: 0 12px;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+.btn-copy:hover {
+  background: var(--surface-3);
+  color: #fff;
+  border-color: rgba(255,255,255,0.2);
+}
+.btn-copy.copied { color: var(--accent); }
+
+.meta-field-wrapper .btn-copy {
   position: absolute;
   top: 6px;
   right: 6px;
@@ -1133,20 +1164,7 @@ body {
   background: var(--surface-3);
   border: 1px solid var(--border-2);
   border-radius: 4px;
-  color: var(--text-2);
-  cursor: pointer;
-  font-family: var(--sans);
-  font-size: 11px;
-  font-weight: 600;
-  transition: all 0.15s;
-  white-space: nowrap;
 }
-.btn-copy:hover {
-  background: var(--surface-4);
-  color: #fff;
-  border-color: rgba(255,255,255,0.2);
-}
-.btn-copy.copied { color: var(--accent); }
 
 /* ═══════════════════════════════════════════════════════════════
    SHIMMER / SKELETON
