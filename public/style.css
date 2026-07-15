@@ -1536,3 +1536,13 @@ input[type="checkbox"], input[type="radio"] {
   color: rgba(255, 255, 255, 0.4) !important;
   opacity: 1; /* Firefox */
 }
+
+
+/* Hide scrollbar for readonly meta fields so it doesn't overlap the Copy button */
+.meta-field-wrapper textarea {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}
+.meta-field-wrapper textarea::-webkit-scrollbar {
+  display: none;
+}
