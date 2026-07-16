@@ -3629,7 +3629,25 @@ modalLyricsQuery.addEventListener('keydown', e => {
 // ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
 const btnLocalAudio = document.getElementById('btn-local-audio');
 const btnErrorUploadAudio = document.getElementById('btn-error-upload-audio');
+
 const localAudioUpload = document.getElementById('local-audio-upload');
+const globalEditCover = document.getElementById('edit-cover');
+if (globalEditCover) {
+  globalEditCover.addEventListener('input', (e) => {
+    const url = e.target.value.trim();
+    if (S.track && url) {
+      S.track.artworkUrl = url;
+      const preview = document.getElementById('edit-cover-preview');
+      if (preview) {
+        preview.src = url;
+        preview.classList.remove('hidden');
+      }
+      updatePlayerUIElements();
+      renderTimeline(); // re-render canvas to show new cover art
+    }
+  });
+}
+
 const audioErrorModal = document.getElementById('audio-error-modal');
 const btnCopyErrorLink = document.getElementById('btn-copy-error-link');
 const btnErrorClose = document.getElementById('btn-error-close');
@@ -3676,8 +3694,6 @@ if (localAudioUpload) {
       // Play locally immediately
       const localUrl = URL.createObjectURL(file);
       audio.pause();
-      audio.src = localUrl;
-      audio.load();
       audioOverlay.classList.remove('hidden');
       audioLoadTxt.textContent = 'Loading custom audio...';
       
@@ -3686,10 +3702,24 @@ if (localAudioUpload) {
           S.track.duration = audio.duration;
           S.audioDuration = audio.duration;
           updatePlayerUIElements();
+          
+          // Re-trigger timeline rebuild in case duration changed significantly
+          buildLyricsTimeline();
+          renderTimeline();
         }
       }, { once: true });
       
       audio.addEventListener('canplay', () => { audioOverlay.classList.add('hidden'); }, { once: true });
+      
+      audio.src = localUrl;
+      audio.load();
+      
+      // Fallback in case loadedmetadata already fired or readyState is already available
+      if (audio.readyState >= 1 && S.track) {
+          S.track.duration = audio.duration;
+          S.audioDuration = audio.duration;
+          updatePlayerUIElements();
+      }
 
       btnCompile.disabled = false;
       if(btnCloudExport) btnCloudExport.disabled = false;
