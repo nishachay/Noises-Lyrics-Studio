@@ -3643,7 +3643,6 @@ if (globalEditCover) {
         preview.classList.remove('hidden');
       }
       updatePlayerUIElements();
-      renderTimeline(); // re-render canvas to show new cover art
     }
   });
 }
@@ -3702,10 +3701,6 @@ if (localAudioUpload) {
           S.track.duration = audio.duration;
           S.audioDuration = audio.duration;
           updatePlayerUIElements();
-          
-          // Re-trigger timeline rebuild in case duration changed significantly
-          buildLyricsTimeline();
-          renderTimeline();
         }
       }, { once: true });
       
