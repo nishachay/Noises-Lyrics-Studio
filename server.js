@@ -389,6 +389,19 @@ function scoreYoutubeResult(y, targetTitle, targetArtist, targetDur) {
   if (channel.includes('vevo') || title.includes('official audio') || title.includes('official stream')) {
     score -= 15;
   }
+
+  // Penalize results that are missing any of the searched artists
+  // e.g. searching "JIHYO Hvnly" should not return a solo Jenevieve version
+  const artistTokens = (targetArtist || '').toLowerCase().split(/[\s,&+]+/);
+  for (let token of artistTokens) {
+    token = token.replace(/[^a-z0-9]/g, '');
+    if (token.length > 2 && token !== 'feat' && token !== 'and' && token !== 'the') {
+      if (!title.includes(token) && !channel.includes(token)) {
+        score += 200; // heavy penalty per missing artist name
+      }
+    }
+  }
+
   const isTargetLive = (targetTitle || '').toLowerCase().includes('live');
   const isTargetRemix = (targetTitle || '').toLowerCase().includes('remix');
   if (title.includes('live') && !isTargetLive) score += 50;
@@ -544,13 +557,23 @@ app.get('/api/search-metadata', async (req, res) => {
       const info = await getVideoInfo(q);
       if (info) {
         const meta = cleanYoutubeMeta(info.title, info.uploader);
+        // Try to get cleaner artwork from iTunes instead of raw YT thumbnail
+        let finalArtworkUrl = `https://i.ytimg.com/vi/${info.id}/hqdefault.jpg`;
+        let finalAlbum = '';
+        try {
+          const itunesHits = await searchItunes(`${meta.title} ${meta.artist}`);
+          if (itunesHits && itunesHits.length > 0) {
+            finalArtworkUrl = itunesHits[0].artworkUrl || finalArtworkUrl;
+            finalAlbum = itunesHits[0].album || '';
+          }
+        } catch (_) {}
         const results = [{
           source: 'youtube',
           title: meta.title,
           artist: meta.artist,
-          album: '',
+          album: finalAlbum,
           duration: info.duration,
-          artworkUrl: `https://i.ytimg.com/vi/${info.id}/hqdefault.jpg`,
+          artworkUrl: finalArtworkUrl,
           youtubeId: info.id
         }];
         const payload = { results };

@@ -279,6 +279,11 @@
               Upload Audio File
             </button>
             <input type="file" id="local-audio-upload" accept="audio/*" style="display:none">
+            <!-- Change Audio by YouTube URL -->
+            <div style="display:flex; gap:6px; margin-top:8px;">
+              <input type="text" id="change-audio-url" class="text-inline url-inline" placeholder="Paste YouTube URL to swap audio..." style="flex:1; font-size:11px; padding:7px 10px;">
+              <button id="btn-change-audio-url" class="btn-action" style="font-size:11px; padding:6px 10px; white-space:nowrap;">Swap</button>
+            </div>
           </div>
         </div>
       </div>
@@ -808,7 +813,7 @@
   </div>
 </div>
 
-<script src="app.js?v=9.0.3"></script>
+<script src="app.js?v=9.0.4"></script>
 </body>
 </html>
 

@@ -3647,6 +3647,43 @@ if (globalEditCover) {
   });
 }
 
+// Change audio by pasting a YouTube URL
+const btnChangeAudioUrl = document.getElementById('btn-change-audio-url');
+const changeAudioUrlInput = document.getElementById('change-audio-url');
+if (btnChangeAudioUrl && changeAudioUrlInput) {
+  btnChangeAudioUrl.addEventListener('click', async () => {
+    const raw = changeAudioUrlInput.value.trim();
+    if (!raw) return;
+    if (!S.track) { alert('Load a song first.'); return; }
+
+    // Extract video ID from URL or treat as raw ID
+    let videoId = raw;
+    try {
+      const u = new URL(raw);
+      if (u.hostname.includes('youtu.be')) videoId = u.pathname.slice(1);
+      else videoId = u.searchParams.get('v') || raw;
+    } catch (_) { /* raw is already an ID */ }
+
+    videoId = videoId.split('&')[0].trim();
+    if (!videoId) { alert('Could not extract a YouTube video ID from that URL.'); return; }
+
+    const origText = btnChangeAudioUrl.textContent;
+    btnChangeAudioUrl.textContent = '...';
+    btnChangeAudioUrl.disabled = true;
+
+    S.track.youtubeId = videoId;
+    S.track.customAudioPath = null; // clear any previously uploaded file
+    audio.dataset.videoId = ''; // force reinit
+    initAudio(videoId);
+    changeAudioUrlInput.value = '';
+    btnChangeAudioUrl.textContent = 'Swapped!';
+    setTimeout(() => {
+      btnChangeAudioUrl.textContent = origText;
+      btnChangeAudioUrl.disabled = false;
+    }, 2000);
+  });
+}
+
 const audioErrorModal = document.getElementById('audio-error-modal');
 const btnCopyErrorLink = document.getElementById('btn-copy-error-link');
 const btnErrorClose = document.getElementById('btn-error-close');
