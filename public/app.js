@@ -866,7 +866,8 @@ function drawLyrics(W, H, songTime) {
     const t = precomputedLyrics[i].time;
     if (t !== null && t !== undefined && t <= adjTime) {
       activeIdx = i;
-    } else {
+    } else if (t !== null && t !== undefined) {
+      // Only break when we hit a future timestamp — null times (plain lyrics) should not stop the scan
       break;
     }
   }
@@ -2499,7 +2500,8 @@ function resetTimings() {
 
 // ΓöÇΓöÇ Project State Autosave & Restore ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 function saveProjectState() {
-  if (!S.track || !S.track.youtubeId) return;
+  const trackKey = S.track?.youtubeId || S.track?.id;
+  if (!S.track || !trackKey) return;
   const state = {
     lyrics: S.lyrics,
     lyricsType: S.lyricsType,
@@ -2511,7 +2513,7 @@ function saveProjectState() {
     savedAt: Date.now()
   };
 
-  const key = `noises_lyric_project_${S.track.youtubeId}`;
+  const key = `noises_lyric_project_${S.track.youtubeId || S.track.id}`;
   const value = JSON.stringify(state);
 
   // LRU eviction: if quota exceeded, remove oldest saved project and retry
@@ -2550,8 +2552,9 @@ function saveProjectState() {
 
 
 function loadProjectState() {
-  if (!S.track || !S.track.youtubeId) return false;
-  const stored = localStorage.getItem(`noises_lyric_project_${S.track.youtubeId}`);
+  const trackKey = S.track?.youtubeId || S.track?.id;
+  if (!S.track || !trackKey) return false;
+  const stored = localStorage.getItem(`noises_lyric_project_${trackKey}`);
   if (!stored) return false;
   try {
     const state = JSON.parse(stored);
@@ -3642,6 +3645,8 @@ if (globalEditCover) {
         preview.src = url;
         preview.classList.remove('hidden');
       }
+      // Also reload the canvas background so the blurred art updates
+      loadArtwork(url);
       updatePlayerUIElements();
     }
   });
@@ -3673,7 +3678,7 @@ if (btnChangeAudioUrl && changeAudioUrlInput) {
 
     S.track.youtubeId = videoId;
     S.track.customAudioPath = null; // clear any previously uploaded file
-    audio.dataset.videoId = ''; // force reinit
+    if (audio) audio.dataset.videoId = ''; // force reinit (audio may be null if no song was played yet)
     initAudio(videoId);
     changeAudioUrlInput.value = '';
     btnChangeAudioUrl.textContent = 'Swapped!';

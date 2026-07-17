@@ -656,7 +656,7 @@ app.get('/api/search-metadata', async (req, res) => {
           artist: item.artist,
           album: item.albumName || '',
           duration: item.duration,
-          artworkUrl: item.artworkUrl || (item.id ? `https://i.ytimg.com/vi/${item.id}/hqdefault.jpg` : null)
+          artworkUrl: (item.artworkUrl && !item.artworkUrl.includes('ytimg.com')) ? item.artworkUrl : null
         });
       }
     });
@@ -676,7 +676,7 @@ app.get('/api/search-metadata', async (req, res) => {
             artist: meta.artist,
             album: '',
             duration: item.duration,
-            artworkUrl: item.id ? `https://i.ytimg.com/vi/${item.id}/hqdefault.jpg` : null
+            artworkUrl: null  // resolve-song will fetch from iTunes
           });
         }
       });
@@ -817,12 +817,25 @@ app.post('/api/resolve-song', async (req, res) => {
       }
     }
 
+    // Always prefer iTunes artwork — never use a YouTube thumbnail as the primary art
+    let resolvedArtworkUrl = artworkUrl;
+    const isYtThumb = artworkUrl && (artworkUrl.includes("ytimg.com") || artworkUrl.includes("yt.img.com"));
+    if (!artworkUrl || isYtThumb) {
+      try {
+        const itunesHits = await searchItunes(`${title} ${artist}`);
+        if (itunesHits && itunesHits.length > 0 && itunesHits[0].artworkUrl) {
+          resolvedArtworkUrl = itunesHits[0].artworkUrl;
+          console.log("[Resolve] Replaced YT thumbnail with iTunes artwork:", resolvedArtworkUrl.slice(0, 60));
+        }
+      } catch (_) {}
+    }
+
     const bestMatch = {
       title,
       artist,
       albumName: album || '',
       duration,
-      artworkUrl,
+      artworkUrl: resolvedArtworkUrl,
       youtubeThumbnail: bestYt?.id ? `https://i.ytimg.com/vi/${bestYt.id}/maxresdefault.jpg` : null,
       youtubeId: bestYt?.id || null,
       youtubeUrl: bestYt?.webpage_url || null,
