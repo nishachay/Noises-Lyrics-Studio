@@ -432,7 +432,11 @@ function loadArtwork(url) {
     getArtworkStats(img);
     prepareBlurSource(img);
   };
-  img.src = `/api/proxy?url=${encodeURIComponent(url)}`;
+  if (url.startsWith('data:') || url.startsWith('blob:') || url.startsWith('/') || url.includes(window.location.host)) {
+    img.src = url;
+  } else {
+    img.src = `/api/proxy?url=${encodeURIComponent(url)}`;
+  }
 }
 
 // ── Draw background (Apple Music style dynamic blurred art) ───────────────────
@@ -3634,7 +3638,20 @@ const btnLocalAudio = document.getElementById('btn-local-audio');
 const btnErrorUploadAudio = document.getElementById('btn-error-upload-audio');
 
 const localAudioUpload = document.getElementById('local-audio-upload');
-const globalEditCover = document.getElementById('edit-cover');
+const btnEditCoverToggle = document.getElementById('btn-edit-cover-toggle');
+const editCoverControls = document.getElementById('edit-cover-controls');
+const btnUploadCoverFile = document.getElementById('btn-upload-cover-file');
+const coverFileInput = document.getElementById('cover-file-input');
+
+if (btnEditCoverToggle && editCoverControls) {
+  btnEditCoverToggle.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const isHidden = editCoverControls.style.display === 'none';
+    editCoverControls.style.display = isHidden ? 'flex' : 'none';
+    if (isHidden && globalEditCover) globalEditCover.focus();
+  });
+}
+
 if (globalEditCover) {
   globalEditCover.addEventListener('input', (e) => {
     const url = e.target.value.trim();
@@ -3645,9 +3662,51 @@ if (globalEditCover) {
         preview.src = url;
         preview.classList.remove('hidden');
       }
-      // Also reload the canvas background so the blurred art updates
+      // Reload the canvas background and dynamic colors instantly from the new art
       loadArtwork(url);
       updatePlayerUIElements();
+    }
+  });
+}
+
+if (btnUploadCoverFile && coverFileInput) {
+  btnUploadCoverFile.addEventListener('click', () => coverFileInput.click());
+  coverFileInput.addEventListener('change', async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    
+    const prevBtnText = btnUploadCoverFile.textContent;
+    btnUploadCoverFile.textContent = '...';
+    btnUploadCoverFile.disabled = true;
+
+    try {
+      const formData = new FormData();
+      formData.append('cover', file);
+      const res = await fetch('/api/upload-cover', { method: 'POST', body: formData });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Upload failed');
+
+      const coverUrl = data.url;
+      if (globalEditCover) globalEditCover.value = coverUrl;
+      if (S.track) {
+        S.track.artworkUrl = coverUrl;
+        const preview = document.getElementById('edit-cover-preview');
+        if (preview) {
+          preview.src = coverUrl;
+          preview.classList.remove('hidden');
+        }
+        loadArtwork(coverUrl);
+        updatePlayerUIElements();
+      }
+      btnUploadCoverFile.textContent = 'Uploaded!';
+      setTimeout(() => {
+        btnUploadCoverFile.textContent = prevBtnText;
+        btnUploadCoverFile.disabled = false;
+      }, 2000);
+    } catch (err) {
+      alert('Failed to upload cover image: ' + err.message);
+      btnUploadCoverFile.textContent = prevBtnText;
+      btnUploadCoverFile.disabled = false;
     }
   });
 }

@@ -244,19 +244,23 @@
         <div class="inspector-scroll" style="padding: 16px; display: flex; flex-direction: column; gap: 16px;">
           <!-- Premium Track Info Card -->
           <div class="glass-card track-info-card" style="margin: 0;">
-            <div class="track-info-cover-wrapper">
+            <div class="track-info-cover-wrapper" id="cover-wrapper-clickable">
               <img id="edit-cover-preview" src="" alt="" class="track-info-cover hidden">
               <div class="track-info-cover-placeholder">
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
               </div>
-              <button class="btn-edit-cover" onclick="document.getElementById('edit-cover').style.display='block'; document.getElementById('edit-cover').focus()" aria-label="Edit Cover URL">
+              <button class="btn-edit-cover" id="btn-edit-cover-toggle" aria-label="Edit Cover Art" title="Change Cover Art">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
               </button>
             </div>
             <div class="track-info-text">
               <input type="text" id="edit-title" class="unified-input title-inline" placeholder="Song Title">
               <input type="text" id="edit-artist" class="unified-input artist-inline" placeholder="Artist Name">
-              <input type="text" id="edit-cover" class="text-inline url-inline" placeholder="Paste image URL..." style="display:none;">
+              <div id="edit-cover-controls" style="display:none; gap:6px; margin-top:6px; align-items:center;">
+                <input type="text" id="edit-cover" class="text-inline url-inline" placeholder="Paste image URL..." style="flex:1;">
+                <button id="btn-upload-cover-file" class="btn-action" style="font-size:10px; padding:5px 8px; white-space:nowrap;" title="Upload Image File">Upload</button>
+                <input type="file" id="cover-file-input" accept="image/*" style="display:none">
+              </div>
             </div>
           </div>
 
@@ -813,7 +817,7 @@
   </div>
 </div>
 
-<script src="app.js?v=9.0.5"></script>
+<script src="app.js?v=9.0.6"></script>
 </body>
 </html>
 

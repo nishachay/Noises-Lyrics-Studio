@@ -177,7 +177,21 @@ async function searchItunes(query) {
 // Downloads album artwork from iTunes CDN (square, proper aspect ratio).
 async function downloadArtwork(artworkUrl, id) {
   if (!artworkUrl) return null;
-  const dest = path.join(TEMP_DIR, `${id}_artwork.jpg`);
+  
+  // Check if artworkUrl is already a local file path
+  if (fs.existsSync(artworkUrl)) {
+    return path.resolve(artworkUrl);
+  }
+  const localTemp = path.join(__dirname, artworkUrl.replace(/^\//, ''));
+  if (fs.existsSync(localTemp)) {
+    return localTemp;
+  }
+
+  // Hash artworkUrl to avoid stale cache when cover art URL changes
+  const crypto = require('crypto');
+  const urlHash = crypto.createHash('md5').update(artworkUrl).digest('hex').slice(0, 8);
+  const dest = path.join(TEMP_DIR, `${id}_${urlHash}_artwork.jpg`);
+
   if (fs.existsSync(dest) && fs.statSync(dest).size > 1000) {
     console.log(`[Artwork] Artwork already downloaded (cached): ${dest}`);
     return dest;
@@ -187,7 +201,7 @@ async function downloadArtwork(artworkUrl, id) {
     const w   = fs.createWriteStream(dest);
     res.data.pipe(w);
     await new Promise((ok, fail) => { w.on('finish', ok); w.on('error', fail); });
-    if (fs.existsSync(dest) && fs.statSync(dest).size > 5000) {
+    if (fs.existsSync(dest) && fs.statSync(dest).size > 1000) {
       console.log(`[Artwork] Downloaded: ${dest}`);
       return dest;
     }

@@ -1374,6 +1374,25 @@ app.post('/api/upload-audio', upload.single('audio'), (req, res) => {
 });
 
 // ══════════════════════════════════════════════════════════════
+// POST /api/upload-cover
+// Manually upload a custom cover image file
+// ══════════════════════════════════════════════════════════════
+app.post('/api/upload-cover', upload.single('cover'), (req, res) => {
+  try {
+    if (!req.file) return res.status(400).json({ error: 'No image file uploaded' });
+    const ext = path.extname(req.file.originalname) || '.jpg';
+    const newFileName = req.file.filename + ext;
+    const newPath = path.join(__dirname, 'temp', newFileName);
+    fs.renameSync(req.file.path, newPath);
+    const relUrl = `/temp/${newFileName}`;
+    res.json({ success: true, url: relUrl, path: newPath });
+  } catch (err) {
+    console.error('[Upload Cover]', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ══════════════════════════════════════════════════════════════
 // POST /api/translate
 // Proxies Google Translate to avoid CORS
 // ══════════════════════════════════════════════════════════════
