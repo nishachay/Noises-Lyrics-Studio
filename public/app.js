@@ -364,7 +364,11 @@ const wrapCache = new Map();
 function startCanvasLoop() {
   if (rafId) cancelAnimationFrame(rafId);
   const frame = () => {
-    drawFrame();
+    try {
+      drawFrame();
+    } catch (err) {
+      console.error('[Canvas] drawFrame error (loop continues):', err);
+    }
     rafId = requestAnimationFrame(frame);
   };
   rafId = requestAnimationFrame(frame);
@@ -510,7 +514,10 @@ function drawSongInfo(W, H) {
   if (!S.track) return;
   const songTime = getCurrentTime();
   const dur = S.track.duration || 0;
-  const layoutAlpha = Math.max(0, Math.min(1, songTime) * Math.min(1, dur - songTime));
+  // Prevent alpha=0 when paused at start (songTime=0). Always show at full opacity.
+  const fadeIn  = Math.min(1, songTime + 1);       // 1 at t>=0 (instant in)
+  const fadeOut = dur > 1 ? Math.min(1, dur - songTime) : 1;
+  const layoutAlpha = Math.max(0, Math.min(1, fadeIn * fadeOut));
 
   ctx.save();
   ctx.globalAlpha = layoutAlpha;
@@ -794,7 +801,9 @@ function precomputeLyricsLayout(W, H, alignment) {
 function drawLeftSplitLayout(W, H, songTime) {
   if (!S.track) return;
   const dur = S.track.duration || 0;
-  const layoutAlpha = Math.max(0, Math.min(1, songTime) * Math.min(1, dur - songTime));
+  const fadeIn  = Math.min(1, songTime + 1);
+  const fadeOut = dur > 1 ? Math.min(1, dur - songTime) : 1;
+  const layoutAlpha = Math.max(0, Math.min(1, fadeIn * fadeOut));
   
   ctx.save();
   ctx.globalAlpha = layoutAlpha;
@@ -923,7 +932,9 @@ function drawLyrics(W, H, songTime) {
     }
 
     const dur = S.track ? S.track.duration : 0;
-    const layoutAlpha = Math.max(0, Math.min(1, songTime) * Math.min(1, dur - songTime));
+    const fadeIn  = Math.min(1, songTime + 1);
+    const fadeOut = dur > 1 ? Math.min(1, dur - songTime) : 1;
+    const layoutAlpha = Math.max(0, Math.min(1, fadeIn * fadeOut));
     const finalOpacity = stanzaOpacity * layoutAlpha;
 
     let activeSz = Math.min(Math.round(H * 0.065), 72);
@@ -1089,7 +1100,9 @@ function drawLyrics(W, H, songTime) {
   }
 
   const dur = S.track ? S.track.duration : 0;
-  const layoutAlpha = Math.max(0, Math.min(1, songTime) * Math.min(1, dur - songTime));
+  const fadeIn  = Math.min(1, songTime + 1);
+  const fadeOut = dur > 1 ? Math.min(1, dur - songTime) : 1;
+  const layoutAlpha = Math.max(0, Math.min(1, fadeIn * fadeOut));
 
   ctx.save();
   ctx.globalAlpha = opacity * layoutAlpha;
@@ -1265,7 +1278,8 @@ let resolving = false;
 
 function drawIntroLayout(W, H, now) {
   if (!S.track) return;
-  const a = now < 1 ? now : now < 2 ? 1 : 3 - now;
+  // Clamp: fully visible at now<=1, fades from 1 to 3 after that
+  const a = now < 1 ? 1 : Math.max(0, 3 - now);
   ctx.save();
   ctx.globalAlpha = Math.max(0, Math.min(1, a));
   drawSharedIntro(ctx, W, H, artImg, S.track.title || '', S.track.artist || '', FONT);

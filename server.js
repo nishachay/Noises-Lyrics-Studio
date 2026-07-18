@@ -1421,19 +1421,7 @@ app.post('/api/translate', async (req, res) => {
   }
 });
 
-app.get('/api/proxy', async (req, res) => {
-  const url = req.query.url;
-  if (!url) return res.status(400).send('No URL');
-  try {
-    const response = await axios({ method: 'get', url, responseType: 'stream' });
-    res.set('Access-Control-Allow-Origin', '*');
-    res.set('Content-Type', response.headers['content-type']);
-    res.set('Cache-Control', 'public, max-age=86400');
-    response.data.pipe(res);
-  } catch (err) {
-    res.status(500).send('Proxy error');
-  }
-});
+
 
 // ══════════════════════════════════════════════════════════════
 // GET /api/download/:fileId
