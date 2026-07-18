@@ -1323,6 +1323,18 @@ function drawFrame() {
   const H = canvas.height;
   const t = performance.now() / 1000;
 
+  // Hard-reset the canvas 2D context state each frame.
+  // This clears any leftover globalAlpha/transform/clip from a
+  // previous frame that ended with an unbalanced save/restore or
+  // an error caught by the try/catch wrapper.
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.globalAlpha = 1;
+  ctx.globalCompositeOperation = 'source-over';
+  ctx.shadowColor = 'transparent';
+  ctx.shadowBlur = 0;
+  ctx.shadowOffsetX = 0;
+  ctx.shadowOffsetY = 0;
+
   if (resolving) {
     drawLoadingState(W, H, t);
     return;
@@ -1332,6 +1344,7 @@ function drawFrame() {
     drawEmptyState(W, H, t);
     return;
   }
+
 
   // Update playhead if playing
   if (S.isPlaying) {
