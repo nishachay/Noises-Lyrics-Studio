@@ -432,10 +432,18 @@ function loadArtwork(url) {
     getArtworkStats(img);
     prepareBlurSource(img);
   };
-  if (url.startsWith('data:') || url.startsWith('blob:') || url.startsWith('/') || url.includes(window.location.host)) {
-    img.src = url;
-  } else {
+  img.onerror = () => {
+    console.warn('[Artwork] Image load error. Retrying raw URL fallback:', url);
+    if (img.src !== url && !url.startsWith('data:')) {
+      img.src = url;
+    }
+  };
+
+  const isExternalUrl = (url.startsWith('http://') || url.startsWith('https://')) && !url.includes(window.location.host);
+  if (isExternalUrl) {
     img.src = `/api/proxy?url=${encodeURIComponent(url)}`;
+  } else {
+    img.src = url.startsWith('/') || url.startsWith('http') || url.startsWith('data:') || url.startsWith('blob:') ? url : '/' + url;
   }
 }
 

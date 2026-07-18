@@ -902,6 +902,7 @@ function generateThumbnail(coverImg, colors, title, artist, font, alignment, wra
 // ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
 // MAIN RENDER ENGINE
 // ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+// ΓöÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
 function renderVideo({
   audioPath,
   artworkPath,        // Square album art from iTunes (or null)
@@ -963,9 +964,18 @@ function renderVideo({
         }
       }
 
-      if (artworkPath && fs.existsSync(artworkPath)) {
+      let resolvedArtPath = artworkPath;
+      if (resolvedArtPath && !fs.existsSync(resolvedArtPath)) {
+        const tempMatch = resolvedArtPath.match(/temp[/\\]([^?#]+)/);
+        if (tempMatch) {
+          const localFile = path.join(__dirname, 'temp', tempMatch[1]);
+          if (fs.existsSync(localFile)) resolvedArtPath = localFile;
+        }
+      }
+
+      if (resolvedArtPath && fs.existsSync(resolvedArtPath)) {
         try {
-          coverImg = await loadImage(artworkPath);
+          coverImg = await loadImage(resolvedArtPath);
           colors   = extractColors(coverImg);
           
           // Generate _blurCanvas exactly like app.js

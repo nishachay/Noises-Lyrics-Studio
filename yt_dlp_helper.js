@@ -178,13 +178,19 @@ async function searchItunes(query) {
 async function downloadArtwork(artworkUrl, id) {
   if (!artworkUrl) return null;
   
-  // Check if artworkUrl is already a local file path
-  if (fs.existsSync(artworkUrl)) {
-    return path.resolve(artworkUrl);
+  // Extract local file if artworkUrl is a relative or local server URL pointing to temp/
+  const tempMatch = artworkUrl.match(/temp[/\\]([^?#]+)/);
+  if (tempMatch) {
+    const tempFile = path.join(TEMP_DIR, tempMatch[1]);
+    if (fs.existsSync(tempFile) && fs.statSync(tempFile).size > 100) {
+      console.log(`[Artwork] Using local temp artwork: ${tempFile}`);
+      return path.resolve(tempFile);
+    }
   }
-  const localTemp = path.join(__dirname, artworkUrl.replace(/^\//, ''));
-  if (fs.existsSync(localTemp)) {
-    return localTemp;
+
+  // Check if artworkUrl is already an absolute file path on disk
+  if (fs.existsSync(artworkUrl) && fs.statSync(artworkUrl).size > 100) {
+    return path.resolve(artworkUrl);
   }
 
   // Hash artworkUrl to avoid stale cache when cover art URL changes
@@ -196,6 +202,21 @@ async function downloadArtwork(artworkUrl, id) {
     console.log(`[Artwork] Artwork already downloaded (cached): ${dest}`);
     return dest;
   }
+
+  // Support base64 data URIs directly
+  if (artworkUrl.startsWith('data:image/')) {
+    try {
+      const base64Data = artworkUrl.replace(/^data:image\/\w+;base64,/, '');
+      const buffer = Buffer.from(base64Data, 'base64');
+      fs.writeFileSync(dest, buffer);
+      if (fs.existsSync(dest) && fs.statSync(dest).size > 100) {
+        return dest;
+      }
+    } catch (e) {
+      console.warn('[Artwork] Base64 decode failed:', e.message);
+    }
+  }
+
   try {
     const res = await axios({ method: 'get', url: artworkUrl, responseType: 'stream', timeout: 10000 });
     const w   = fs.createWriteStream(dest);
@@ -231,6 +252,7 @@ async function downloadAudio(id, url) {
   await ensureYtdlp();
   const out = path.join(TEMP_DIR, `${id}.%(ext)s`);
   const baseArgs = [
+    ...getAuthArgs(),
     '-f', 'bestaudio[ext=m4a]/bestaudio/best',
     '-x', '--audio-format', 'm4a',
     '--ffmpeg-location', ffmpegInstaller.path,
