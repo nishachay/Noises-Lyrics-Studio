@@ -3695,6 +3695,7 @@ const btnLocalAudio = document.getElementById('btn-local-audio');
 const btnErrorUploadAudio = document.getElementById('btn-error-upload-audio');
 
 const localAudioUpload = document.getElementById('local-audio-upload');
+const globalEditCover = document.getElementById('edit-cover');
 const btnEditCoverToggle = document.getElementById('btn-edit-cover-toggle');
 const editCoverControls = document.getElementById('edit-cover-controls');
 const btnUploadCoverFile = document.getElementById('btn-upload-cover-file');
