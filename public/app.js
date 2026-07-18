@@ -403,34 +403,43 @@ function getArtworkStats(img) {
 }
 
 function prepareBlurSource(img) {
-  // 32x18 gives a super soft, premium gradient blur on stretch
-  blurCanvas = document.createElement('canvas');
-  blurCanvas.width = 32;
-  blurCanvas.height = 18;
-  const bx = blurCanvas.getContext('2d');
+  try {
+    // 32x18 gives a super soft, premium gradient blur on stretch
+    blurCanvas = document.createElement('canvas');
+    blurCanvas.width = 32;
+    blurCanvas.height = 18;
+    const bx = blurCanvas.getContext('2d');
 
-  // Apply dynamic saturation filter based on stats
-  if (artworkStats && artworkStats.saturation > 0.12) {
-    bx.filter = 'saturate(200%) brightness(110%)';
-  } else {
-    bx.filter = 'none';
+    // Apply dynamic saturation filter based on stats
+    if (artworkStats && artworkStats.saturation > 0.12) {
+      bx.filter = 'saturate(200%) brightness(110%)';
+    } else {
+      bx.filter = 'none';
+    }
+
+    const W = img.naturalWidth || 1000;
+    const H = img.naturalHeight || 1000;
+    const target = 32 / 18;
+    const ratio = W / H;
+    let sx, sy, sw, sh;
+    if (ratio > target) { sh = H; sw = H * target; sx = (W - sw) / 2; sy = 0; }
+    else                { sw = W; sh = W / target; sx = 0; sy = (H - sh) / 2; }
+    bx.drawImage(img, sx, sy, sw, sh, 0, 0, 32, 18);
+  } catch (e) {
+    console.warn('[Artwork] prepareBlurSource error:', e);
+    blurCanvas = null;
   }
-
-  const W = img.naturalWidth || 1000;
-  const H = img.naturalHeight || 1000;
-  const target = 32 / 18;
-  const ratio = W / H;
-  let sx, sy, sw, sh;
-  if (ratio > target) { sh = H; sw = H * target; sx = (W - sw) / 2; sy = 0; }
-  else                { sw = W; sh = W / target; sx = 0; sy = (H - sh) / 2; }
-  bx.drawImage(img, sx, sy, sw, sh, 0, 0, 32, 18);
 }
 
 // ── Load artwork image ────────────────────────────────────────────────────────
 function loadArtwork(url) {
   if (!url) { artImg = null; blurCanvas = null; artworkStats = null; return; }
   const img = new Image();
-  img.crossOrigin = 'anonymous';
+  const isExternalUrl = (url.startsWith('http://') || url.startsWith('https://')) && !url.includes(window.location.host);
+  if (isExternalUrl) {
+    img.crossOrigin = 'anonymous';
+  }
+
   img.onload = () => {
     artImg = img;
     getArtworkStats(img);
@@ -439,11 +448,11 @@ function loadArtwork(url) {
   img.onerror = () => {
     console.warn('[Artwork] Image load error. Retrying raw URL fallback:', url);
     if (img.src !== url && !url.startsWith('data:')) {
+      try { img.removeAttribute('crossOrigin'); } catch(_) {}
       img.src = url;
     }
   };
 
-  const isExternalUrl = (url.startsWith('http://') || url.startsWith('https://')) && !url.includes(window.location.host);
   if (isExternalUrl) {
     img.src = `/api/proxy?url=${encodeURIComponent(url)}`;
   } else {
@@ -453,43 +462,52 @@ function loadArtwork(url) {
 
 // ── Draw background (Apple Music style dynamic blurred art) ───────────────────
 function drawBackground(W, H, t) {
+  let drewBlur = false;
   if (blurCanvas) {
-    ctx.save();
-    ctx.imageSmoothingEnabled = true;
-    ctx.imageSmoothingQuality = 'high';
-    
-    const dw = Math.max(W, H) * 1.5;
-    
-    // Base layer (The original rotating blur texture)
-    ctx.save();
-    ctx.translate(W/2, H/2);
-    ctx.scale(1.2, 1.2);
-    ctx.drawImage(blurCanvas, -dw/2, -dw/2, dw, dw);
-    ctx.restore();
+    try {
+      ctx.save();
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = 'high';
+      
+      const dw = Math.max(W, H) * 1.5;
+      
+      // Base layer (The original rotating blur texture)
+      ctx.save();
+      ctx.translate(W/2, H/2);
+      ctx.scale(1.2, 1.2);
+      ctx.drawImage(blurCanvas, -dw/2, -dw/2, dw, dw);
+      ctx.restore();
 
-    // Fluid blob 1 (slower motion)
-    ctx.save();
-    ctx.globalCompositeOperation = 'source-over';
-    ctx.globalAlpha = 0.5;
-    ctx.translate(W/2 + Math.sin(t * 0.15) * W * 0.3, H/2 + Math.cos(t * 0.18) * H * 0.3);
-    ctx.rotate(t * 0.05);
-    ctx.scale(1.8, 1.8);
-    ctx.drawImage(blurCanvas, -dw/2, -dw/2, dw, dw);
-    ctx.restore();
+      // Fluid blob 1 (slower motion)
+      ctx.save();
+      ctx.globalCompositeOperation = 'source-over';
+      ctx.globalAlpha = 0.5;
+      ctx.translate(W/2 + Math.sin(t * 0.15) * W * 0.3, H/2 + Math.cos(t * 0.18) * H * 0.3);
+      ctx.rotate(t * 0.05);
+      ctx.scale(1.8, 1.8);
+      ctx.drawImage(blurCanvas, -dw/2, -dw/2, dw, dw);
+      ctx.restore();
 
-    // Fluid blob 2 (slower motion)
-    ctx.save();
-    ctx.globalCompositeOperation = 'source-over';
-    ctx.globalAlpha = 0.5;
-    ctx.translate(W/2 + Math.cos(t * 0.16) * W * 0.4, H/2 + Math.sin(t * 0.2) * H * 0.4);
-    ctx.rotate(-t * 0.06);
-    ctx.scale(2.2, 2.2);
-    ctx.drawImage(blurCanvas, -dw/2, -dw/2, dw, dw);
-    ctx.restore();
-    
-    ctx.restore();
-  } else {
-    ctx.fillStyle = '#111';
+      // Fluid blob 2 (slower motion)
+      ctx.save();
+      ctx.globalCompositeOperation = 'source-over';
+      ctx.globalAlpha = 0.5;
+      ctx.translate(W/2 + Math.cos(t * 0.16) * W * 0.4, H/2 + Math.sin(t * 0.2) * H * 0.4);
+      ctx.rotate(-t * 0.06);
+      ctx.scale(2.2, 2.2);
+      ctx.drawImage(blurCanvas, -dw/2, -dw/2, dw, dw);
+      ctx.restore();
+      
+      ctx.restore();
+      drewBlur = true;
+    } catch (e) {
+      console.warn('[Artwork] drawBackground blur draw error:', e);
+      blurCanvas = null;
+    }
+  }
+
+  if (!drewBlur) {
+    ctx.fillStyle = '#111115';
     ctx.fillRect(0, 0, W, H);
   }
 
@@ -528,25 +546,29 @@ function drawSongInfo(W, H) {
   const radius = Math.round(artSz * 0.16);
 
   if (artImg && artImg.complete) {
-    ctx.save();
-    ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
-    ctx.shadowBlur = Math.round(artSz * 0.25);
-    ctx.shadowOffsetY = Math.round(artSz * 0.1);
-    
-    ctx.beginPath();
-    ctx.roundRect(ax, ay, artSz, artSz, radius);
-    ctx.clip();
-    ctx.drawImage(artImg, ax, ay, artSz, artSz);
-    ctx.restore();
+    try {
+      ctx.save();
+      ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
+      ctx.shadowBlur = Math.round(artSz * 0.25);
+      ctx.shadowOffsetY = Math.round(artSz * 0.1);
+      
+      ctx.beginPath();
+      ctx.roundRect(ax, ay, artSz, artSz, radius);
+      ctx.clip();
+      ctx.drawImage(artImg, ax, ay, artSz, artSz);
+      ctx.restore();
 
-    // Elegant inner border for realism
-    ctx.save();
-    ctx.beginPath();
-    ctx.roundRect(ax, ay, artSz, artSz, radius);
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.12)';
-    ctx.lineWidth = 1;
-    ctx.stroke();
-    ctx.restore();
+      // Elegant inner border for realism
+      ctx.save();
+      ctx.beginPath();
+      ctx.roundRect(ax, ay, artSz, artSz, radius);
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.12)';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+      ctx.restore();
+    } catch (e) {
+      console.warn('[Artwork] drawSongInfo artImg draw error:', e);
+    }
   } else {
     ctx.save();
     ctx.fillStyle = '#111115';
