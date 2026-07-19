@@ -535,24 +535,25 @@ function drawLyricsPanel(ctx, W, H, time, wrappedLyrics, font, alignment, durati
     const stanzaStartTime = wrappedLyrics[startIndex] && typeof wrappedLyrics[startIndex].time === 'number' ? wrappedLyrics[startIndex].time : 0;
     const nextStanzaStartTime = endIndex < wrappedLyrics.length && typeof wrappedLyrics[endIndex].time === 'number' ? wrappedLyrics[endIndex].time : Infinity;
 
-    const elapsed = adjTime - stanzaStartTime;
-    const timeLeft = nextStanzaStartTime - adjTime;
-
-    const gapToNext = nextStanzaStartTime - stanzaStartTime;
-    let fadeDur = 0.4;
-    if (gapToNext < 0.8) {
-      fadeDur = 0; // Instant snap for fast stanzas
-    } else {
-      fadeDur = Math.min(0.4, gapToNext * 0.25);
+    let screenWasBlank = true;
+    if (startIndex > 0) {
+      const prevLine = wrappedLyrics[startIndex - 1];
+      const prevGap = stanzaStartTime - prevLine.time;
+      if (prevGap <= 2.0) screenWasBlank = false;
     }
 
+    const elapsed = adjTime - stanzaStartTime;
+    const timeLeft = nextStanzaStartTime - adjTime;
+    const gapToNext = nextStanzaStartTime - stanzaStartTime;
+
+    const fadeInDur = screenWasBlank ? 0.4 : 0.0;
+    const fadeOutDur = (gapToNext > 2.0) ? 0.4 : 0.0;
+
     let stanzaOpacity = 1.0;
-    if (fadeDur > 0) {
-      if (elapsed < fadeDur) {
-        stanzaOpacity = elapsed / fadeDur;
-      } else if (timeLeft < fadeDur) {
-        stanzaOpacity = Math.max(0, timeLeft / fadeDur);
-      }
+    if (elapsed < fadeInDur && fadeInDur > 0) {
+      stanzaOpacity = elapsed / fadeInDur;
+    } else if (timeLeft < fadeOutDur && fadeOutDur > 0) {
+      stanzaOpacity = Math.max(0, timeLeft / fadeOutDur);
     }
 
     const layoutAlpha = Math.max(0, Math.min(1, time) * Math.min(1, duration - time));
@@ -663,30 +664,32 @@ function drawLyricsPanel(ctx, W, H, time, wrappedLyrics, font, alignment, durati
 
   const line = wrappedLyrics[activeIdx];
   const activeSz = line.activeSz;
-  const hasNext = activeIdx + 1 < wrappedLyrics.length;
   const activeLine = wrappedLyrics[activeIdx];
+  const hasNext = activeIdx + 1 < wrappedLyrics.length;
+
+  const hasPrev = activeIdx > 0;
+  let screenWasBlank = true;
+  if (hasPrev) {
+    const prevLine = wrappedLyrics[activeIdx - 1];
+    const prevGap = activeLine.time - prevLine.time;
+    if (prevGap <= 2.0) screenWasBlank = false;
+  }
 
   const elapsed = adjTime - line.time;
   const timeLeft = showDuration - elapsed;
   const gapToNext = hasNext ? wrappedLyrics[activeIdx + 1].time - activeLine.time : showDuration;
 
-  let fadeDur = 0.3;
-  if (gapToNext < 0.8) {
-    fadeDur = 0; // Instant snap for fast single lines
-  } else {
-    fadeDur = Math.min(0.3, gapToNext * 0.25);
-  }
+  const fadeInDur = screenWasBlank ? 0.3 : 0.0;
+  const fadeOutDur = (gapToNext > 2.0) ? 0.3 : 0.0;
   const scaleDur = Math.min(0.2, gapToNext * 0.25);
 
   // Good smooth scale/fade animation
   const scale = scaleDur > 0 ? Math.min(1, 0.96 + (elapsed / scaleDur) * 0.04) : 1.0; 
   let opacity = 1.0;
-  if (fadeDur > 0) {
-    if (elapsed < fadeDur) {
-      opacity = Math.max(0, Math.min(1, elapsed / fadeDur)); // fade in
-    } else if (timeLeft < fadeDur) {
-      opacity = Math.max(0, timeLeft / fadeDur); // fade out
-    }
+  if (elapsed < fadeInDur && fadeInDur > 0) {
+    opacity = Math.max(0, Math.min(1, elapsed / fadeInDur)); // fade in
+  } else if (timeLeft < fadeOutDur && fadeOutDur > 0) {
+    opacity = Math.max(0, timeLeft / fadeOutDur); // fade out
   }
 
   const layoutAlpha = Math.max(0, Math.min(1, time) * Math.min(1, duration - time));
