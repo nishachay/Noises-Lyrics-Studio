@@ -2793,7 +2793,7 @@ async function startCompile(isShort = false, shortStartTime = 0, isSlideshow = f
 
   showView('progress');
 
-  const params = new URLSearchParams({
+  const payload = {
     id:             S.track.youtubeId || S.track.id || 'song',
     videoUrl:       `https://www.youtube.com/watch?v=${S.track.youtubeId || S.track.id || ''}`,
     title:          S.track.title,
@@ -2812,45 +2812,60 @@ async function startCompile(isShort = false, shortStartTime = 0, isSlideshow = f
     slideshowIndices: JSON.stringify(window.slideshowIndices || []),
     youtubeDuration: S.track.youtubeDuration || S.track.duration,
     itunesDuration:  S.track.duration,
-  });
-  if (S.track.customAudioPath) params.append('customAudioPath', S.track.customAudioPath);
+  };
+  if (S.track.customAudioPath) payload.customAudioPath = S.track.customAudioPath;
 
   if (activeSSE) activeSSE.close();
-  activeSSE = new EventSource(`/api/render?${params}`);
 
-  activeSSE.onmessage = e => {
-    const msg = JSON.parse(e.data);
-    if (msg.error) {
+  fetch('/api/render-job', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
+  })
+  .then(res => res.json())
+  .then(data => {
+    if (!data.jobId) throw new Error('No job ID returned');
+    
+    activeSSE = new EventSource(`/api/render?jobId=${data.jobId}`);
+    
+    activeSSE.onmessage = e => {
+      const msg = JSON.parse(e.data);
+      if (msg.error) {
+        activeSSE.close();
+        logLine(`ERROR: ${msg.error}`, 'error');
+        setProgress(lastPct, 'Failed.');
+        return;
+      }
+      switch (msg.status) {
+        case 'downloading': setProgress(msg.progress ?? 5, msg.message); break;
+        case 'rendering':   setProgress(msg.progress ?? 18, msg.message); break;
+        case 'progress':    setProgress(msg.progress, `Rendering... ${msg.progress}%`); break;
+        case 'error':
+          activeSSE.close();
+          setProgress(lastPct, 'Error!');
+          logLine(msg.error || 'Unknown error occurred', 'error');
+          showView('publish');
+          break;
+        case 'completed':
+          activeSSE.close();
+          setProgress(100, 'Done!');
+          logLine('Video ready!', 'ok');
+          showDone(msg);
+          break;
+      }
+      logLine(msg.message || '');
+    };
+
+    activeSSE.onerror = () => {
+      if (activeSSE.readyState === EventSource.CLOSED) return;
       activeSSE.close();
-      logLine(`ERROR: ${msg.error}`, 'error');
-      setProgress(lastPct, 'Failed.');
-      return;
-    }
-    switch (msg.status) {
-      case 'downloading': setProgress(msg.progress ?? 5, msg.message); break;
-      case 'rendering':   setProgress(msg.progress ?? 18, msg.message); break;
-      case 'progress':    setProgress(msg.progress, `Rendering... ${msg.progress}%`); break;
-      case 'error':
-        activeSSE.close();
-        setProgress(lastPct, 'Error!');
-        logLine(msg.error || 'Unknown error occurred', 'error');
-        showView('publish'); // Optionally go back or just let them read the log
-        break;
-      case 'completed':
-        activeSSE.close();
-        setProgress(100, 'Done!');
-        logLine('Video ready!', 'ok');
-        showDone(msg);
-        break;
-    }
-    logLine(msg.message || '');
-  };
-
-  activeSSE.onerror = () => {
-    if (activeSSE.readyState === EventSource.CLOSED) return;
-    activeSSE.close();
-    logLine('Connection lost.', 'error');
-  };
+      logLine('Connection lost.', 'error');
+    };
+  })
+  .catch(err => {
+    setProgress(lastPct, 'Failed to start job.');
+    logLine('Error starting render job: ' + err.message, 'error');
+  });
 }
 
 function setProgress(pct, label) {

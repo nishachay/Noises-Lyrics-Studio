@@ -1045,10 +1045,26 @@ app.get('/api/resolve', async (req, res) => {
 });
 
 // ══════════════════════════════════════════════════════════════
+// Render Jobs Store (for bypassing URL length limits)
+// ══════════════════════════════════════════════════════════════
+const renderJobs = {};
+
+app.post('/api/render-job', express.json({limit: '50mb'}), (req, res) => {
+  const jobId = Date.now().toString() + Math.random().toString(36).substr(2, 5);
+  renderJobs[jobId] = req.body;
+  res.json({ jobId });
+});
+
+// ══════════════════════════════════════════════════════════════
 // GET /api/render  (SSE stream)
 // ══════════════════════════════════════════════════════════════
 app.get('/api/render', async (req, res) => {
-  const { id, videoUrl, title, artist, duration: durStr, lyrics: lyricsParam, artworkUrl: rawArtworkUrl, offset: offsetStr, resolution, fps, alignment, youtubeDuration, itunesDuration, isSlideshow: isSlideshowStr, slideshowIndices: slideshowIndicesStr, customAudioPath, linesPerScreen } = req.query;
+  let params = req.query;
+  if (req.query.jobId && renderJobs[req.query.jobId]) {
+    params = renderJobs[req.query.jobId];
+  }
+
+  const { id, videoUrl, title, artist, duration: durStr, lyrics: lyricsParam, artworkUrl: rawArtworkUrl, offset: offsetStr, resolution, fps, alignment, youtubeDuration, itunesDuration, isSlideshow: isSlideshowStr, slideshowIndices: slideshowIndicesStr, customAudioPath, linesPerScreen } = params;
   if (!id || !videoUrl) return res.status(400).end('Missing id or videoUrl');
 
   res.writeHead(200, {
@@ -1063,7 +1079,13 @@ app.get('/api/render', async (req, res) => {
     const songTitle   = decodeURIComponent(title  || '') || 'Unknown';
     const songArtist  = decodeURIComponent(artist || '') || 'Unknown';
     const duration    = parseFloat(durStr) || 0;
-    const rawLyrics   = JSON.parse(decodeURIComponent(lyricsParam || '[]'));
+    let rawLyrics = [];
+    if (typeof lyricsParam === 'string') {
+      try { rawLyrics = JSON.parse(decodeURIComponent(lyricsParam || '[]')); } catch(e) {}
+    } else {
+      rawLyrics = lyricsParam || [];
+    }
+
     const artworkUrl  = rawArtworkUrl ? decodeURIComponent(rawArtworkUrl) : null;
 
     // Parse options
