@@ -1059,9 +1059,11 @@ app.post('/api/render-job', express.json({limit: '50mb'}), (req, res) => {
 // GET /api/render  (SSE stream)
 // ══════════════════════════════════════════════════════════════
 app.get('/api/render', async (req, res) => {
+  let isPostJob = false;
   let params = req.query;
   if (req.query.jobId && renderJobs[req.query.jobId]) {
     params = renderJobs[req.query.jobId];
+    isPostJob = true;
   }
 
   const { id, videoUrl, title, artist, duration: durStr, lyrics: lyricsParam, artworkUrl: rawArtworkUrl, offset: offsetStr, resolution, fps, alignment, youtubeDuration, itunesDuration, isSlideshow: isSlideshowStr, slideshowIndices: slideshowIndicesStr, customAudioPath, linesPerScreen } = params;
@@ -1075,18 +1077,26 @@ app.get('/api/render', async (req, res) => {
 
   const send = obj => res.write(`data: ${JSON.stringify(obj)}\n\n`);
 
+  // Helper to safely decode strings depending on whether they came from the URL or POST body
+  const safeDec = (val) => {
+    if (!val) return '';
+    if (isPostJob) return val; // POST payload is not URL encoded
+    try { return decodeURIComponent(val); } catch(e) { return val; }
+  };
+
   try {
-    const songTitle   = decodeURIComponent(title  || '') || 'Unknown';
-    const songArtist  = decodeURIComponent(artist || '') || 'Unknown';
+    const songTitle   = safeDec(title) || 'Unknown';
+    const songArtist  = safeDec(artist) || 'Unknown';
     const duration    = parseFloat(durStr) || 0;
+    
     let rawLyrics = [];
     if (typeof lyricsParam === 'string') {
-      try { rawLyrics = JSON.parse(decodeURIComponent(lyricsParam || '[]')); } catch(e) {}
+      try { rawLyrics = JSON.parse(safeDec(lyricsParam)); } catch(e) { console.error('Failed to parse lyrics JSON:', e.message); }
     } else {
       rawLyrics = lyricsParam || [];
     }
 
-    const artworkUrl  = rawArtworkUrl ? decodeURIComponent(rawArtworkUrl) : null;
+    const artworkUrl  = rawArtworkUrl ? safeDec(rawArtworkUrl) : null;
 
     // Parse options
     const offset      = parseFloat(offsetStr || '0');
@@ -1096,7 +1106,7 @@ app.get('/api/render', async (req, res) => {
     
     const isSlideshow = isSlideshowStr === 'true';
     let slideshowIndices = [];
-    try { if (slideshowIndicesStr) slideshowIndices = JSON.parse(decodeURIComponent(slideshowIndicesStr)); } catch(e) {}
+    try { if (slideshowIndicesStr) slideshowIndices = JSON.parse(safeDec(slideshowIndicesStr)); } catch(e) {}
 
     // 1. Download audio
     let audioPath = null;
