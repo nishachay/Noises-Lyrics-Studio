@@ -942,10 +942,13 @@ function drawLyrics(W, H, songTime) {
     const timeLeft = nextStanzaStartTime - adjTime;
 
     let stanzaOpacity = 1.0;
-    if (elapsed < 0.4) {
-      stanzaOpacity = elapsed / 0.4;
-    } else if (timeLeft < 0.4) {
-      stanzaOpacity = Math.max(0, timeLeft / 0.4);
+    const fadeDur = Math.min(0.4, (nextStanzaStartTime - stanzaStartTime) * 0.25);
+    if (fadeDur > 0) {
+      if (elapsed < fadeDur) {
+        stanzaOpacity = elapsed / fadeDur;
+      } else if (timeLeft < fadeDur) {
+        stanzaOpacity = Math.max(0, timeLeft / fadeDur);
+      }
     }
 
     const dur = S.track ? S.track.duration : 0;
@@ -1105,13 +1108,21 @@ function drawLyrics(W, H, songTime) {
   const elapsed = adjTime - line.time;
   const timeLeft = showDuration - elapsed;
 
+  const hasNext = activeIdx + 1 < precomputedLyrics.length;
+  const gapToNext = hasNext ? precomputedLyrics[activeIdx + 1].time - line.time : showDuration;
+
+  const fadeDur = Math.min(0.3, gapToNext * 0.25);
+  const scaleDur = Math.min(0.2, gapToNext * 0.25);
+
   // Good smooth scale/fade animation
-  const scale = Math.min(1, 0.96 + elapsed * 0.2); 
+  const scale = scaleDur > 0 ? Math.min(1, 0.96 + (elapsed / scaleDur) * 0.04) : 1.0; 
   let opacity = 1.0;
-  if (elapsed < 0.3) {
-    opacity = elapsed / 0.3; // fade in
-  } else if (timeLeft < 0.3) {
-    opacity = Math.max(0, timeLeft / 0.3); // fade out
+  if (fadeDur > 0) {
+    if (elapsed < fadeDur) {
+      opacity = Math.max(0, Math.min(1, elapsed / fadeDur)); // fade in
+    } else if (timeLeft < fadeDur) {
+      opacity = Math.max(0, timeLeft / fadeDur); // fade out
+    }
   }
 
   const dur = S.track ? S.track.duration : 0;
