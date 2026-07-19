@@ -3572,6 +3572,29 @@ async function runLyricsSearch(query) {
   }
 }
 
+function detectLanguage(text) {
+  if (!text) return '';
+  let hi = 0, ko = 0, ja = 0, ru = 0, zh = 0, lat = 0;
+  for (let i = 0; i < Math.min(text.length, 2000); i++) {
+    const c = text.charCodeAt(i);
+    if (c >= 0x0900 && c <= 0x097F) hi++;
+    else if (c >= 0xAC00 && c <= 0xD7A3) ko++;
+    else if (c >= 0x3040 && c <= 0x30FF) ja++;
+    else if (c >= 0x0400 && c <= 0x04FF) ru++;
+    else if (c >= 0x4E00 && c <= 0x9FFF) zh++;
+    else if ((c >= 0x0041 && c <= 0x005A) || (c >= 0x0061 && c <= 0x007A)) lat++;
+  }
+  const total = hi + ko + ja + ru + zh + lat;
+  if (total === 0) return '';
+  if (hi / total > 0.1) return 'HI';
+  if (ko / total > 0.1) return 'KO';
+  if (ja / total > 0.1) return 'JA';
+  if (ru / total > 0.1) return 'RU';
+  if (zh / total > 0.1) return 'ZH';
+  if (lat / total > 0.8) return 'EN';
+  return 'MIX';
+}
+
 function renderLyricsResults(results) {
   modalLyricsSearching.classList.add('hidden');
   modalLyricsEmpty.classList.add('hidden');
@@ -3590,9 +3613,16 @@ function renderLyricsResults(results) {
       : `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#666" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="9" x2="20" y2="9"/><line x1="4" y1="15" x2="20" y2="15"/><line x1="10" y1="3" x2="8" y2="21"/><line x1="16" y1="3" x2="14" y2="21"/></svg>`;
       
     // Text
+    const lang = detectLanguage(r.syncedLyrics || r.plainLyrics);
+    const langBadge = lang ? `<span style="background:rgba(255,255,255,0.1); color:#aaa; font-size: 9px; padding: 2px 4px; border-radius: 4px; font-weight: 600; margin-left: 6px;">${lang}</span>` : '';
+
     const metaHtml = `
       <div class="result-text">
-        <div class="result-title">${r.trackName} <span style="color:#666; font-size: 11px;">(${formatDur(r.duration)})</span></div>
+        <div class="result-title" style="display:flex; align-items:center;">
+          ${r.trackName} 
+          <span style="color:#666; font-size: 11px; margin-left: 6px;">(${formatDur(r.duration)})</span>
+          ${langBadge}
+        </div>
         <div class="result-artist">${r.artistName} &bull; ${r.albumName}</div>
       </div>
     `;
