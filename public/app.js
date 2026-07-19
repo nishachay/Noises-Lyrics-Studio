@@ -940,7 +940,7 @@ function drawLyrics(W, H, songTime) {
 
     let screenWasBlank = true;
     if (startIndex > 0) {
-      const prevLine = wrappedLyrics[startIndex - 1];
+      const prevLine = precomputedLyrics[startIndex - 1];
       const prevGap = stanzaStartTime - prevLine.time;
       if (prevGap <= 2.0) screenWasBlank = false;
     }
