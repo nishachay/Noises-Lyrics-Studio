@@ -941,8 +941,15 @@ function drawLyrics(W, H, songTime) {
     const elapsed = adjTime - stanzaStartTime;
     const timeLeft = nextStanzaStartTime - adjTime;
 
+    const gapToNext = nextStanzaStartTime - stanzaStartTime;
+    let fadeDur = 0.4;
+    if (gapToNext < 0.8) {
+      fadeDur = 0; // Instant snap for fast stanzas
+    } else {
+      fadeDur = Math.min(0.4, gapToNext * 0.25);
+    }
+
     let stanzaOpacity = 1.0;
-    const fadeDur = Math.min(0.4, (nextStanzaStartTime - stanzaStartTime) * 0.25);
     if (fadeDur > 0) {
       if (elapsed < fadeDur) {
         stanzaOpacity = elapsed / fadeDur;
@@ -1111,7 +1118,12 @@ function drawLyrics(W, H, songTime) {
   const hasNext = activeIdx + 1 < precomputedLyrics.length;
   const gapToNext = hasNext ? precomputedLyrics[activeIdx + 1].time - line.time : showDuration;
 
-  const fadeDur = Math.min(0.3, gapToNext * 0.25);
+  let fadeDur = 0.3;
+  if (gapToNext < 0.8) {
+    fadeDur = 0; // Instant snap for fast single lines
+  } else {
+    fadeDur = Math.min(0.3, gapToNext * 0.25);
+  }
   const scaleDur = Math.min(0.2, gapToNext * 0.25);
 
   // Good smooth scale/fade animation

@@ -538,17 +538,28 @@ function drawLyricsPanel(ctx, W, H, time, wrappedLyrics, font, alignment, durati
     const elapsed = adjTime - stanzaStartTime;
     const timeLeft = nextStanzaStartTime - adjTime;
 
+    const gapToNext = nextStanzaStartTime - stanzaStartTime;
+    let fadeDur = 0.4;
+    if (gapToNext < 0.8) {
+      fadeDur = 0; // Instant snap for fast stanzas
+    } else {
+      fadeDur = Math.min(0.4, gapToNext * 0.25);
+    }
+
     let stanzaOpacity = 1.0;
-    if (elapsed < 0.4) {
-      stanzaOpacity = elapsed / 0.4;
-    } else if (timeLeft < 0.4) {
-      stanzaOpacity = Math.max(0, timeLeft / 0.4);
+    if (fadeDur > 0) {
+      if (elapsed < fadeDur) {
+        stanzaOpacity = elapsed / fadeDur;
+      } else if (timeLeft < fadeDur) {
+        stanzaOpacity = Math.max(0, timeLeft / fadeDur);
+      }
     }
 
     const layoutAlpha = Math.max(0, Math.min(1, time) * Math.min(1, duration - time));
     const finalOpacity = stanzaOpacity * layoutAlpha;
 
     let activeSz = defaultActiveSz;
+    const N = linesPerScreen;
     if (N >= 4) {
       activeSz = Math.min(Math.round(H * 0.048), 50);
     } else if (N >= 3) {
@@ -652,16 +663,30 @@ function drawLyricsPanel(ctx, W, H, time, wrappedLyrics, font, alignment, durati
 
   const line = wrappedLyrics[activeIdx];
   const activeSz = line.activeSz;
+  const hasNext = activeIdx + 1 < wrappedLyrics.length;
+  const activeLine = wrappedLyrics[activeIdx];
 
   const elapsed = adjTime - line.time;
   const timeLeft = showDuration - elapsed;
+  const gapToNext = hasNext ? wrappedLyrics[activeIdx + 1].time - activeLine.time : showDuration;
 
-  const scale = Math.min(1, 0.96 + elapsed * 0.2); 
+  let fadeDur = 0.3;
+  if (gapToNext < 0.8) {
+    fadeDur = 0; // Instant snap for fast single lines
+  } else {
+    fadeDur = Math.min(0.3, gapToNext * 0.25);
+  }
+  const scaleDur = Math.min(0.2, gapToNext * 0.25);
+
+  // Good smooth scale/fade animation
+  const scale = scaleDur > 0 ? Math.min(1, 0.96 + (elapsed / scaleDur) * 0.04) : 1.0; 
   let opacity = 1.0;
-  if (elapsed < 0.3) {
-    opacity = elapsed / 0.3;
-  } else if (timeLeft < 0.3) {
-    opacity = Math.max(0, timeLeft / 0.3);
+  if (fadeDur > 0) {
+    if (elapsed < fadeDur) {
+      opacity = Math.max(0, Math.min(1, elapsed / fadeDur)); // fade in
+    } else if (timeLeft < fadeDur) {
+      opacity = Math.max(0, timeLeft / fadeDur); // fade out
+    }
   }
 
   const layoutAlpha = Math.max(0, Math.min(1, time) * Math.min(1, duration - time));
