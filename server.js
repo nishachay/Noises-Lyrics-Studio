@@ -397,9 +397,16 @@ function scoreYoutubeResult(y, targetTitle, targetArtist, targetDur) {
     token = token.replace(/[^a-z0-9]/g, '');
     if (token.length > 2 && token !== 'feat' && token !== 'and' && token !== 'the') {
       if (!title.includes(token) && !channel.includes(token)) {
-        score += 200; // heavy penalty per missing artist name
+        score += 3000; // heavy penalty per missing artist name to override topic bonus
       }
     }
+  }
+
+  // Bonus for exact artist name match in the channel name
+  const exactArtist = (targetArtist || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+  const exactChannel = channel.replace(/[^a-z0-9]/g, '');
+  if (exactArtist.length > 2 && exactChannel.includes(exactArtist)) {
+    score -= 500;
   }
 
   const isTargetLive = (targetTitle || '').toLowerCase().includes('live');
@@ -790,7 +797,7 @@ app.post('/api/resolve-song', async (req, res) => {
       if (!ytResult || ytResult.length === 0) {
         console.log('[Resolve Audio] YTMusic returned no results. Trying standard YouTube fallback...');
         try {
-          ytResult = await searchYoutube(query);
+          ytResult = await searchYoutube(query + " official audio");
         } catch (e) {
           console.error('[Resolve Audio] standard YouTube search failed:', e.message);
         }
@@ -1243,7 +1250,7 @@ app.get('/api/render', async (req, res) => {
 // ══════════════════════════════════════════════════════════════
 app.post('/api/generate-metadata', express.json(), async (req, res) => {
   try {
-    const { songArtist = '', songTitle = '', videoUrl = '', lyrics = [], hasTranslation = false } = req.body;
+    const { songArtist = '', songTitle = '', videoUrl = '', lyrics = [], hasTranslation = false, channel = 'Pop' } = req.body;
 
     // Auto-generate SEO Tags from YouTube autocomplete
     let seoKeywords = [];
@@ -1258,17 +1265,36 @@ app.post('/api/generate-metadata', express.json(), async (req, res) => {
     const youtubeTitle = `${songArtist} - ${songTitle} (Lyrics${hasTranslation ? ' & English Translation' : ''})`;
     const lyricLines   = lyrics.map(l => (typeof l === 'string' ? l : l.text || '')).join('\n');
 
-    const tags          = `#${songArtist.replace(/\s+/g,'')} #${songTitle.replace(/\s+/g,'')} #Lyrics #NoisesMusic #NoisesHipHop #NoisesDHH #NoisesKpop #NoisesGeet`;
+    // Channel specific configurations
+    const channelConfigs = {
+      'Pop': { tag: '#NoisesMusic', time: '2:00 PM IST', url: 'https://youtube.com/@NoisesMusic' },
+      'Hip-Hop': { tag: '#NoisesHipHop', time: '11:00 AM IST', url: 'https://youtube.com/@NoisesHipHop' },
+      'Hindi': { tag: '#NoisesGeet', time: '7:00 PM IST', url: 'https://youtube.com/@NoisesGeet' },
+      'DHH': { tag: '#NoisesDHH', time: '9:00 PM IST', url: 'https://youtube.com/@NoisesDHH' },
+      'K-Pop': { tag: '#NoisesKpop', time: '6:00 PM IST', url: 'https://youtube.com/@NoisesKpop' }
+    };
+    
+    const conf = channelConfigs[channel] || channelConfigs['Pop'];
+
+    const tags          = `#${songArtist.replace(/\s+/g,'')} #${songTitle.replace(/\s+/g,'')} #Lyrics ${conf.tag}`;
     const seoBlock      = seoKeywords.length > 0 ? `\n\nSearch terms:\n${seoKeywords.join(', ')}` : '';
     const disclaimer    = `\n\n────────────────────────────────────────────────────────────\n⚠️ COPYRIGHT DISCLAIMER:\nWe do not own the rights to this song. All credits go to the original artists and their respective record labels. This video is created for entertainment purposes only.\n────────────────────────────────────────────────────────────`;
-    const networkBlock  = `\n\n🌐 Follow Our Network:\n- Noises Music: https://youtube.com/@NoisesMusic\n- Noises HipHop: https://youtube.com/@NoisesHipHop\n- Noises DHH: https://youtube.com/@NoisesDHH\n- Noises Kpop: https://youtube.com/@NoisesKpop\n- Noises Geet: https://youtube.com/@NoisesGeet`;
+    const networkBlock  = `\n\n🌐 Follow Our Network:\n- ${channel}: ${conf.url}`;
 
     const youtubeDescription = `🎵 ${songArtist} - ${songTitle} (Lyrics Video)\n\n${videoUrl}\n\n${lyricLines}\n\n${tags}${seoBlock}${networkBlock}${disclaimer}`;
 
     const fallbackTags = `${songArtist}, ${songTitle}, Lyrics, Pop, Music`;
     const youtubeTags  = seoKeywords.length > 0 ? seoKeywords.join(', ') + `, ${fallbackTags}` : fallbackTags;
 
-    res.json({ youtubeTitle, youtubeDescription, youtubeTags });
+    // Generate a suggested upload time (Tomorrow at specific channel IST time)
+    const now = new Date();
+    const tomorrow = new Date(now);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const dateOptions = { weekday: 'long', month: 'short', day: 'numeric' };
+    const dateString = tomorrow.toLocaleDateString('en-US', dateOptions);
+    const youtubeUploadTime = `${dateString} @ ${conf.time}`;
+
+    res.json({ youtubeTitle, youtubeDescription, youtubeTags, youtubeUploadTime });
   } catch (err) {
     console.error('[Metadata] Error:', err.message);
     res.status(500).json({ error: err.message });

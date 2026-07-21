@@ -510,6 +510,13 @@
               <button class="btn-copy" data-target="yt-tags">Copy</button>
             </div>
           </div>
+          <div class="meta-field">
+            <label>Suggested Upload Time</label>
+            <div class="meta-field-wrapper">
+              <input id="yt-upload" type="text" readonly>
+              <button class="btn-copy" data-target="yt-upload">Copy</button>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -569,6 +576,19 @@
       
       <!-- LEFT COLUMN -->
       <div class="done-left-col" style="display: flex; flex-direction: column; gap: 24px;">
+        <!-- Target Channel -->
+        <div class="modal-section">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+            <div style="font-size: 11px; font-weight: 600; color: var(--text-2); text-transform: uppercase; letter-spacing: 0.5px;">Target Channel</div>
+          </div>
+          <select id="pm-target-channel" class="select-field" style="width:100%; padding: 10px; font-size: 13px; background: var(--surface-2); border: 1px solid var(--border); border-radius:6px; cursor:pointer;">
+            <option value="Pop" selected>Noises Music (Pop)</option>
+            <option value="Hip-Hop">Noises Hip-Hop</option>
+            <option value="Hindi">Noises Geet (Hindi)</option>
+            <option value="DHH">Noises DHH</option>
+            <option value="K-Pop">Noises K-Pop</option>
+          </select>
+        </div>
         
         <!-- Video Quality -->
         <div class="modal-section">
@@ -665,6 +685,13 @@
               <div class="meta-field-wrapper">
                 <textarea id="pm-yt-tags" rows="2" readonly placeholder="Load a song first..."></textarea>
                 <button class="btn-copy" data-target="pm-yt-tags">Copy</button>
+              </div>
+            </div>
+            <div class="meta-field">
+              <label>Suggested Upload Time</label>
+              <div class="meta-field-wrapper">
+                <input id="pm-yt-upload" type="text" readonly placeholder="Load a song first...">
+                <button class="btn-copy" data-target="pm-yt-upload">Copy</button>
               </div>
             </div>
             <button id="btn-regen-meta" class="btn-compile" style="width:100%; justify-content:center; background:transparent; border: 1px solid var(--border-2); color:var(--text-2); height:32px; font-size:12px; margin-top:6px; border-radius: 6px;">

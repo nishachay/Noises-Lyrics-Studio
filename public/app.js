@@ -1580,6 +1580,7 @@ async function fetchAndFillMetadata() {
   const pmTitle  = document.getElementById('pm-yt-title');
   const pmDesc   = document.getElementById('pm-yt-desc');
   const pmTags   = document.getElementById('pm-yt-tags');
+  const pmUpload = document.getElementById('pm-yt-upload');
   const regenBtn = document.getElementById('btn-regen-meta');
   if (!pmTitle) return;
 
@@ -1593,25 +1594,31 @@ async function fetchAndFillMetadata() {
       ? `https://www.youtube.com/watch?v=${S.track.youtubeId}`
       : '';
 
+    const channelSelect = document.getElementById('pm-target-channel');
+    const selectedChannel = channelSelect ? channelSelect.value : 'Pop';
+
     const res = await fetch('/api/generate-metadata', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ songArtist: S.track.artist, songTitle: S.track.title, videoUrl, lyrics, hasTranslation })
+      body: JSON.stringify({ songArtist: S.track.artist, songTitle: S.track.title, videoUrl, lyrics, hasTranslation, channel: selectedChannel })
     });
     const data = await res.json();
     if (data.error) throw new Error(data.error);
 
-    pmTitle.value = data.youtubeTitle       || '';
-    pmDesc.value  = data.youtubeDescription || '';
-    pmTags.value  = data.youtubeTags        || '';
+    pmTitle.value  = data.youtubeTitle       || '';
+    pmDesc.value   = data.youtubeDescription || '';
+    pmTags.value   = data.youtubeTags        || '';
+    if (pmUpload) pmUpload.value = data.youtubeUploadTime  || '';
 
     // Also pre-fill done-view fields so they're ready after rendering
     const ytTitleEl = document.getElementById('yt-title');
     const ytDescEl  = document.getElementById('yt-desc');
     const ytTagsEl  = document.getElementById('yt-tags');
+    const ytUploadEl = document.getElementById('yt-upload');
     if (ytTitleEl) ytTitleEl.value = data.youtubeTitle       || '';
     if (ytDescEl)  ytDescEl.value  = data.youtubeDescription || '';
     if (ytTagsEl)  ytTagsEl.value  = data.youtubeTags        || '';
+    if (ytUploadEl) ytUploadEl.value = data.youtubeUploadTime || '';
 
     if (statusEl) {
       statusEl.textContent = '✓ Ready';
@@ -1641,6 +1648,11 @@ if (btnPublishClose && publishModal) {
 const btnRegenMeta = document.getElementById('btn-regen-meta');
 if (btnRegenMeta) {
   btnRegenMeta.addEventListener('click', fetchAndFillMetadata);
+}
+
+const pmTargetChannel = document.getElementById('pm-target-channel');
+if (pmTargetChannel) {
+  pmTargetChannel.addEventListener('change', fetchAndFillMetadata);
 }
 
 document.querySelectorAll('.trending-tab').forEach(tab => {
@@ -2193,6 +2205,11 @@ function loadLyricsRecord(r) {
 }
 
 function loadLyricsByIdx(idx) {
+  // Reset offset on explicit load so previous lyric tweaks don't carry over
+  S.syncOffset = 0;
+  if(syncOffsetSlider) syncOffsetSlider.value = 0;
+  if(syncOffsetText) syncOffsetText.textContent = "0.00s";
+
   if (idx === 'custom') { setLyrics([], 'none', ''); return; }
   if (idx === 'yt-captions') {
     if (S.ytCaptionsList) {
@@ -3553,21 +3570,22 @@ let lyricsSearchHighlight = -1;
 
 btnManualLyrics.addEventListener('click', () => {
   lyricsModal.classList.remove('hidden');
-  modalLyricsQuery.value = S.track ? `${S.track.title} ${S.track.artist}` : '';
+  if (!modalLyricsQuery.value) {
+    modalLyricsQuery.value = S.track ? `${S.track.title} ${S.track.artist}` : '';
+    if (modalLyricsQuery.value) {
+      runLyricsSearch(modalLyricsQuery.value);
+    } else {
+      showLyricsEmpty('Type to search LRCLIB for synced lyrics.');
+    }
+  }
   modalLyricsQuery.focus();
   modalLyricsQuery.select();
-  if (modalLyricsQuery.value) {
-    runLyricsSearch(modalLyricsQuery.value);
-  } else {
-    showLyricsEmpty('Type to search LRCLIB for synced lyrics.');
-  }
 });
 
 btnLyricsModalClose.addEventListener('click', closeLyricsModal);
 
 function closeLyricsModal() {
   lyricsModal.classList.add('hidden');
-  modalLyricsQuery.value = '';
 }
 
 modalLyricsQuery.addEventListener('input', () => {
@@ -3699,6 +3717,9 @@ function selectManualLyrics(lrclibRecord) {
     syncedLyrics: lrclibRecord.syncedLyrics,
     plainLyrics: lrclibRecord.plainLyrics
   };
+  
+  // Remove existing record with same ID to prevent duplicates in dropdown
+  S.lyricsRecords = S.lyricsRecords.filter(r => r.id !== record.id);
   
   // Put it at the top of the records
   S.lyricsRecords.unshift(record);
