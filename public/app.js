@@ -2813,6 +2813,14 @@ scrubber.addEventListener('input', () => {
 let lastPct = 0;
 
 async function startCompile(isShort = false, shortStartTime = 0, isSlideshow = false) {
+  // Always sync S.lyrics with active lyricsEditor.value before compiling
+  if (lyricsEditor && lyricsEditor.value.trim()) {
+    const freshParsed = parseLRC(lyricsEditor.value);
+    if (freshParsed && freshParsed.length > 0) {
+      S.lyrics = freshParsed;
+    }
+  }
+
   if (!S.track || !S.lyrics.length) return;
   if (audio && !audio.paused) audio.pause();
   stopCanvasLoop();
