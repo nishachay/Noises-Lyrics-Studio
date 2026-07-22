@@ -1654,7 +1654,18 @@ if (btnRegenMeta) {
 
 const pmTargetChannel = document.getElementById('pm-target-channel');
 if (pmTargetChannel) {
-  pmTargetChannel.addEventListener('change', fetchAndFillMetadata);
+  pmTargetChannel.addEventListener('change', () => {
+    const channelTimes = {
+      'Pop': '2:00 PM IST',
+      'Hip-Hop': '11:00 AM IST',
+      'Hindi': '7:00 PM IST',
+      'DHH': '9:00 PM IST',
+      'K-Pop': '6:00 PM IST'
+    };
+    const badge = document.getElementById('pm-slot-badge');
+    if (badge) badge.textContent = `⏰ ${channelTimes[pmTargetChannel.value] || '2:00 PM IST'}`;
+    fetchAndFillMetadata();
+  });
 }
 
 document.querySelectorAll('.trending-tab').forEach(tab => {
