@@ -2163,6 +2163,7 @@ function autoSelectBestLyrics() {
 
 function loadLyricsRecord(r) {
   if (!r) return;
+  S.activeLyricsRecord = r;
   if (r.syncedLyrics) {
     setLyrics(parseLRC(r.syncedLyrics), 'synced', r.syncedLyrics);
   } else if (r.plainLyrics) {
@@ -2170,6 +2171,7 @@ function loadLyricsRecord(r) {
   } else {
     setLyrics([], 'none', '');
   }
+  populateLyricsSource();
 
   // Switch to Sync & Lyrics tab
   const syncBtn = document.querySelector('.tab-btn[data-tab="tab-sync"]');
@@ -3433,15 +3435,10 @@ async function fetchAndApplyCaptions(opts = {}) {
     S.ytCaptionsLRC = lrcContent;
     S.ytCaptionsList = data.lyrics;
 
-    // Check if the user changed the source dropdown while we were loading in background
-    if (lyricsSource.value === 'loading') {
+    // Check if the user changed the source dropdown or selected a record while loading in background
+    if (!S.activeLyricsRecord) {
       // Apply the captions immediately and set as active source
       setLyrics(data.lyrics, 'synced', lrcContent);
-
-      // Update Lyrics Source dropdown
-      lyricsSource.disabled = false;
-      populateLyricsSource();
-      lyricsSource.value = 'yt-captions';
 
       if (data.source === 'lyrics_search') {
         setStatus(`✓ ${data.lyrics.length} lines from lyrics video — applied`, 'ok');
@@ -3449,8 +3446,12 @@ async function fetchAndApplyCaptions(opts = {}) {
       } else {
         setStatus(`✓ ${data.lyrics.length} caption lines loaded — applied`, 'ok');
       }
+    } else {
+      console.log('[Captions] Background YT captions loaded without overwriting active selection');
+    }
 
-      lyricsEditor.placeholder = 'Paste LRC lyrics or plain text here…';
+    populateLyricsSource();
+    lyricsEditor.placeholder = 'Paste LRC lyrics or plain text here…';
       lyricsEditor.classList.add('pulse-attention');
       setTimeout(() => lyricsEditor.classList.remove('pulse-attention'), 2000);
 
@@ -3459,11 +3460,6 @@ async function fetchAndApplyCaptions(opts = {}) {
       if (syncBtn) syncBtn.click();
 
       saveProjectState();
-    } else {
-      // User changed source while loading. Just update dropdown options in case they want to switch to it later
-      lyricsSource.disabled = false;
-      populateLyricsSource();
-    }
 
   } catch (err) {
     S.ytCaptionsSearching = false;
