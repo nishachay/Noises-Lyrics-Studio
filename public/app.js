@@ -1652,9 +1652,23 @@ if (btnRegenMeta) {
   btnRegenMeta.addEventListener('click', fetchAndFillMetadata);
 }
 
-const pmTargetChannel = document.getElementById('pm-target-channel');
-if (pmTargetChannel) {
-  pmTargetChannel.addEventListener('change', () => {
+document.querySelectorAll('.pm-channel-card').forEach(card => {
+  card.addEventListener('click', () => {
+    document.querySelectorAll('.pm-channel-card').forEach(c => {
+      c.classList.remove('active');
+      c.style.borderColor = 'var(--border)';
+      c.style.background = 'var(--surface-2)';
+    });
+    card.classList.add('active');
+    card.style.borderColor = '#10b981';
+    card.style.background = 'rgba(16, 185, 129, 0.08)';
+
+    const val = card.dataset.value;
+    const pmTargetChannel = document.getElementById('pm-target-channel');
+    if (pmTargetChannel) {
+      pmTargetChannel.value = val;
+    }
+
     const channelTimes = {
       'Pop': '2:00 PM IST',
       'Hip-Hop': '11:00 AM IST',
@@ -1663,10 +1677,10 @@ if (pmTargetChannel) {
       'K-Pop': '6:00 PM IST'
     };
     const badge = document.getElementById('pm-slot-badge');
-    if (badge) badge.textContent = `⏰ ${channelTimes[pmTargetChannel.value] || '2:00 PM IST'}`;
+    if (badge) badge.textContent = `⏰ ${channelTimes[val] || '2:00 PM IST'}`;
     fetchAndFillMetadata();
   });
-}
+});
 
 document.querySelectorAll('.trending-tab').forEach(tab => {
   tab.addEventListener('click', (e) => {
