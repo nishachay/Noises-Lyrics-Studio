@@ -546,8 +546,8 @@ function drawLyricsPanel(ctx, W, H, time, wrappedLyrics, font, alignment, durati
     const timeLeft = nextStanzaStartTime - adjTime;
     const gapToNext = nextStanzaStartTime - stanzaStartTime;
 
-    const fadeInDur = screenWasBlank ? 0.4 : 0.0;
-    const fadeOutDur = (gapToNext > 2.0) ? 0.4 : 0.0;
+    const fadeInDur = screenWasBlank ? 0.35 : Math.min(0.2, gapToNext * 0.3);
+    const fadeOutDur = Math.min(0.35, Math.max(0.08, gapToNext * 0.4));
 
     let stanzaOpacity = 1.0;
     if (elapsed < fadeInDur && fadeInDur > 0) {
@@ -558,7 +558,6 @@ function drawLyricsPanel(ctx, W, H, time, wrappedLyrics, font, alignment, durati
 
     const layoutAlpha = Math.max(0, Math.min(1, time) * Math.min(1, duration - time));
     const finalOpacity = stanzaOpacity * layoutAlpha;
-
     let activeSz = defaultActiveSz;
     const N = linesPerScreen;
     if (N >= 4) {
@@ -679,8 +678,8 @@ function drawLyricsPanel(ctx, W, H, time, wrappedLyrics, font, alignment, durati
   const timeLeft = showDuration - elapsed;
   const gapToNext = hasNext ? wrappedLyrics[activeIdx + 1].time - activeLine.time : showDuration;
 
-  const fadeInDur = screenWasBlank ? 0.3 : 0.0;
-  const fadeOutDur = (gapToNext > 2.0) ? 0.3 : 0.0;
+  const fadeInDur = screenWasBlank ? 0.3 : Math.min(0.15, gapToNext * 0.3);
+  const fadeOutDur = Math.min(0.3, Math.max(0.08, gapToNext * 0.35));
   const scaleDur = Math.min(0.2, gapToNext * 0.25);
 
   // Good smooth scale/fade animation

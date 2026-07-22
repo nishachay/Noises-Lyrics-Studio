@@ -390,14 +390,27 @@ function scoreYoutubeResult(y, targetTitle, targetArtist, targetDur) {
     score -= 15;
   }
 
-  // Penalize results that are missing any of the searched artists
-  // e.g. searching "JIHYO Hvnly" should not return a solo Jenevieve version
-  const artistTokens = (targetArtist || '').toLowerCase().split(/[\s,&+]+/);
-  for (let token of artistTokens) {
-    token = token.replace(/[^a-z0-9]/g, '');
-    if (token.length > 2 && token !== 'feat' && token !== 'and' && token !== 'the') {
-      if (!title.includes(token) && !channel.includes(token)) {
-        score += 3000; // heavy penalty per missing artist name to override topic bonus
+  // Only heavily penalize if the PRIMARY artist is missing
+  const primaryArtist = (targetArtist || '').split(/[,&]/)[0].toLowerCase();
+  const primaryTokens = primaryArtist.split(/[\s+]+/)
+    .map(t => t.replace(/[^a-z0-9]/g, ''))
+    .filter(t => t.length > 2 && !['feat', 'and', 'the'].includes(t));
+
+  for (const token of primaryTokens) {
+    if (!title.includes(token) && !channel.includes(token)) {
+      score += 3000; // heavy penalty only for primary artist missing
+    }
+  }
+
+  // Bonus for secondary artists if they DO exist (no penalty if they don't)
+  const allTokens = (targetArtist || '').toLowerCase().split(/[\s,&+]+/)
+    .map(t => t.replace(/[^a-z0-9]/g, ''))
+    .filter(t => t.length > 2 && !['feat', 'and', 'the'].includes(t));
+
+  for (const token of allTokens) {
+    if (!primaryTokens.includes(token)) {
+      if (title.includes(token) || channel.includes(token)) {
+        score -= 200; // bonus for matching featured artists
       }
     }
   }

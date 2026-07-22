@@ -949,8 +949,8 @@ function drawLyrics(W, H, songTime) {
     const timeLeft = nextStanzaStartTime - adjTime;
     const gapToNext = nextStanzaStartTime - stanzaStartTime;
 
-    const fadeInDur = screenWasBlank ? 0.4 : 0.0;
-    const fadeOutDur = (gapToNext > 2.0) ? 0.4 : 0.0;
+    const fadeInDur = screenWasBlank ? 0.35 : Math.min(0.2, gapToNext * 0.3);
+    const fadeOutDur = Math.min(0.35, Math.max(0.08, gapToNext * 0.4));
 
     let stanzaOpacity = 1.0;
     if (elapsed < fadeInDur && fadeInDur > 0) {
@@ -1127,8 +1127,8 @@ function drawLyrics(W, H, songTime) {
   const hasNext = activeIdx + 1 < precomputedLyrics.length;
   const gapToNext = hasNext ? precomputedLyrics[activeIdx + 1].time - line.time : showDuration;
 
-  const fadeInDur = screenWasBlank ? 0.3 : 0.0;
-  const fadeOutDur = (gapToNext > 2.0) ? 0.3 : 0.0;
+  const fadeInDur = screenWasBlank ? 0.3 : Math.min(0.15, gapToNext * 0.3);
+  const fadeOutDur = Math.min(0.3, Math.max(0.08, gapToNext * 0.35));
   const scaleDur = Math.min(0.2, gapToNext * 0.25);
 
   // Good smooth scale/fade animation
@@ -2099,6 +2099,7 @@ function setLyrics(list, type, rawText) {
 }
 
 function populateLyricsSource() {
+  const activeValue = lyricsSource.value;
   lyricsSource.innerHTML = '';
   
   // 1. YouTube Auto-Captions if available
@@ -2124,11 +2125,11 @@ function populateLyricsSource() {
       if (a.syncedLyrics && !b.syncedLyrics) return -1;
       if (!a.syncedLyrics && b.syncedLyrics) return 1;
       
-      const trackAlbum = (S.track.albumName || '').toLowerCase();
+      const trackAlbum = (S.track?.albumName || '').toLowerCase();
       const albumBonusA = trackAlbum && (a.albumName || '').toLowerCase() === trackAlbum ? 10 : 0;
       const albumBonusB = trackAlbum && (b.albumName || '').toLowerCase() === trackAlbum ? 10 : 0;
 
-      const targetDur = S.track.youtubeDuration || S.track.duration || 0;
+      const targetDur = S.track?.youtubeDuration || S.track?.duration || 0;
       const durA = Math.abs((a.duration || 0) - targetDur) - albumBonusA;
       const durB = Math.abs((b.duration || 0) - targetDur) - albumBonusB;
       
@@ -2137,9 +2138,9 @@ function populateLyricsSource() {
 
     S.lyricsRecords.forEach((r, i) => {
       const o = document.createElement('option');
-      o.value = i;
+      o.value = i.toString();
       const type = r.syncedLyrics ? 'Synced' : r.plainLyrics ? 'Plain' : 'Instr';
-      const targetDur = S.track.youtubeDuration || S.track.duration || 0;
+      const targetDur = S.track?.youtubeDuration || S.track?.duration || 0;
       const diff = r.duration ? ` (${Math.abs(r.duration - targetDur)}s diff)` : '';
       o.textContent = `[${type}] ${r.trackName || r.artistName || '—'}${diff}`;
       lyricsSource.appendChild(o);
@@ -2158,6 +2159,11 @@ function populateLyricsSource() {
   custom.value = 'custom';
   custom.textContent = '📝 Paste Custom Lyrics';
   lyricsSource.appendChild(custom);
+
+  // Restore active selected value if it exists in the new options list
+  if (activeValue && Array.from(lyricsSource.options).some(o => o.value === activeValue)) {
+    lyricsSource.value = activeValue;
+  }
 }
 
 function autoSelectBestLyrics() {
@@ -3706,6 +3712,8 @@ function showLyricsEmpty(msg) {
 
 function selectManualLyrics(lrclibRecord) {
   closeLyricsModal();
+  S.ytCaptionsSearching = false;
+  lyricsSource.disabled = false;
   
   // Create a record format that matches our internal structure exactly
   const record = {
@@ -3744,9 +3752,13 @@ function selectManualLyrics(lrclibRecord) {
   // Rebuild the select
   populateLyricsSource();
   
+  // The array was just sorted by populateLyricsSource, so we must find the new index
+  const newIndex = S.lyricsRecords.findIndex(r => r.id === record.id).toString();
+  const validIdx = newIndex !== '-1' ? newIndex : '0';
+  
   // Select it
-  lyricsSource.value = "0";
-  loadLyricsByIdx("0");
+  lyricsSource.value = validIdx;
+  loadLyricsByIdx(validIdx);
   saveProjectState();
 }
 
