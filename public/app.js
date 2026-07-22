@@ -3784,30 +3784,35 @@ function selectManualLyrics(lrclibRecord) {
   S.ytCaptionsSearching = false;
   lyricsSource.disabled = false;
   
-  // Create a record format that matches our internal structure exactly
+  // Normalize record format with consistent id string format
+  const recordId = `lrclib_${lrclibRecord.id}`;
   const record = {
     source: 'LRCLIB (Manual)',
-    id: lrclibRecord.id,
+    id: recordId,
     duration: lrclibRecord.duration,
     trackName: lrclibRecord.trackName,
     artistName: lrclibRecord.artistName,
     syncedLyrics: lrclibRecord.syncedLyrics,
     plainLyrics: lrclibRecord.plainLyrics
   };
+
+  // 1. DIRECTLY LOAD THIS CHOSEN RECORD RIGHT NOW!
+  loadLyricsRecord(record);
   
-  // Remove existing record with same ID to prevent duplicates in dropdown
-  S.lyricsRecords = S.lyricsRecords.filter(r => r.id !== record.id);
+  // 2. Remove existing record with same ID to prevent duplicates in dropdown
+  S.lyricsRecords = S.lyricsRecords.filter(r => String(r.id) !== String(recordId) && String(r.id) !== String(lrclibRecord.id));
   
-  // Put it at the top of the records
+  // 3. Put our manually chosen record at the top of S.lyricsRecords
   S.lyricsRecords.unshift(record);
 
-  // Also push the rest of the search results to the end so they populate the dropdown
-  if (typeof manualLyricsResults !== 'undefined') {
+  // 4. Also push the rest of the search results to the end so they populate the dropdown
+  if (typeof manualLyricsResults !== 'undefined' && Array.isArray(manualLyricsResults)) {
     manualLyricsResults.forEach(r => {
-      if (r.id !== lrclibRecord.id && !S.lyricsRecords.some(ex => ex.id === r.id)) {
+      const altId = `lrclib_${r.id}`;
+      if (r.id !== lrclibRecord.id && !S.lyricsRecords.some(ex => String(ex.id) === String(altId) || String(ex.id) === String(r.id))) {
         S.lyricsRecords.push({
           source: 'LRCLIB (Manual Alt)',
-          id: r.id,
+          id: altId,
           duration: r.duration,
           trackName: r.trackName,
           artistName: r.artistName,
@@ -3818,17 +3823,15 @@ function selectManualLyrics(lrclibRecord) {
     });
   }
   
-  // Rebuild the select
+  // 5. Rebuild dropdown options
   populateLyricsSource();
   
-  // The array was just sorted by populateLyricsSource, so we must find the new index
-  const newIndex = S.lyricsRecords.findIndex(r => r.id === record.id).toString();
-  const validIdx = newIndex !== '-1' ? newIndex : '0';
-  
-  // Select it
+  // 6. Find index of our chosen record and update lyricsSource.value
+  const newIndex = S.lyricsRecords.findIndex(r => String(r.id) === String(recordId));
+  const validIdx = newIndex !== -1 ? newIndex.toString() : '0';
   lyricsSource.value = validIdx;
-  loadLyricsByIdx(validIdx);
   
+  // 7. Ensure SYNC tab is active & re-rendered
   const syncTabBtn = document.querySelector('.tab-btn[data-tab="tab-sync"]');
   if (syncTabBtn) syncTabBtn.click();
   renderLyricsList();
