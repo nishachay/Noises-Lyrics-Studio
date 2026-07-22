@@ -1913,7 +1913,8 @@ async function resolveSong(metadata) {
   if (btnShort) btnShort.disabled = true;
   if (btnSlideshow) btnSlideshow.disabled = true;
   lyricsSource.disabled = true;
-  lyricsSource.innerHTML = '<option>Resolving Audio & Lyrics...</option>';
+  const srcLabel = $('lyrics-source-label');
+  if (srcLabel) srcLabel.textContent = '⏳ Resolving Audio & Lyrics...';
 
   S.ytCaptionsLRC = null;
   S.ytCaptionsList = null;
@@ -1944,7 +1945,7 @@ async function resolveSong(metadata) {
     
     // Auto-fetch LRCLIB from frontend proxy
     if (S.lyricsRecords.length === 0 && S.track.title && S.track.artist) {
-      lyricsSource.innerHTML = '<option>Fetching Lyrics from LRCLIB...</option>';
+      if (srcLabel) srcLabel.textContent = '⏳ Fetching Lyrics from LRCLIB...';
       try {
         const getUrl = `/api/lyrics?title=${encodeURIComponent(S.track.title)}&artist=${encodeURIComponent(S.track.artist)}`;
         const controller = new AbortController();
@@ -2018,7 +2019,8 @@ async function resolveSong(metadata) {
   } catch (err) {
     console.error('[Resolve]', err.message);
     resolving = false;
-    lyricsSource.innerHTML = `<option>Resolve failed: ${err.message}</option>`;
+    const srcLabel = $('lyrics-source-label');
+    if (srcLabel) srcLabel.textContent = `✗ Resolve failed: ${err.message}`;
     alert(`Could not load song: ${err.message}`);
     return false;
   }
