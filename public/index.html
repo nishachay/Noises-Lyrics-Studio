@@ -273,9 +273,10 @@
                 <button id="btn-manual-lyrics" class="btn-action btn-glass" style="font-size: 11px; padding: 4px 8px;">LRCLIB</button>
               </div>
             </div>
-            <select id="lyrics-source" class="select-field glass-select" disabled>
-              <option>No song loaded — press Ctrl+K</option>
-            </select>
+            <div id="lyrics-source" class="select-field glass-select" style="display:flex; align-items:center; justify-content:space-between; cursor:pointer; height:36px; user-select:none;">
+              <span id="lyrics-source-label" style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis; font-size:12px; font-weight:500;">No song loaded — press Ctrl+K</span>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0; margin-left:8px; opacity:0.6;"><polyline points="6 9 12 15 18 9"/></svg>
+            </div>
             
             <!-- Upload Audio File Button -->
             <button id="btn-local-audio" class="btn-action primary" style="width:100%; margin-top:12px; justify-content:center;">

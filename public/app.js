@@ -2112,84 +2112,23 @@ function setLyrics(list, type, rawText) {
 }
 
 function populateLyricsSource() {
-  const activeValue = lyricsSource.value;
-  lyricsSource.innerHTML = '';
-  
-  // 1. YouTube Auto-Captions if available
-  if (S.ytCaptionsList && S.ytCaptionsList.length) {
-    const o = document.createElement('option');
-    o.value = 'yt-captions';
-    o.textContent = `[Synced] YouTube Auto-Captions (${S.ytCaptionsList.length} lines)`;
-    lyricsSource.appendChild(o);
-  }
+  const label = $('lyrics-source-label');
+  if (!label) return;
 
-  // 2. YouTube Auto-Captions searching state
   if (S.ytCaptionsSearching) {
-    const o = document.createElement('option');
-    o.value = 'loading';
-    o.disabled = true;
-    o.textContent = '⏳ Searching YouTube captions…';
-    lyricsSource.appendChild(o);
+    label.textContent = '⏳ Searching YouTube captions…';
+    return;
   }
 
-  // 3. Lyrics records from LRCLIB
-  if (S.lyricsRecords && S.lyricsRecords.length) {
-    // Deduplicate records by unique ID
-    const seenIds = new Set();
-    S.lyricsRecords = S.lyricsRecords.filter(r => {
-      const key = String(r.id || `${r.trackName}_${r.duration}`);
-      if (seenIds.has(key)) return false;
-      seenIds.add(key);
-      return true;
-    });
-
-    S.lyricsRecords.sort((a, b) => {
-      if (a.syncedLyrics && !b.syncedLyrics) return -1;
-      if (!a.syncedLyrics && b.syncedLyrics) return 1;
-      
-      const trackAlbum = (S.track?.albumName || '').toLowerCase();
-      const albumBonusA = trackAlbum && (a.albumName || '').toLowerCase() === trackAlbum ? 10 : 0;
-      const albumBonusB = trackAlbum && (b.albumName || '').toLowerCase() === trackAlbum ? 10 : 0;
-
-      const targetDur = S.track?.youtubeDuration || S.track?.duration || 0;
-      const durA = Math.abs((a.duration || 0) - targetDur) - albumBonusA;
-      const durB = Math.abs((b.duration || 0) - targetDur) - albumBonusB;
-      
-      return durA - durB;
-    });
-
-    S.lyricsRecords.forEach((r) => {
-      const o = document.createElement('option');
-      o.value = String(r.id);
-      const type = r.syncedLyrics ? 'Synced' : r.plainLyrics ? 'Plain' : 'Instr';
-      const targetDur = S.track?.youtubeDuration || S.track?.duration || 0;
-      const rawDiff = r.duration ? Math.abs(r.duration - targetDur) : 0;
-      const roundedDiff = Math.round(rawDiff);
-      const diffStr = r.duration 
-        ? (roundedDiff === 0 ? ' • Exact match' : ` • ${roundedDiff}s diff`) 
-        : '';
-      const labelName = r.trackName || r.artistName || 'Lyrics';
-      o.textContent = `[${type}] ${labelName}${diffStr}`;
-      lyricsSource.appendChild(o);
-    });
-  }
-
-  // 4. Fallback / Custom
-  if (!S.lyricsRecords.length && (!S.ytCaptionsList || !S.ytCaptionsList.length) && !S.ytCaptionsSearching) {
-    const o = document.createElement('option');
-    o.value = 'none';
-    o.textContent = 'No lyrics found — paste manually or use YT Captions';
-    lyricsSource.appendChild(o);
-  }
-
-  const custom = document.createElement('option');
-  custom.value = 'custom';
-  custom.textContent = '📝 Paste Custom Lyrics';
-  lyricsSource.appendChild(custom);
-
-  // Restore active selected value if it exists in the new options list
-  if (activeValue && Array.from(lyricsSource.options).some(o => o.value === activeValue)) {
-    lyricsSource.value = activeValue;
+  if (S.activeLyricsRecord) {
+    const type = S.activeLyricsRecord.syncedLyrics ? 'Synced' : 'Plain';
+    label.textContent = `[${type}] ${S.activeLyricsRecord.trackName || S.track?.title || 'Lyrics'}`;
+  } else if (S.ytCaptionsList && S.ytCaptionsList.length) {
+    label.textContent = `[Synced] YouTube Auto-Captions (${S.ytCaptionsList.length} lines)`;
+  } else if (S.lyrics && S.lyrics.length) {
+    label.textContent = `[Active] Current Lyrics (${S.lyrics.length} lines)`;
+  } else {
+    label.textContent = S.track ? 'Click to select / search lyrics...' : 'No song loaded — press Ctrl+K';
   }
 }
 
@@ -3652,19 +3591,24 @@ let lyricsSearchTimeout;
 let manualLyricsResults = [];
 let lyricsSearchHighlight = -1;
 
-btnManualLyrics.addEventListener('click', () => {
+function openLyricsModal() {
+  if (!S.track) return;
   lyricsModal.classList.remove('hidden');
-  if (!modalLyricsQuery.value) {
-    modalLyricsQuery.value = S.track ? `${S.track.title} ${S.track.artist}` : '';
-    if (modalLyricsQuery.value) {
-      runLyricsSearch(modalLyricsQuery.value);
-    } else {
-      showLyricsEmpty('Type to search LRCLIB for synced lyrics.');
-    }
+  modalLyricsQuery.value = S.track ? `${S.track.title} ${S.track.artist}` : '';
+  
+  if (S.lyricsRecords && S.lyricsRecords.length) {
+    renderLyricsResults(S.lyricsRecords);
+  } else if (modalLyricsQuery.value) {
+    runLyricsSearch(modalLyricsQuery.value);
+  } else {
+    showLyricsEmpty('Type to search LRCLIB for synced lyrics.');
   }
   modalLyricsQuery.focus();
   modalLyricsQuery.select();
-});
+}
+
+if (lyricsSource) lyricsSource.addEventListener('click', openLyricsModal);
+if (btnManualLyrics) btnManualLyrics.addEventListener('click', openLyricsModal);
 
 btnLyricsModalClose.addEventListener('click', closeLyricsModal);
 
@@ -3820,6 +3764,7 @@ function selectManualLyrics(lrclibRecord) {
   };
 
   // 1. DIRECTLY LOAD THIS CHOSEN RECORD RIGHT NOW!
+  S.activeLyricsRecord = record;
   loadLyricsRecord(record);
   
   // 2. Remove existing record with same ID to prevent duplicates in dropdown
