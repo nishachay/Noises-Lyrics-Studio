@@ -2163,8 +2163,13 @@ function populateLyricsSource() {
       o.value = String(r.id);
       const type = r.syncedLyrics ? 'Synced' : r.plainLyrics ? 'Plain' : 'Instr';
       const targetDur = S.track?.youtubeDuration || S.track?.duration || 0;
-      const diff = r.duration ? ` (${Math.abs(r.duration - targetDur)}s diff)` : '';
-      o.textContent = `[${type}] ${r.trackName || r.artistName || '—'}${diff}`;
+      const rawDiff = r.duration ? Math.abs(r.duration - targetDur) : 0;
+      const roundedDiff = Math.round(rawDiff);
+      const diffStr = r.duration 
+        ? (roundedDiff === 0 ? ' • Exact match' : ` • ${roundedDiff}s diff`) 
+        : '';
+      const labelName = r.trackName || r.artistName || 'Lyrics';
+      o.textContent = `[${type}] ${labelName}${diffStr}`;
       lyricsSource.appendChild(o);
     });
   }

@@ -653,6 +653,11 @@ body {
 }
 .select-field:focus { border-color: var(--accent); }
 .select-field:disabled { opacity: 0.4; cursor: not-allowed; }
+.select-field option {
+  background-color: #141419;
+  color: #ffffff;
+  padding: 8px 12px;
+}
 
 .text-field {
   width: 100%;
