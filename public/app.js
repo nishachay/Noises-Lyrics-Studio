@@ -3628,9 +3628,13 @@ async function runLyricsSearch(query) {
 
 function detectLanguage(text) {
   if (!text) return '';
+  // Strip LRC tags and metadata headers so we only analyze actual lyric text
+  const clean = text.replace(/\[.*?\]/g, '').trim();
+  if (!clean) return '';
+
   let hi = 0, ko = 0, ja = 0, ru = 0, zh = 0, lat = 0;
-  for (let i = 0; i < Math.min(text.length, 2000); i++) {
-    const c = text.charCodeAt(i);
+  for (let i = 0; i < Math.min(clean.length, 2000); i++) {
+    const c = clean.charCodeAt(i);
     if (c >= 0x0900 && c <= 0x097F) hi++;
     else if (c >= 0xAC00 && c <= 0xD7A3) ko++;
     else if (c >= 0x3040 && c <= 0x30FF) ja++;
@@ -3640,12 +3644,12 @@ function detectLanguage(text) {
   }
   const total = hi + ko + ja + ru + zh + lat;
   if (total === 0) return '';
-  if (hi / total > 0.1) return 'HI';
-  if (ko / total > 0.1) return 'KO';
-  if (ja / total > 0.1) return 'JA';
-  if (ru / total > 0.1) return 'RU';
-  if (zh / total > 0.1) return 'ZH';
-  if (lat / total > 0.8) return 'EN';
+  if (hi / total > 0.05) return 'HI';
+  if (ko / total > 0.05) return 'KO';
+  if (ja / total > 0.05) return 'JA';
+  if (ru / total > 0.05) return 'RU';
+  if (zh / total > 0.05) return 'ZH';
+  if (lat / total > 0.7) return 'EN';
   return 'MIX';
 }
 
@@ -3670,14 +3674,24 @@ function renderLyricsResults(results) {
     const lang = detectLanguage(r.syncedLyrics || r.plainLyrics);
     const langBadge = lang ? `<span style="background:rgba(255,255,255,0.1); color:#aaa; font-size: 9px; padding: 2px 4px; border-radius: 4px; font-weight: 600; margin-left: 6px;">${lang}</span>` : '';
 
+    // Extract first non-empty lyric line snippet
+    const rawContent = r.syncedLyrics || r.plainLyrics || '';
+    const cleanLines = rawContent
+      .split('\n')
+      .map(l => l.replace(/\[.*?\]/g, '').trim())
+      .filter(l => l.length > 0 && !l.toLowerCase().startsWith('artist:') && !l.toLowerCase().startsWith('title:'));
+    const snippet = cleanLines.length > 0 ? cleanLines[0] : '';
+    const snippetHtml = snippet ? `<div class="result-snippet" style="color:var(--text-3, #888); font-size: 11px; margin-top: 3px; font-style: italic; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 380px;">"${esc(snippet)}"</div>` : '';
+
     const metaHtml = `
-      <div class="result-text">
+      <div class="result-text" style="width: 100%; overflow: hidden;">
         <div class="result-title" style="display:flex; align-items:center;">
-          ${r.trackName} 
+          ${esc(r.trackName)} 
           <span style="color:#666; font-size: 11px; margin-left: 6px;">(${formatDur(r.duration)})</span>
           ${langBadge}
         </div>
-        <div class="result-artist">${r.artistName} &bull; ${r.albumName}</div>
+        <div class="result-artist">${esc(r.artistName)} &bull; ${esc(r.albumName || 'Single')}</div>
+        ${snippetHtml}
       </div>
     `;
     
@@ -3759,6 +3773,10 @@ function selectManualLyrics(lrclibRecord) {
   // Select it
   lyricsSource.value = validIdx;
   loadLyricsByIdx(validIdx);
+  
+  const syncTabBtn = document.querySelector('.tab-btn[data-tab="tab-sync"]');
+  if (syncTabBtn) syncTabBtn.click();
+  renderLyricsList();
   saveProjectState();
 }
 
