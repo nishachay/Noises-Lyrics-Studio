@@ -2134,6 +2134,15 @@ function populateLyricsSource() {
 
   // 3. Lyrics records from LRCLIB
   if (S.lyricsRecords && S.lyricsRecords.length) {
+    // Deduplicate records by unique ID
+    const seenIds = new Set();
+    S.lyricsRecords = S.lyricsRecords.filter(r => {
+      const key = String(r.id || `${r.trackName}_${r.duration}`);
+      if (seenIds.has(key)) return false;
+      seenIds.add(key);
+      return true;
+    });
+
     S.lyricsRecords.sort((a, b) => {
       if (a.syncedLyrics && !b.syncedLyrics) return -1;
       if (!a.syncedLyrics && b.syncedLyrics) return 1;
@@ -2149,9 +2158,9 @@ function populateLyricsSource() {
       return durA - durB;
     });
 
-    S.lyricsRecords.forEach((r, i) => {
+    S.lyricsRecords.forEach((r) => {
       const o = document.createElement('option');
-      o.value = i.toString();
+      o.value = String(r.id);
       const type = r.syncedLyrics ? 'Synced' : r.plainLyrics ? 'Plain' : 'Instr';
       const targetDur = S.track?.youtubeDuration || S.track?.duration || 0;
       const diff = r.duration ? ` (${Math.abs(r.duration - targetDur)}s diff)` : '';
@@ -2223,20 +2232,29 @@ function loadLyricsRecord(r) {
   if (syncBtn) syncBtn.click();
 }
 
-function loadLyricsByIdx(idx) {
+function loadLyricsByIdx(val) {
   // Reset offset on explicit load so previous lyric tweaks don't carry over
   S.syncOffset = 0;
   if(syncOffsetSlider) syncOffsetSlider.value = 0;
   if(syncOffsetText) syncOffsetText.textContent = "0.00s";
 
-  if (idx === 'custom') { setLyrics([], 'none', ''); return; }
-  if (idx === 'yt-captions') {
+  if (val === 'custom') { setLyrics([], 'none', ''); return; }
+  if (val === 'yt-captions') {
     if (S.ytCaptionsList) {
       setLyrics(S.ytCaptionsList, 'synced', S.ytCaptionsLRC);
     }
     return;
   }
-  const r = S.lyricsRecords[parseInt(idx, 10)];
+
+  // Lookup record by unique ID string, or fallback to array index
+  let r = S.lyricsRecords.find(rec => String(rec.id) === String(val));
+  if (!r) {
+    const idx = parseInt(val, 10);
+    if (!isNaN(idx) && S.lyricsRecords[idx]) {
+      r = S.lyricsRecords[idx];
+    }
+  }
+
   if (r) loadLyricsRecord(r);
 }
 
