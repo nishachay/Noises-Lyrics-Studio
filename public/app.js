@@ -59,6 +59,7 @@ const S = {
 
   // Lyrics scroll state
   currentScrollY: 0,
+  editTextMode: false,
 
   // Virtual Timeline
   videoTime: 0,
@@ -94,6 +95,7 @@ const modalLyricsSearching= $('modal-lyrics-searching');
 const modalLyricsEmpty    = $('modal-lyrics-empty');
 const btnLyricsModalClose = $('btn-lyrics-modal-close');
 const btnManualLyrics     = $('btn-manual-lyrics');
+const btnEditTextMode     = $('btn-edit-text-mode');
 
 // Header
 const headerTrackContent = $('header-track-content');
@@ -2263,12 +2265,30 @@ function renderLyricsList() {
     div.dataset.idx = idx;
 
     const textWrap = document.createElement('div');
-    textWrap.style.cssText = 'display:flex;flex-direction:column;flex:1;gap:4px;';
+    textWrap.style.cssText = 'display:flex;flex-direction:column;flex:1;gap:4px;overflow:hidden;';
     
-    const textEl = document.createElement('span');
-    textEl.className = 'line-text';
-    textEl.textContent = line.text;
-    textWrap.appendChild(textEl);
+    if (S.editTextMode) {
+      const textInput = document.createElement('input');
+      textInput.type = 'text';
+      textInput.className = 'line-text-input';
+      textInput.value = line.text;
+      textInput.style.cssText = 'width:100%; background:var(--surface-2, rgba(255,255,255,0.06)); border:1px solid var(--border, rgba(255,255,255,0.15)); color:#fff; border-radius:4px; padding:4px 8px; font-size:13px; font-weight:600;';
+      
+      textInput.addEventListener('click', e => e.stopPropagation());
+      textInput.addEventListener('dblclick', e => e.stopPropagation());
+      textInput.addEventListener('input', e => {
+        line.text = e.target.value;
+        lyricsEditor.value = lyricsToLRC(S.lyrics);
+        precomputeLyricsLayout(canvas.width, canvas.height, selectAlign.value);
+      });
+      textInput.addEventListener('change', () => saveProjectState());
+      textWrap.appendChild(textInput);
+    } else {
+      const textEl = document.createElement('span');
+      textEl.className = 'line-text';
+      textEl.textContent = line.text;
+      textWrap.appendChild(textEl);
+    }
 
     if (!S.tapMode) {
       if (S.showTranslations) {
@@ -2283,6 +2303,7 @@ function renderLyricsList() {
           precomputeLyricsLayout(canvas.width, canvas.height, selectAlign.value);
         });
         transInput.addEventListener('click', e => e.stopPropagation());
+        transInput.addEventListener('dblclick', e => e.stopPropagation());
         textWrap.appendChild(transInput);
       } else if (line.translation) {
         const transEl = document.createElement('span');
@@ -2303,6 +2324,7 @@ function renderLyricsList() {
     timeEl.addEventListener('focus', () => timeEl.style.borderColor = 'rgba(255,255,255,0.8)');
     timeEl.addEventListener('blur', () => timeEl.style.borderColor = 'rgba(255,255,255,0.15)');
     timeEl.addEventListener('click', e => e.stopPropagation());
+    timeEl.addEventListener('dblclick', e => e.stopPropagation());
     timeEl.addEventListener('change', e => {
       const val = e.target.value.trim();
       let parsedTime = null;
@@ -2361,8 +2383,8 @@ function renderLyricsList() {
     div.appendChild(textWrap);
     div.appendChild(controls);
 
-    // Double-Click to seek
-    if (!S.tapMode && isSynced) {
+    // Double-Click to seek (only in normal mode, not during edit mode)
+    if (!S.tapMode && isSynced && !S.editTextMode) {
       div.addEventListener('dblclick', () => {
         const t = Math.max(0, line.time - S.syncOffset);
         seekTo(t);
@@ -2455,6 +2477,9 @@ function updateSyncHighlight(curTime, force = false) {
   });
 
   if (activeIdx >= 0) {
+    if (S.editTextMode || (document.activeElement && lyricsList.contains(document.activeElement))) {
+      return; // Do not auto-scroll list while editing text
+    }
     const activeEl = lyricsList.querySelector('.sync-line.active');
     if (activeEl) {
       const containerHeight = lyricsList.clientHeight;
@@ -2469,6 +2494,7 @@ function updateSyncHighlight(curTime, force = false) {
 
 let scrollAnimId = null;
 function triggerSmoothScroll() {
+  if (S.editTextMode || (document.activeElement && lyricsList.contains(document.activeElement))) return;
   if (scrollAnimId) return;
   if (S.currentScrollTop === undefined || S.currentScrollTop === null) {
     S.currentScrollTop = lyricsList.scrollTop;
@@ -3064,6 +3090,16 @@ lyricsSource.addEventListener('change', () => {
   loadLyricsByIdx(lyricsSource.value);
   saveProjectState();
 });
+
+// Toggle Edit Text Mode
+if (btnEditTextMode) {
+  btnEditTextMode.addEventListener('click', () => {
+    S.editTextMode = !S.editTextMode;
+    btnEditTextMode.classList.toggle('active', S.editTextMode);
+    btnEditTextMode.textContent = S.editTextMode ? '🔒 Done Editing' : '✏️ Edit Text';
+    renderLyricsList();
+  });
+}
 
 // Tap sync
 btnTapToggle.addEventListener('click', () => {
