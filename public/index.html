@@ -581,45 +581,55 @@
         <!-- Target Channel -->
         <div class="modal-section">
           <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-            <div style="font-size: 11px; font-weight: 600; color: var(--text-2); text-transform: uppercase; letter-spacing: 0.5px;">Select Target Channel</div>
+            <div style="display:flex; align-items:center; gap:8px;">
+              <div style="font-size: 11px; font-weight: 600; color: var(--text-2); text-transform: uppercase; letter-spacing: 0.5px;">Select Target Channel</div>
+              <button id="btn-pm-channel-settings" style="background:transparent; border:none; cursor:pointer; color:var(--text-3); padding:2px; border-radius:4px; display:flex; align-items:center; justify-content:center;" title="Edit Target Times">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+              </button>
+            </div>
             <div id="pm-slot-badge" style="font-size: 11px; font-weight: 700; color: #10b981; background: rgba(16, 185, 129, 0.12); padding: 2px 8px; border-radius: 4px;">⏰ 2:00 PM IST</div>
+          </div>
+
+          <!-- Settings panel (hidden by default) -->
+          <div id="pm-channel-editor" style="display:none; margin-bottom: 12px; background: var(--surface-2); padding: 12px; border: 1px solid var(--border); border-radius: 8px;">
+            <div style="font-size: 10px; font-weight: 700; color: var(--text-2); margin-bottom: 8px;">EDIT UPLOAD TIMINGS (IST)</div>
+            <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px;">
+              <input type="text" id="edit-time-Pop" class="line-text-input" style="font-size: 11px; padding: 4px 6px;" value="2:00 PM IST">
+              <input type="text" id="edit-time-Hip-Hop" class="line-text-input" style="font-size: 11px; padding: 4px 6px;" value="11:00 AM IST">
+              <input type="text" id="edit-time-Hindi" class="line-text-input" style="font-size: 11px; padding: 4px 6px;" value="7:00 PM IST">
+              <input type="text" id="edit-time-DHH" class="line-text-input" style="font-size: 11px; padding: 4px 6px;" value="9:00 PM IST">
+              <input type="text" id="edit-time-K-Pop" class="line-text-input" style="font-size: 11px; padding: 4px 6px;" value="6:00 PM IST">
+            </div>
+            <div style="text-align: right; margin-top: 10px;">
+              <button id="btn-pm-save-times" class="btn-action btn-glass" style="font-size: 11px; padding: 4px 10px; min-width: auto;">Lock Timings</button>
+            </div>
           </div>
 
           <div class="channel-card-grid" style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px;">
             
-            <div class="pm-channel-card active" data-value="Pop" style="background: rgba(16, 185, 129, 0.08); border: 1.5px solid #10b981; border-radius: 8px; padding: 10px 8px; cursor: pointer; text-align: center; transition: all 0.15s;">
-              <div style="font-size: 16px; margin-bottom: 3px;">🎵</div>
+            <div class="pm-channel-card active" data-value="Pop" style="background: rgba(16, 185, 129, 0.08); border: 1.5px solid #10b981; border-radius: 8px; padding: 12px 8px; cursor: pointer; text-align: center; transition: all 0.15s; display: flex; flex-direction: column; justify-content: center; min-height: 60px;">
               <div style="font-size: 11px; font-weight: 700; color: #fff;">Noises Music</div>
-              <div style="font-size: 9px; color: var(--text-3); margin-top: 2px;">Pop Genre</div>
-              <div style="font-size: 9px; font-weight: 700; color: #10b981; margin-top: 6px; background: rgba(16,185,129,0.12); padding: 2px 4px; border-radius: 4px;">2:00 PM IST</div>
+              <div class="card-time-display" style="font-size: 9px; font-weight: 700; color: #10b981; margin-top: 6px; background: rgba(16,185,129,0.12); padding: 2px 4px; border-radius: 4px; display: inline-block; width: max-content; margin-left: auto; margin-right: auto;">2:00 PM IST</div>
             </div>
 
-            <div class="pm-channel-card" data-value="Hip-Hop" style="background: var(--surface-2); border: 1px solid var(--border); border-radius: 8px; padding: 10px 8px; cursor: pointer; text-align: center; transition: all 0.15s;">
-              <div style="font-size: 16px; margin-bottom: 3px;">🎤</div>
+            <div class="pm-channel-card" data-value="Hip-Hop" style="background: var(--surface-2); border: 1px solid var(--border); border-radius: 8px; padding: 12px 8px; cursor: pointer; text-align: center; transition: all 0.15s; display: flex; flex-direction: column; justify-content: center; min-height: 60px;">
               <div style="font-size: 11px; font-weight: 700; color: #fff;">Noises Hip-Hop</div>
-              <div style="font-size: 9px; color: var(--text-3); margin-top: 2px;">Hip-Hop / Rap</div>
-              <div style="font-size: 9px; font-weight: 700; color: #10b981; margin-top: 6px; background: rgba(16,185,129,0.12); padding: 2px 4px; border-radius: 4px;">11:00 AM IST</div>
+              <div class="card-time-display" style="font-size: 9px; font-weight: 700; color: #10b981; margin-top: 6px; background: rgba(16,185,129,0.12); padding: 2px 4px; border-radius: 4px; display: inline-block; width: max-content; margin-left: auto; margin-right: auto;">11:00 AM IST</div>
             </div>
 
-            <div class="pm-channel-card" data-value="Hindi" style="background: var(--surface-2); border: 1px solid var(--border); border-radius: 8px; padding: 10px 8px; cursor: pointer; text-align: center; transition: all 0.15s;">
-              <div style="font-size: 16px; margin-bottom: 3px;">🪕</div>
+            <div class="pm-channel-card" data-value="Hindi" style="background: var(--surface-2); border: 1px solid var(--border); border-radius: 8px; padding: 12px 8px; cursor: pointer; text-align: center; transition: all 0.15s; display: flex; flex-direction: column; justify-content: center; min-height: 60px;">
               <div style="font-size: 11px; font-weight: 700; color: #fff;">Noises Geet</div>
-              <div style="font-size: 9px; color: var(--text-3); margin-top: 2px;">Hindi Music</div>
-              <div style="font-size: 9px; font-weight: 700; color: #10b981; margin-top: 6px; background: rgba(16,185,129,0.12); padding: 2px 4px; border-radius: 4px;">7:00 PM IST</div>
+              <div class="card-time-display" style="font-size: 9px; font-weight: 700; color: #10b981; margin-top: 6px; background: rgba(16,185,129,0.12); padding: 2px 4px; border-radius: 4px; display: inline-block; width: max-content; margin-left: auto; margin-right: auto;">7:00 PM IST</div>
             </div>
 
-            <div class="pm-channel-card" data-value="DHH" style="background: var(--surface-2); border: 1px solid var(--border); border-radius: 8px; padding: 10px 8px; cursor: pointer; text-align: center; transition: all 0.15s;">
-              <div style="font-size: 16px; margin-bottom: 3px;">🔥</div>
+            <div class="pm-channel-card" data-value="DHH" style="background: var(--surface-2); border: 1px solid var(--border); border-radius: 8px; padding: 12px 8px; cursor: pointer; text-align: center; transition: all 0.15s; display: flex; flex-direction: column; justify-content: center; min-height: 60px;">
               <div style="font-size: 11px; font-weight: 700; color: #fff;">Noises DHH</div>
-              <div style="font-size: 9px; color: var(--text-3); margin-top: 2px;">Desi Hip-Hop</div>
-              <div style="font-size: 9px; font-weight: 700; color: #10b981; margin-top: 6px; background: rgba(16,185,129,0.12); padding: 2px 4px; border-radius: 4px;">9:00 PM IST</div>
+              <div class="card-time-display" style="font-size: 9px; font-weight: 700; color: #10b981; margin-top: 6px; background: rgba(16,185,129,0.12); padding: 2px 4px; border-radius: 4px; display: inline-block; width: max-content; margin-left: auto; margin-right: auto;">9:00 PM IST</div>
             </div>
 
-            <div class="pm-channel-card" data-value="K-Pop" style="background: var(--surface-2); border: 1px solid var(--border); border-radius: 8px; padding: 10px 8px; cursor: pointer; text-align: center; transition: all 0.15s;">
-              <div style="font-size: 16px; margin-bottom: 3px;">✨</div>
+            <div class="pm-channel-card" data-value="K-Pop" style="background: var(--surface-2); border: 1px solid var(--border); border-radius: 8px; padding: 12px 8px; cursor: pointer; text-align: center; transition: all 0.15s; display: flex; flex-direction: column; justify-content: center; min-height: 60px;">
               <div style="font-size: 11px; font-weight: 700; color: #fff;">Noises K-Pop</div>
-              <div style="font-size: 9px; color: var(--text-3); margin-top: 2px;">K-Pop Genre</div>
-              <div style="font-size: 9px; font-weight: 700; color: #10b981; margin-top: 6px; background: rgba(16,185,129,0.12); padding: 2px 4px; border-radius: 4px;">6:00 PM IST</div>
+              <div class="card-time-display" style="font-size: 9px; font-weight: 700; color: #10b981; margin-top: 6px; background: rgba(16,185,129,0.12); padding: 2px 4px; border-radius: 4px; display: inline-block; width: max-content; margin-left: auto; margin-right: auto;">6:00 PM IST</div>
             </div>
 
           </div>

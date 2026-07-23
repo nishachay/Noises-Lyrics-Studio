@@ -1634,9 +1634,49 @@ async function fetchAndFillMetadata() {
   }
 }
 
+const DEFAULT_CHANNEL_TIMES = {
+  'Pop': '2:00 PM IST',
+  'Hip-Hop': '11:00 AM IST',
+  'Hindi': '7:00 PM IST',
+  'DHH': '9:00 PM IST',
+  'K-Pop': '6:00 PM IST'
+};
+
+function getChannelTimes() {
+  try {
+    const saved = localStorage.getItem('noises_channel_times');
+    if (saved) return JSON.parse(saved);
+  } catch(e) {}
+  return { ...DEFAULT_CHANNEL_TIMES };
+}
+
+function updateChannelCardUI() {
+  const times = getChannelTimes();
+  document.querySelectorAll('.pm-channel-card').forEach(card => {
+    const val = card.dataset.value;
+    const timeDisplay = card.querySelector('.card-time-display');
+    if (timeDisplay && times[val]) {
+      timeDisplay.textContent = times[val];
+    }
+  });
+  
+  ['Pop', 'Hip-Hop', 'Hindi', 'DHH', 'K-Pop'].forEach(val => {
+    const inp = document.getElementById(`edit-time-${val}`);
+    if (inp) inp.value = times[val] || '';
+  });
+
+  const pmTargetChannel = document.getElementById('pm-target-channel');
+  if (pmTargetChannel) {
+    const activeVal = pmTargetChannel.value || 'Pop';
+    const badge = document.getElementById('pm-slot-badge');
+    if (badge) badge.textContent = `⏰ ${times[activeVal] || '2:00 PM IST'}`;
+  }
+}
+
 if (btnPublishModal && publishModal) {
   btnPublishModal.addEventListener('click', () => {
     publishModal.classList.remove('hidden');
+    updateChannelCardUI();
     fetchAndFillMetadata();   // Auto-fetch on every open
   });
 }
@@ -1650,6 +1690,30 @@ if (btnPublishClose && publishModal) {
 const btnRegenMeta = document.getElementById('btn-regen-meta');
 if (btnRegenMeta) {
   btnRegenMeta.addEventListener('click', fetchAndFillMetadata);
+}
+
+const btnPmChannelSettings = document.getElementById('btn-pm-channel-settings');
+const pmChannelEditor = document.getElementById('pm-channel-editor');
+if (btnPmChannelSettings && pmChannelEditor) {
+  btnPmChannelSettings.addEventListener('click', () => {
+    pmChannelEditor.style.display = pmChannelEditor.style.display === 'none' ? 'block' : 'none';
+  });
+}
+
+const btnPmSaveTimes = document.getElementById('btn-pm-save-times');
+if (btnPmSaveTimes) {
+  btnPmSaveTimes.addEventListener('click', () => {
+    const times = {
+      'Pop': document.getElementById('edit-time-Pop').value.trim() || '2:00 PM IST',
+      'Hip-Hop': document.getElementById('edit-time-Hip-Hop').value.trim() || '11:00 AM IST',
+      'Hindi': document.getElementById('edit-time-Hindi').value.trim() || '7:00 PM IST',
+      'DHH': document.getElementById('edit-time-DHH').value.trim() || '9:00 PM IST',
+      'K-Pop': document.getElementById('edit-time-K-Pop').value.trim() || '6:00 PM IST'
+    };
+    localStorage.setItem('noises_channel_times', JSON.stringify(times));
+    updateChannelCardUI();
+    if (pmChannelEditor) pmChannelEditor.style.display = 'none';
+  });
 }
 
 document.querySelectorAll('.pm-channel-card').forEach(card => {
@@ -1669,13 +1733,7 @@ document.querySelectorAll('.pm-channel-card').forEach(card => {
       pmTargetChannel.value = val;
     }
 
-    const channelTimes = {
-      'Pop': '2:00 PM IST',
-      'Hip-Hop': '11:00 AM IST',
-      'Hindi': '7:00 PM IST',
-      'DHH': '9:00 PM IST',
-      'K-Pop': '6:00 PM IST'
-    };
+    const channelTimes = getChannelTimes();
     const badge = document.getElementById('pm-slot-badge');
     if (badge) badge.textContent = `⏰ ${channelTimes[val] || '2:00 PM IST'}`;
     fetchAndFillMetadata();
