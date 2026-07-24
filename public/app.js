@@ -2815,7 +2815,7 @@ function loadProjectState() {
   }
 }
 
-function revertProjectState() {
+async function revertProjectState() {
   const trackKey = S.track?.youtubeId || S.track?.id;
   if (!S.track || !trackKey) {
     showToast('No track loaded to revert.');
@@ -2839,6 +2839,24 @@ function revertProjectState() {
     } catch (e) {}
   }
 
+  // Fallback: If originalTrack is missing for older sessions, re-fetch clean metadata
+  if (!S.originalTrack && S.track.youtubeId) {
+    try {
+      const res = await fetch('/api/resolve-song', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ q: S.track.youtubeId })
+      });
+      const data = await res.json();
+      if (data && data.bestMatch) {
+        S.originalTrack = data.bestMatch;
+        if (data.lyricsRecords) S.originalLyricsRecords = data.lyricsRecords;
+      }
+    } catch (e) {
+      console.warn('Revert auto-fetch fallback failed:', e);
+    }
+  }
+
   if (S.originalTrack) {
     S.track.title = S.originalTrack.title;
     S.track.artist = S.originalTrack.artist;
@@ -2856,23 +2874,42 @@ function revertProjectState() {
   S.ytCaptionsLRC = null;
   S.ytCaptionsList = null;
 
-  // 4. Update UI
+  // 4. Update UI input fields directly on frontend
   headerTitle.textContent = S.track.title;
   headerArtist.textContent = S.track.artist;
   editTitle.value = S.track.title || '';
   editArtist.value = S.track.artist || '';
-  if (S.track.artworkUrl) loadArtwork(S.track.artworkUrl);
+
+  const editCover = document.getElementById('edit-cover');
+  const editCoverPreview = document.getElementById('edit-cover-preview');
+  if (editCover) editCover.value = S.track.artworkUrl || '';
+  if (editCoverPreview) {
+    if (S.track.artworkUrl) {
+      editCoverPreview.src = S.track.artworkUrl;
+      editCoverPreview.classList.remove('hidden');
+    } else {
+      editCoverPreview.classList.add('hidden');
+    }
+  }
+  if (S.track.artworkUrl) {
+    loadArtwork(S.track.artworkUrl);
+  }
 
   // 5. Re-select best lyrics fresh
   populateLyricsSource();
   autoSelectBestLyrics();
   updateTranslationIndicator();
-  showToast('Reverted track to original metadata & lyrics.');
+  showToast('Reverted song title, artist, and lyrics back to original defaults.');
 }
 
 const btnRevertTrack = document.getElementById('btn-revert-track');
 if (btnRevertTrack) {
   btnRevertTrack.addEventListener('click', revertProjectState);
+}
+
+const btnRevertCard = document.getElementById('btn-revert-card');
+if (btnRevertCard) {
+  btnRevertCard.addEventListener('click', revertProjectState);
 }
 
 
