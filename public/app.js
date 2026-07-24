@@ -1607,10 +1607,21 @@ async function fetchAndFillMetadata() {
     const data = await res.json();
     if (data.error) throw new Error(data.error);
 
+    // Use user's locked channel time (localStorage) instead of server's hardcoded time
+    const _pmChannel = document.getElementById('pm-target-channel');
+    const _lockedTimes = getChannelTimes();
+    const _channelKey = _pmChannel ? _pmChannel.value : 'Pop';
+    const _lockedTime = _lockedTimes[_channelKey] || '2:00 PM IST';
+    const now = new Date();
+    const tomorrow = new Date(now);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const _dateStr = tomorrow.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
+    const computedUploadTime = `${_dateStr} @ ${_lockedTime}`;
+
     pmTitle.value  = data.youtubeTitle       || '';
     pmDesc.value   = data.youtubeDescription || '';
     pmTags.value   = data.youtubeTags        || '';
-    if (pmUpload) pmUpload.value = data.youtubeUploadTime  || '';
+    if (pmUpload) pmUpload.value = computedUploadTime;
 
     // Also pre-fill done-view fields so they're ready after rendering
     const ytTitleEl = document.getElementById('yt-title');
@@ -1620,7 +1631,7 @@ async function fetchAndFillMetadata() {
     if (ytTitleEl) ytTitleEl.value = data.youtubeTitle       || '';
     if (ytDescEl)  ytDescEl.value  = data.youtubeDescription || '';
     if (ytTagsEl)  ytTagsEl.value  = data.youtubeTags        || '';
-    if (ytUploadEl) ytUploadEl.value = data.youtubeUploadTime || '';
+    if (ytUploadEl) ytUploadEl.value = computedUploadTime;
 
     if (statusEl) {
       statusEl.textContent = '✓ Ready';
@@ -3389,6 +3400,18 @@ if (btnFetchGenius) {
 }
 
 // Map Translations line by line
+function updateTranslationIndicator() {
+  const count = S.lyrics ? S.lyrics.filter(l => l.translation && l.translation.trim()).length : 0;
+  const el = document.getElementById('trans-indicator');
+  if (!el) return;
+  if (count > 0) {
+    el.textContent = `${count} translations active — will render in video`;
+    el.style.display = 'block';
+    el.style.color = '#10b981';
+  } else {
+    el.style.display = 'none';
+  }
+}
 if (btnMapTranslations) {
   btnMapTranslations.addEventListener('click', () => {
     if (!S.lyrics || S.lyrics.length === 0) {
@@ -3412,8 +3435,9 @@ if (btnMapTranslations) {
       });
       precomputeLyricsLayout(canvas.width, canvas.height, selectAlign.value);
       renderLyricsList();
+      updateTranslationIndicator();
       saveProjectState();
-      alert(`Mapped ${mapped} translation lines successfully!`);
+      showToast(`${mapped} translation lines mapped. These will be included in the rendered video.`);
     }
   });
 }
@@ -3428,7 +3452,9 @@ btnApply.addEventListener('click', () => {
   // Detect LRC format (timestamps like [00:12.34] or [0:12])
   if (/\[\d{1,2}:\d{2}/.test(text)) {
     const parsed = parseLRC(text);
-    // Preserve the exact text the user typed — don't let setLyrics overwrite it
+    // Preserve existing translations from S.lyrics — merge by line index
+    const oldTrans = (S.lyrics || []).map(l => l.translation || null);
+    parsed.forEach((line, i) => { if (oldTrans[i]) line.translation = oldTrans[i]; });
     S.lyrics = parsed;
     S.lyricsType = 'synced';
     S.lastHighlightIdx = -1;
@@ -3441,11 +3467,15 @@ btnApply.addEventListener('click', () => {
     exitTapMode();
     precomputeLyricsLayout(canvas.width, canvas.height, selectAlign.value);
     renderLyricsList();
+    updateTranslationIndicator();
     saveProjectState();
   } else {
     // Plain text — strip any existing timestamps from lines and spread evenly
     const plainText = text.split(/\r?\n/).map(l => l.replace(/^\[\d+:\d+[.:]?\d*\]\s*/, '').trim()).filter(Boolean).join('\n');
     const list = S.track ? spreadPlain(plainText, S.track.duration) : [];
+    // Preserve existing translations — merge by line index
+    const oldTrans2 = (S.lyrics || []).map(l => l.translation || null);
+    list.forEach((line, i) => { if (oldTrans2[i]) line.translation = oldTrans2[i]; });
     S.lyrics = list;
     S.lyricsType = 'plain';
     S.lastHighlightIdx = -1;
