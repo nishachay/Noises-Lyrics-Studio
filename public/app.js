@@ -2056,6 +2056,19 @@ async function resolveSong(metadata) {
       }
     }
 
+    // Save original unedited track metadata and lyrics records for Revert feature
+    S.originalTrack = JSON.parse(JSON.stringify(S.track));
+    S.originalLyricsRecords = JSON.parse(JSON.stringify(S.lyricsRecords));
+    const _origKey = S.track.youtubeId || S.track.id;
+    if (_origKey) {
+      try {
+        localStorage.setItem(`noises_lyric_orig_${_origKey}`, JSON.stringify({
+          track: S.originalTrack,
+          lyricsRecords: S.originalLyricsRecords
+        }));
+      } catch (e) {}
+    }
+
     const editCover = document.getElementById('edit-cover');
     const editCoverPreview = document.getElementById('edit-cover-preview');
     if (editCover) editCover.value = S.track.artworkUrl || '';
@@ -2742,6 +2755,17 @@ function saveProjectState() {
 function loadProjectState() {
   const trackKey = S.track?.youtubeId || S.track?.id;
   if (!S.track || !trackKey) return false;
+
+  // Restore original track data reference if available
+  const origStored = localStorage.getItem(`noises_lyric_orig_${trackKey}`);
+  if (origStored) {
+    try {
+      const orig = JSON.parse(origStored);
+      if (orig.track) S.originalTrack = orig.track;
+      if (orig.lyricsRecords) S.originalLyricsRecords = orig.lyricsRecords;
+    } catch(e) {}
+  }
+
   const stored = localStorage.getItem(`noises_lyric_project_${trackKey}`);
   if (!stored) return false;
   try {
@@ -2789,6 +2813,66 @@ function loadProjectState() {
     console.error('Failed to parse project state', e);
     return false;
   }
+}
+
+function revertProjectState() {
+  const trackKey = S.track?.youtubeId || S.track?.id;
+  if (!S.track || !trackKey) {
+    showToast('No track loaded to revert.');
+    return;
+  }
+
+  if (!confirm('Revert all edits (title, artist, lyrics, sync offsets, translations) back to original track defaults?')) {
+    return;
+  }
+
+  // 1. Remove saved project state
+  localStorage.removeItem(`noises_lyric_project_${trackKey}`);
+
+  // 2. Restore original track metadata if available
+  const origStored = localStorage.getItem(`noises_lyric_orig_${trackKey}`);
+  if (origStored) {
+    try {
+      const orig = JSON.parse(origStored);
+      if (orig.track) S.originalTrack = orig.track;
+      if (orig.lyricsRecords) S.originalLyricsRecords = orig.lyricsRecords;
+    } catch (e) {}
+  }
+
+  if (S.originalTrack) {
+    S.track.title = S.originalTrack.title;
+    S.track.artist = S.originalTrack.artist;
+    S.track.artworkUrl = S.originalTrack.artworkUrl;
+  }
+  if (S.originalLyricsRecords) {
+    S.lyricsRecords = JSON.parse(JSON.stringify(S.originalLyricsRecords));
+  }
+
+  // 3. Reset offset & captions
+  S.syncOffset = 0.0;
+  if (syncOffsetSlider) syncOffsetSlider.value = 0;
+  if (syncOffsetText) syncOffsetText.textContent = "0.00s";
+  S.activeLyricsRecord = null;
+  S.ytCaptionsLRC = null;
+  S.ytCaptionsList = null;
+
+  // 4. Update UI
+  headerTitle.textContent = S.track.title;
+  headerArtist.textContent = S.track.artist;
+  editTitle.value = S.track.title || '';
+  editArtist.value = S.track.artist || '';
+  if (S.track.artworkUrl) loadArtwork(S.track.artworkUrl);
+
+  // 5. Re-select best lyrics fresh
+  populateLyricsSource();
+  autoSelectBestLyrics();
+  updateTranslationIndicator();
+  showToast('Reverted track to original metadata & lyrics.');
+}
+
+const btnRevertTrack = document.getElementById('btn-revert-track');
+if (btnRevertTrack) {
+  btnRevertTrack.addEventListener('click', revertProjectState);
 }
 
 
