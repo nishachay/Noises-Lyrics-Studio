@@ -2696,6 +2696,8 @@ function saveProjectState() {
     lyricsSourceValue: lyricsSource.value,
     trackTitle: S.track.title,
     trackArtist: S.track.artist,
+    ytCaptionsLRC: S.ytCaptionsLRC || null,
+    ytCaptionsList: S.ytCaptionsList || null,
     savedAt: Date.now()
   };
 
@@ -2781,6 +2783,7 @@ function loadProjectState() {
     
     precomputeLyricsLayout(canvas.width, canvas.height, selectAlign.value);
     renderLyricsList();
+    updateTranslationIndicator();
     return true;
   } catch (e) {
     console.error('Failed to parse project state', e);
