@@ -3412,6 +3412,7 @@ function updateTranslationIndicator() {
     el.style.display = 'none';
   }
 }
+
 if (btnMapTranslations) {
   btnMapTranslations.addEventListener('click', () => {
     if (!S.lyrics || S.lyrics.length === 0) {
@@ -3488,6 +3489,7 @@ btnApply.addEventListener('click', () => {
     exitTapMode();
     precomputeLyricsLayout(canvas.width, canvas.height, selectAlign.value);
     renderLyricsList();
+    updateTranslationIndicator();
     saveProjectState();
   }
   // Switch to Sync tab so user can start tapping immediately
