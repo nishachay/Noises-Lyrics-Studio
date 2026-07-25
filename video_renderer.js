@@ -1006,11 +1006,11 @@ function renderVideo({
           colors   = extractColors(coverImg);
           
           // Generate _blurCanvas exactly like app.js
-          _blurCanvas = createCanvas(32, 18);
+          _blurCanvas = createCanvas(480, 270);
           const bx = _blurCanvas.getContext('2d');
           const iW = coverImg.width || 1000;
           const iH = coverImg.height || 1000;
-          const target = 32 / 18;
+          const target = 480 / 270;
           const ratio = iW / iH;
           let sx, sy, sw, sh;
           if (ratio > target) { sh = iH; sw = iH * target; sx = (iW - sw) / 2; sy = 0; }
@@ -1021,7 +1021,7 @@ function renderVideo({
           } else {
             bx.filter = 'none';
           }
-          bx.drawImage(coverImg, sx, sy, sw, sh, 0, 0, 32, 18);
+          bx.drawImage(coverImg, sx, sy, sw, sh, 0, 0, 480, 270);
           
           console.log('[Renderer] Cover art loaded ✓');
         } catch (e) { console.error('[Renderer] Cover art:', e.message); }
@@ -1359,11 +1359,11 @@ async function renderSlideshow({
             colors = extractColors(coverImg);
             
             // Generate _blurCanvas for slideshow background
-            _blurCanvas = createCanvas(32, 18);
+            _blurCanvas = createCanvas(480, 270);
             const bx = _blurCanvas.getContext('2d');
             const iW = coverImg.width || 1000;
             const iH = coverImg.height || 1000;
-            const target = 32 / 18;
+            const target = 480 / 270;
             const ratio = iW / iH;
             let sx, sy, sw, sh;
             if (ratio > target) { sh = iH; sw = iH * target; sx = (iW - sw) / 2; sy = 0; }
@@ -1374,7 +1374,7 @@ async function renderSlideshow({
             } else {
               bx.filter = 'none';
             }
-            bx.drawImage(coverImg, sx, sy, sw, sh, 0, 0, 32, 18);
+            bx.drawImage(coverImg, sx, sy, sw, sh, 0, 0, 480, 270);
             processSlides();
           });
         } else {
@@ -1394,11 +1394,11 @@ async function generateThumbnailBuffer({ title, artist, artworkUrl, theme, logoP
   
   const colors = extractColors(coverImg);
   
-  _blurCanvas = createCanvas(32, 18);
+  _blurCanvas = createCanvas(480, 270);
   const bx = _blurCanvas.getContext('2d');
   const iW = coverImg.width || 1000;
   const iH = coverImg.height || 1000;
-  const target = 32 / 18;
+  const target = 480 / 270;
   const ratio = iW / iH;
   let sx, sy, sw, sh;
   if (ratio > target) { sh = iH; sw = iH * target; sx = (iW - sw) / 2; sy = 0; }
@@ -1409,7 +1409,7 @@ async function generateThumbnailBuffer({ title, artist, artworkUrl, theme, logoP
   } else {
     bx.filter = 'none';
   }
-  bx.drawImage(coverImg, sx, sy, sw, sh, 0, 0, 32, 18);
+  bx.drawImage(coverImg, sx, sy, sw, sh, 0, 0, 480, 270);
   
   const font = '"Plus Jakarta Sans", "Noto Sans Devanagari", "Noto Sans KR"';
   const buf = generateThumbnail(coverImg, colors, title, artist, font, 'center', [], 0, logoImg, 1280, 720, style);
