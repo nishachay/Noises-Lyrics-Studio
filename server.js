@@ -424,9 +424,17 @@ function scoreYoutubeResult(y, targetTitle, targetArtist, targetDur) {
 
   const isTargetLive = (targetTitle || '').toLowerCase().includes('live');
   const isTargetRemix = (targetTitle || '').toLowerCase().includes('remix');
+  const isTargetInstrumental = (targetTitle || '').toLowerCase().includes('instrumental');
+  const isTargetKaraoke = (targetTitle || '').toLowerCase().includes('karaoke');
+
   if (title.includes('live') && !isTargetLive) score += 50;
   if (title.includes('cover')) score += 100;
   if (title.includes('remix') && !isTargetRemix) score += 40;
+  if (title.includes('instrumental') && !isTargetInstrumental) score += 500;
+  if (title.includes('karaoke') && !isTargetKaraoke) score += 500;
+  if (title.includes('type beat')) score += 500;
+  if (title.includes('slowed') || title.includes('reverb')) score += 100;
+
   return score;
 }
 
