@@ -356,7 +356,6 @@
             <button id="btn-group-4" class="btn-action btn-glass" style="font-size:11px; padding:3px 8px;" title="Group lines into quads (slash separated)">4×</button>
           </div>
           <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
-              <button id="btn-map-translations" class="btn-action btn-glass" style="font-size:11px; padding:3px 8px; background:rgba(16,185,129,0.08); border-color:rgba(16,185,129,0.25); color:#10B981;" title="Map translations line-by-line to the lyrics">Map →</button>
               <button id="btn-apply" class="btn-action" style="padding:3px 12px; font-size:11px; background:var(--accent); border:none; color:#000; font-weight:700;">Apply</button>
               <span id="trans-indicator" style="display:none; font-size:10px; font-weight:600;"></span>
           </div>
@@ -379,7 +378,8 @@
               <span style="font-size:10px; font-weight:700; letter-spacing:0.08em; text-transform:uppercase; color:#10B981;">Translations</span>
               <span style="font-size:10px; color:var(--text-3);">Line-by-line</span>
             </div>
-            <textarea id="translations-editor" class="code-editor" spellcheck="false" autocomplete="off" placeholder="Paste translated lines here...&#10;&#10;Each line maps 1-to-1 with the lyrics on the left.&#10;Click 'Map →' to apply." style="flex:1; resize:none; border:none; background:rgba(16,185,129,0.02);"></textarea>
+            <textarea id="translations-editor" class="code-editor" spellcheck="false" autocomplete="off" placeholder="Paste translated lines here...&#10;&#10;Each line maps 1-to-1 with the lyrics on the left.&#10;They will be matched automatically." style="flex:1; resize:none; border:none; background:rgba(16,185,129,0.02);"></textarea>
+            <div id="translation-match-status" style="font-size:11px; padding:6px; background:rgba(16,185,129,0.05); color:#10B981; border-top:1px solid rgba(16,185,129,0.15); text-align:center; font-weight:600;">Paste translations to map automatically</div>
           </div>
         </div>
       </div>

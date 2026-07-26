@@ -3027,6 +3027,10 @@ async function startCompile(isShort = false, shortStartTime = 0, isSlideshow = f
   if (lyricsEditor && lyricsEditor.value.trim()) {
     const freshParsed = parseLRC(lyricsEditor.value);
     if (freshParsed && freshParsed.length > 0) {
+      // PRESERVE TRANSLATIONS
+      const oldTrans = (S.lyrics || []).map(l => l.translation || null);
+      freshParsed.forEach((line, i) => { if (oldTrans[i]) line.translation = oldTrans[i]; });
+      
       S.lyrics = freshParsed;
     }
   }
@@ -3537,33 +3541,44 @@ function updateTranslationIndicator() {
   }
 }
 
-if (btnMapTranslations) {
-  btnMapTranslations.addEventListener('click', () => {
-    if (!S.lyrics || S.lyrics.length === 0) {
-      alert("Please parse or load raw lyrics on the left first.");
-      return;
-    }
-    const transText = translationsEditor.value.trim();
-    if (!transText) return;
+if (translationsEditor) {
+  translationsEditor.addEventListener('input', () => {
+    if (!S.lyrics || S.lyrics.length === 0) return;
     
-    // Do not filter out empty lines, so blank lines in the translation maintain 1-to-1 sync
+    const transText = translationsEditor.value;
     const lines = transText.split('\n').map(l => l.trim());
     let mapped = 0;
-    if (lines.length > 0) {
-      S.lyrics.forEach((lyricObj, idx) => {
-        if (idx < lines.length && lines[idx]) {
-          lyricObj.translation = lines[idx];
-          mapped++;
-        } else {
-          delete lyricObj.translation;
-        }
-      });
-      precomputeLyricsLayout(canvas.width, canvas.height, selectAlign.value);
-      renderLyricsList();
-      updateTranslationIndicator();
-      saveProjectState();
-      showToast(`${mapped} translation lines mapped. These will be included in the rendered video.`);
+    
+    S.lyrics.forEach((lyricObj, idx) => {
+      if (idx < lines.length && lines[idx]) {
+        lyricObj.translation = lines[idx];
+        mapped++;
+      } else {
+        delete lyricObj.translation;
+      }
+    });
+
+    const statusEl = document.getElementById('translation-match-status');
+    if (statusEl) {
+      if (transText.trim() === '') {
+        statusEl.textContent = 'Paste translations to map automatically';
+        statusEl.style.color = '#10B981';
+        statusEl.style.backgroundColor = 'rgba(16,185,129,0.05)';
+      } else if (lines.length === S.lyrics.length) {
+        statusEl.textContent = `✓ ${mapped} / ${S.lyrics.length} lines perfectly matched`;
+        statusEl.style.color = '#10B981';
+        statusEl.style.backgroundColor = 'rgba(16,185,129,0.05)';
+      } else {
+        statusEl.textContent = `⚠ ${mapped} / ${S.lyrics.length} lines matched (Mismatch!)`;
+        statusEl.style.color = '#EAB308';
+        statusEl.style.backgroundColor = 'rgba(234,179,8,0.1)';
+      }
     }
+
+    precomputeLyricsLayout(canvas.width, canvas.height, selectAlign.value);
+    renderLyricsList();
+    updateTranslationIndicator();
+    saveProjectState();
   });
 }
 
