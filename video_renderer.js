@@ -1017,9 +1017,9 @@ function renderVideo({
           else                { sw = iW; sh = iW / target; sx = 0; sy = (iH - sh) / 2; }
           
           if (colors && colors.saturation > 0.12) {
-            bx.filter = 'saturate(200%) brightness(110%)';
+            bx.filter = 'blur(60px) saturate(200%) brightness(110%)';
           } else {
-            bx.filter = 'none';
+            bx.filter = 'blur(60px)';
           }
           bx.drawImage(coverImg, sx, sy, sw, sh, 0, 0, 480, 270);
           
@@ -1370,9 +1370,9 @@ async function renderSlideshow({
             else                { sw = iW; sh = iW / target; sx = 0; sy = (iH - sh) / 2; }
             
             if (colors && colors.saturation > 0.12) {
-              bx.filter = 'saturate(200%) brightness(110%)';
+              bx.filter = 'blur(60px) saturate(200%) brightness(110%)';
             } else {
-              bx.filter = 'none';
+              bx.filter = 'blur(60px)';
             }
             bx.drawImage(coverImg, sx, sy, sw, sh, 0, 0, 480, 270);
             processSlides();
@@ -1405,9 +1405,9 @@ async function generateThumbnailBuffer({ title, artist, artworkUrl, theme, logoP
   else                { sw = iW; sh = iW / target; sx = 0; sy = (iH - sh) / 2; }
   
   if (colors && colors.saturation > 0.12) {
-    bx.filter = 'saturate(200%) brightness(110%)';
+    bx.filter = 'blur(60px) saturate(200%) brightness(110%)';
   } else {
-    bx.filter = 'none';
+    bx.filter = 'blur(60px)';
   }
   bx.drawImage(coverImg, sx, sy, sw, sh, 0, 0, 480, 270);
   
