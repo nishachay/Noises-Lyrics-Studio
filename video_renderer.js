@@ -320,7 +320,7 @@ function drawLeftSplitLayout(ctx, coverImg, title, artist, W, H, songTime, durat
     const artistSz = Math.round(titleSz * 0.68);
 
     cctx.save();
-    cctx.font = `bold ${titleSz}px "Plus Jakarta Sans", "Noto Sans Devanagari", "Noto Sans KR"`;
+    cctx.font = `800 ${titleSz}px "Plus Jakarta Sans", "Noto Sans Devanagari", "Noto Sans KR"`;
     cctx.textAlign = 'center';
     cctx.textBaseline = 'top';
     cctx.fillStyle = '#ffffff';
@@ -330,7 +330,7 @@ function drawLeftSplitLayout(ctx, coverImg, title, artist, W, H, songTime, durat
     cctx.fillText(title, textX, titleY);
 
     cctx.font = `600 ${artistSz}px "Plus Jakarta Sans", "Noto Sans Devanagari", "Noto Sans KR"`;
-    cctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
+    cctx.fillStyle = 'rgba(255, 255, 255, 0.85)';
     cctx.shadowColor = 'rgba(0, 0, 0, 0.8)';
     cctx.shadowBlur = 6;
     cctx.shadowOffsetY = 2;
@@ -403,16 +403,16 @@ function drawAlbumPanel(ctx, img, title, artist, W, H, font, songTime, duration)
     cctx.textAlign = 'left';
     cctx.textBaseline = 'middle';
 
-    cctx.font = `bold ${tSz}px "Plus Jakarta Sans", "Noto Sans Devanagari", "Noto Sans KR"`;
-    cctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
-    cctx.shadowColor = 'rgba(0, 0, 0, 0.8)';
+    cctx.font = `700 ${tSz}px "Plus Jakarta Sans", "Noto Sans Devanagari", "Noto Sans KR"`;
+    cctx.fillStyle = '#ffffff';
+    cctx.shadowColor = 'rgba(0, 0, 0, 0.9)';
     cctx.shadowBlur = 8;
     cctx.shadowOffsetY = 2;
     cctx.fillText(title, tx, titleY);
 
-    cctx.font = `${aSz}px "Plus Jakarta Sans", "Noto Sans Devanagari", "Noto Sans KR"`;
-    cctx.fillStyle = 'rgba(255, 255, 255, 0.85)';
-    cctx.shadowColor = 'rgba(0, 0, 0, 0.7)';
+    cctx.font = `500 ${aSz}px "Plus Jakarta Sans", "Noto Sans Devanagari", "Noto Sans KR"`;
+    cctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
+    cctx.shadowColor = 'rgba(0, 0, 0, 0.8)';
     cctx.shadowBlur = 6;
     cctx.shadowOffsetY = 2;
     cctx.fillText(artist, tx, artistY);
@@ -610,7 +610,7 @@ function drawLyricsPanel(ctx, W, H, time, wrappedLyrics, font, alignment, durati
         let curY = ccy - lineH / 2;
         segments.forEach((seg) => {
           curY += lh;
-          drawShadowText(seg, curY - lh + lineActiveSz * 0.5, `bold ${lineActiveSz}px "Plus Jakarta Sans", "Noto Sans Devanagari", "Noto Sans KR"`, '#ffffff', 'rgba(255, 255, 255, 0.8)');
+          drawShadowText(seg, curY - lh + lineActiveSz * 0.5, `800 ${lineActiveSz}px "Plus Jakarta Sans", "Noto Sans Devanagari", "Noto Sans KR"`, '#ffffff', 'rgba(255, 255, 255, 0.8)');
         });
 
         if (transSegments.length > 0) {
@@ -1193,11 +1193,11 @@ function renderVideo({
           ctx.fillStyle = '#ffffff';
           ctx.shadowColor = 'rgba(0, 0, 0, 0.4)';
           ctx.shadowBlur = 4;
-          ctx.font = `bold ${titleSz}px "Plus Jakarta Sans", "Noto Sans Devanagari", "Noto Sans KR"`;
+          ctx.font = `800 ${titleSz}px "Plus Jakarta Sans", "Noto Sans Devanagari", "Noto Sans KR"`;
           ctx.fillText('THANKS FOR WATCHING', W / 2, ay);
           
-          ctx.fillStyle = 'rgba(255, 255, 255, 0.55)';
-          ctx.font = `${artistSz}px "Plus Jakarta Sans", "Noto Sans Devanagari", "Noto Sans KR"`;
+          ctx.fillStyle = 'rgba(255, 255, 255, 0.85)';
+          ctx.font = `600 ${artistSz}px "Plus Jakarta Sans", "Noto Sans Devanagari", "Noto Sans KR"`;
           ctx.fillText('LIKE, SHARE & SUBSCRIBE', W / 2, ay + titleSz + gap);
 
           ctx.restore();
