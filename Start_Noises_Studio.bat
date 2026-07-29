@@ -3,7 +3,7 @@ title Noises Lyrics Studio
 cd /d "e:\noises lyric"
 echo ====================================================
 echo Pulling latest updates from GitHub...
-call git pull
+call git pull --rebase --autostash
 echo ====================================================
 echo Cleaning up zombie Node processes...
 taskkill /F /IM node.exe >nul 2>&1
