@@ -424,17 +424,18 @@ function scoreYoutubeResult(y, targetTitle, targetArtist, targetDur) {
 
   const isTargetLive = (targetTitle || '').toLowerCase().includes('live');
   const isTargetRemix = (targetTitle || '').toLowerCase().includes('remix');
-  const isTargetInstrumental = (targetTitle || '').toLowerCase().includes('instrumental');
-  const isTargetKaraoke = (targetTitle || '').toLowerCase().includes('karaoke');
-
-  if (title.includes('live') && !isTargetLive) score += 50;
-  if (title.includes('cover')) score += 100;
-  if (title.includes('remix') && !isTargetRemix) score += 40;
-  if (title.includes('instrumental') && !isTargetInstrumental) score += 500;
-  if (title.includes('karaoke') && !isTargetKaraoke) score += 500;
-  if (title.includes('type beat')) score += 500;
-  if (title.includes('slowed') || title.includes('reverb')) score += 100;
-
+  const targetLower = (targetTitle || '').toLowerCase();
+  
+  if (title.includes('live') && !isTargetLive) score += 500;
+  if (title.includes('remix') && !isTargetRemix) score += 500;
+  
+  const badWords = ['karaoke', 'cover', 'instrumental', 'tribute', 'slowed', 'reverb', 'type beat'];
+  for (const word of badWords) {
+    if ((title.includes(word) || channel.includes(word)) && !targetLower.includes(word)) {
+      score += 5000;
+    }
+  }
+  
   return score;
 }
 

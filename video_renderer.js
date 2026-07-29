@@ -233,11 +233,11 @@ function precomputeWrappedLyrics(ctx, lyrics, fontSpec, maxWidth, defaultActiveS
     const isHindi = /[\u0900-\u097F]/.test(line.text);
     if (isHindi) activeSz *= 1.25;
 
-    const lineFontSpec = fontSpec.replace(defaultActiveSz.toString(), activeSz.toString());
+    const lineFontSpec = fontSpec.replace(defaultActiveSz.toString(), Math.round(activeSz).toString());
     const wText = wrapLine(line.text, lineFontSpec);
 
     const transSz = activeSz * 0.60;
-    const wTrans = line.translation ? wrapLine('(' + line.translation + ')', `600 ${transSz}px "Plus Jakarta Sans", "Noto Sans Devanagari", "Noto Sans KR"`) : [];
+    const wTrans = line.translation ? wrapLine('(' + line.translation + ')', `normal ${Math.round(transSz)}px "Plus Jakarta Sans", "Noto Sans Devanagari", "Noto Sans KR"`) : [];
     
     return { ...line, wrapped: wText, wrappedTrans: wTrans, activeSz, transSz };
   });
@@ -320,7 +320,7 @@ function drawLeftSplitLayout(ctx, coverImg, title, artist, W, H, songTime, durat
     const artistSz = Math.round(titleSz * 0.68);
 
     cctx.save();
-    cctx.font = `800 ${titleSz}px "Plus Jakarta Sans", "Noto Sans Devanagari", "Noto Sans KR"`;
+    cctx.font = `bold ${titleSz}px "Plus Jakarta Sans", "Noto Sans Devanagari", "Noto Sans KR"`;
     cctx.textAlign = 'center';
     cctx.textBaseline = 'top';
     cctx.fillStyle = '#ffffff';
@@ -330,7 +330,7 @@ function drawLeftSplitLayout(ctx, coverImg, title, artist, W, H, songTime, durat
     cctx.fillText(title, textX, titleY);
 
     cctx.font = `600 ${artistSz}px "Plus Jakarta Sans", "Noto Sans Devanagari", "Noto Sans KR"`;
-    cctx.fillStyle = 'rgba(255, 255, 255, 0.85)';
+    cctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
     cctx.shadowColor = 'rgba(0, 0, 0, 0.8)';
     cctx.shadowBlur = 6;
     cctx.shadowOffsetY = 2;
@@ -403,16 +403,16 @@ function drawAlbumPanel(ctx, img, title, artist, W, H, font, songTime, duration)
     cctx.textAlign = 'left';
     cctx.textBaseline = 'middle';
 
-    cctx.font = `700 ${tSz}px "Plus Jakarta Sans", "Noto Sans Devanagari", "Noto Sans KR"`;
-    cctx.fillStyle = '#ffffff';
-    cctx.shadowColor = 'rgba(0, 0, 0, 0.9)';
+    cctx.font = `bold ${tSz}px "Plus Jakarta Sans", "Noto Sans Devanagari", "Noto Sans KR"`;
+    cctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
+    cctx.shadowColor = 'rgba(0, 0, 0, 0.8)';
     cctx.shadowBlur = 8;
     cctx.shadowOffsetY = 2;
     cctx.fillText(title, tx, titleY);
 
-    cctx.font = `500 ${aSz}px "Plus Jakarta Sans", "Noto Sans Devanagari", "Noto Sans KR"`;
-    cctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
-    cctx.shadowColor = 'rgba(0, 0, 0, 0.8)';
+    cctx.font = `${aSz}px "Plus Jakarta Sans", "Noto Sans Devanagari", "Noto Sans KR"`;
+    cctx.fillStyle = 'rgba(255, 255, 255, 0.85)';
+    cctx.shadowColor = 'rgba(0, 0, 0, 0.7)';
     cctx.shadowBlur = 6;
     cctx.shadowOffsetY = 2;
     cctx.fillText(artist, tx, artistY);
@@ -572,7 +572,7 @@ function drawLyricsPanel(ctx, W, H, time, wrappedLyrics, font, alignment, durati
     stanzaLines.forEach((line) => {
       const lineActiveSz = line.activeSz || activeSz;
       const lh = lineActiveSz * 1.38;
-      const transSz = lineActiveSz * 0.60;
+      const transSz = line.transSz || Math.round(lineActiveSz * 0.60);
       const lhTrans = transSz * 1.38;
       const transGap = lineActiveSz * 0.3;
 
@@ -596,10 +596,21 @@ function drawLyricsPanel(ctx, W, H, time, wrappedLyrics, font, alignment, durati
           cctx.font = fontStr;
           cctx.textAlign = textAlign;
           cctx.textBaseline = 'middle';
-          cctx.fillStyle = primaryColor || '#ffffff';
 
+          // Glow layer (similar to app.js)
+          if (glowColor && glowColor !== 'transparent') {
+            cctx.shadowColor = glowColor;
+            cctx.shadowBlur = 15;
+            cctx.shadowOffsetY = 0;
+            cctx.fillStyle = primaryColor || '#ffffff';
+            cctx.globalAlpha = 0.5; // Half opacity for glow layer
+            cctx.fillText(text, ccx, y);
+            cctx.globalAlpha = 1.0;
+          }
+
+          cctx.fillStyle = primaryColor || '#ffffff';
           cctx.shadowColor = 'rgba(0, 0, 0, 0.8)';
-          cctx.shadowBlur = 10;
+          cctx.shadowBlur = (glowColor && glowColor !== 'transparent') ? 4 : 10;
           cctx.shadowOffsetY = 2;
           cctx.fillText(text, ccx, y);
 
@@ -610,14 +621,14 @@ function drawLyricsPanel(ctx, W, H, time, wrappedLyrics, font, alignment, durati
         let curY = ccy - lineH / 2;
         segments.forEach((seg) => {
           curY += lh;
-          drawShadowText(seg, curY - lh + lineActiveSz * 0.5, `800 ${lineActiveSz}px "Plus Jakarta Sans", "Noto Sans Devanagari", "Noto Sans KR"`, '#ffffff', 'rgba(255, 255, 255, 0.8)');
+          drawShadowText(seg, curY - lh + lineActiveSz * 0.5, `bold ${Math.round(lineActiveSz)}px "Plus Jakarta Sans", "Noto Sans Devanagari", "Noto Sans KR"`, '#ffffff', 'rgba(255, 255, 255, 0.8)');
         });
 
         if (transSegments.length > 0) {
           curY += transGap;
           transSegments.forEach((seg) => {
             curY += lhTrans;
-            drawShadowText(seg, curY - lhTrans + transSz * 0.5, `600 ${transSz}px "Plus Jakarta Sans", "Noto Sans Devanagari", "Noto Sans KR"`, '#ffffff', 'rgba(255, 255, 255, 0.6)');
+            drawShadowText(seg, curY - lhTrans + transSz * 0.5, `normal ${Math.round(transSz)}px "Plus Jakarta Sans", "Noto Sans Devanagari", "Noto Sans KR"`, '#ffffff', 'rgba(255, 255, 255, 0.6)');
           });
         }
       }
@@ -1006,22 +1017,22 @@ function renderVideo({
           colors   = extractColors(coverImg);
           
           // Generate _blurCanvas exactly like app.js
-          _blurCanvas = createCanvas(480, 270);
+          _blurCanvas = createCanvas(32, 18);
           const bx = _blurCanvas.getContext('2d');
           const iW = coverImg.width || 1000;
           const iH = coverImg.height || 1000;
-          const target = 480 / 270;
+          const target = 32 / 18;
           const ratio = iW / iH;
           let sx, sy, sw, sh;
           if (ratio > target) { sh = iH; sw = iH * target; sx = (iW - sw) / 2; sy = 0; }
           else                { sw = iW; sh = iW / target; sx = 0; sy = (iH - sh) / 2; }
           
           if (colors && colors.saturation > 0.12) {
-            bx.filter = 'blur(60px) saturate(200%) brightness(110%)';
+            bx.filter = 'saturate(200%) brightness(110%)';
           } else {
-            bx.filter = 'blur(60px)';
+            bx.filter = 'none';
           }
-          bx.drawImage(coverImg, sx, sy, sw, sh, 0, 0, 480, 270);
+          bx.drawImage(coverImg, sx, sy, sw, sh, 0, 0, 32, 18);
           
           console.log('[Renderer] Cover art loaded ✓');
         } catch (e) { console.error('[Renderer] Cover art:', e.message); }
@@ -1042,6 +1053,8 @@ function renderVideo({
         text: l.text,
         translation: l.translation
       })).sort((a, b) => a.time - b.time);
+      console.log('[DEBUG] First lyric object in renderer:', adjustedLyrics[0]);
+      console.log('[DEBUG] Second lyric object in renderer:', adjustedLyrics[1]);
 
       // ── Pre-compute wrapped lyrics ────────────────────────────
       ctx.font = `bold ${ACT_SZ}px "Plus Jakarta Sans", "Noto Sans Devanagari", "Noto Sans KR"`;
@@ -1193,11 +1206,11 @@ function renderVideo({
           ctx.fillStyle = '#ffffff';
           ctx.shadowColor = 'rgba(0, 0, 0, 0.4)';
           ctx.shadowBlur = 4;
-          ctx.font = `800 ${titleSz}px "Plus Jakarta Sans", "Noto Sans Devanagari", "Noto Sans KR"`;
+          ctx.font = `bold ${titleSz}px "Plus Jakarta Sans", "Noto Sans Devanagari", "Noto Sans KR"`;
           ctx.fillText('THANKS FOR WATCHING', W / 2, ay);
           
-          ctx.fillStyle = 'rgba(255, 255, 255, 0.85)';
-          ctx.font = `600 ${artistSz}px "Plus Jakarta Sans", "Noto Sans Devanagari", "Noto Sans KR"`;
+          ctx.fillStyle = 'rgba(255, 255, 255, 0.55)';
+          ctx.font = `${artistSz}px "Plus Jakarta Sans", "Noto Sans Devanagari", "Noto Sans KR"`;
           ctx.fillText('LIKE, SHARE & SUBSCRIBE', W / 2, ay + titleSz + gap);
 
           ctx.restore();
@@ -1359,22 +1372,22 @@ async function renderSlideshow({
             colors = extractColors(coverImg);
             
             // Generate _blurCanvas for slideshow background
-            _blurCanvas = createCanvas(480, 270);
+            _blurCanvas = createCanvas(32, 18);
             const bx = _blurCanvas.getContext('2d');
             const iW = coverImg.width || 1000;
             const iH = coverImg.height || 1000;
-            const target = 480 / 270;
+            const target = 32 / 18;
             const ratio = iW / iH;
             let sx, sy, sw, sh;
             if (ratio > target) { sh = iH; sw = iH * target; sx = (iW - sw) / 2; sy = 0; }
             else                { sw = iW; sh = iW / target; sx = 0; sy = (iH - sh) / 2; }
             
             if (colors && colors.saturation > 0.12) {
-              bx.filter = 'blur(60px) saturate(200%) brightness(110%)';
+              bx.filter = 'saturate(200%) brightness(110%)';
             } else {
-              bx.filter = 'blur(60px)';
+              bx.filter = 'none';
             }
-            bx.drawImage(coverImg, sx, sy, sw, sh, 0, 0, 480, 270);
+            bx.drawImage(coverImg, sx, sy, sw, sh, 0, 0, 32, 18);
             processSlides();
           });
         } else {
@@ -1394,22 +1407,22 @@ async function generateThumbnailBuffer({ title, artist, artworkUrl, theme, logoP
   
   const colors = extractColors(coverImg);
   
-  _blurCanvas = createCanvas(480, 270);
+  _blurCanvas = createCanvas(32, 18);
   const bx = _blurCanvas.getContext('2d');
   const iW = coverImg.width || 1000;
   const iH = coverImg.height || 1000;
-  const target = 480 / 270;
+  const target = 32 / 18;
   const ratio = iW / iH;
   let sx, sy, sw, sh;
   if (ratio > target) { sh = iH; sw = iH * target; sx = (iW - sw) / 2; sy = 0; }
   else                { sw = iW; sh = iW / target; sx = 0; sy = (iH - sh) / 2; }
   
   if (colors && colors.saturation > 0.12) {
-    bx.filter = 'blur(60px) saturate(200%) brightness(110%)';
+    bx.filter = 'saturate(200%) brightness(110%)';
   } else {
-    bx.filter = 'blur(60px)';
+    bx.filter = 'none';
   }
-  bx.drawImage(coverImg, sx, sy, sw, sh, 0, 0, 480, 270);
+  bx.drawImage(coverImg, sx, sy, sw, sh, 0, 0, 32, 18);
   
   const font = '"Plus Jakarta Sans", "Noto Sans Devanagari", "Noto Sans KR"';
   const buf = generateThumbnail(coverImg, colors, title, artist, font, 'center', [], 0, logoImg, 1280, 720, style);

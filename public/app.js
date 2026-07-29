@@ -137,7 +137,6 @@ const btnFetchGenius = $('btn-fetch-genius');
 const btnApply     = $('btn-apply');
 const btnGroup2    = $('btn-group-2');
 const btnGroup4    = $('btn-group-4');
-const btnMapTranslations = $('btn-map-translations');
 const btnYtCaptions = $('btn-yt-captions');
 const syncOffsetEl = $('sync-offset');
 const offsetLabel  = $('offset-label');
@@ -754,7 +753,7 @@ function precomputeLyricsLayout(W, H, alignment) {
       wText = wrapLine(line.text, lineFontSpec);
       
       transSz = lineActiveSz * 0.60;
-      wTrans = line.translation ? wrapLine('(' + line.translation + ')', `600 ${Math.round(transSz)}px ${FONT}, sans-serif`) : [];
+      wTrans = line.translation ? wrapLine('(' + line.translation + ')', `500 ${Math.round(transSz)}px ${FONT}, sans-serif`) : [];
 
       // Calculate estimated total height
       const lh = lineActiveSz * 1.38;
@@ -1042,7 +1041,7 @@ function drawLyrics(W, H, songTime) {
         line.wrappedTrans.forEach((seg) => {
           segmentY += lhTrans;
           const wy = segmentY - lhTrans + transSz * 0.5;
-          drawTextWithShadows(seg, wy, `600 ${transSz}px ${FONT}, sans-serif`, '#ffffff', 'rgba(255, 255, 255, 0.6)', 0.90);
+          drawTextWithShadows(seg, wy, `500 ${transSz}px ${FONT}, sans-serif`, '#ffffff', 'rgba(255, 255, 255, 0.6)', 0.90);
         });
       }
 
@@ -1197,7 +1196,7 @@ function drawLyrics(W, H, songTime) {
     transSegments.forEach((seg) => {
       curY += lhTrans;
       const wy = curY - lhTrans + transSz * 0.5;
-      drawTextWithShadows(seg, wy, `600 ${transSz}px ${FONT}, sans-serif`, '#ffffff', 'rgba(255, 255, 255, 0.6)', 0.90);
+      drawTextWithShadows(seg, wy, `500 ${transSz}px ${FONT}, sans-serif`, '#ffffff', 'rgba(255, 255, 255, 0.6)', 0.90);
     });
   }
   ctx.globalAlpha = opacity * layoutAlpha; // reset
@@ -2160,18 +2159,29 @@ function parseLRC(lrc) {
       }
     }
     
-    if (times.length && text) times.forEach(t => out.push({ time: t, text }));
+    let translation = '';
+    if (text.includes(' |trans| ')) {
+      const parts = text.split(' |trans| ');
+      text = parts[0].trim();
+      translation = parts[1].trim();
+    }
+    
+    if (times.length && text) {
+      times.forEach(t => out.push({ time: t, text, translation: translation || undefined }));
+    }
   }
   return out.sort((a, b) => a.time - b.time);
 }
 
 function lyricsToLRC(lines) {
   return lines.map(l => {
-    if (l.time === null || l.time === undefined) return l.text;
+    let outText = l.text;
+    if (l.translation) outText += ` |trans| ${l.translation}`;
+    if (l.time === null || l.time === undefined) return outText;
     const m = String(Math.floor(l.time / 60)).padStart(2, '0');
     const s = String(Math.floor(l.time % 60)).padStart(2, '0');
     const ms = String(Math.floor((l.time % 1) * 100)).padStart(2, '0');
-    return `[${m}:${s}.${ms}] ${l.text}`;
+    return `[${m}:${s}.${ms}] ${outText}`;
   }).join('\n');
 }
 
@@ -2179,7 +2189,16 @@ function spreadPlain(text, duration) {
   const lines = text.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
   if (!lines.length || !duration) return [];
   const step = (duration * 0.85) / lines.length;
-  return lines.map((text, i) => ({ time: Math.round((i * step + 4) * 100) / 100, text }));
+  return lines.map((l, i) => {
+    let raw = l;
+    let translation = '';
+    if (raw.includes(' |trans| ')) {
+      const parts = raw.split(' |trans| ');
+      raw = parts[0].trim();
+      translation = parts[1].trim();
+    }
+    return { time: Math.round((i * step + 4) * 100) / 100, text: raw, translation: translation || undefined };
+  });
 }
 
 function setLyrics(list, type, rawText) {
@@ -2201,7 +2220,7 @@ function setLyrics(list, type, rawText) {
     editorFormat.className = 'editor-format';
   }
 
-  S.tapLines = list.map(l => ({ text: l.text, time: type === 'synced' ? l.time : null }));
+  S.tapLines = list.map(l => ({ text: l.text, time: type === 'synced' ? l.time : null, translation: l.translation || undefined }));
   S.tapIdx = 0;
   exitTapMode();
   precomputeLyricsLayout(canvas.width, canvas.height, selectAlign.value);
@@ -2373,6 +2392,7 @@ function renderLyricsList() {
         
         transInput.addEventListener('change', (e) => {
           S.lyrics[idx].translation = e.target.value.trim();
+          lyricsEditor.value = lyricsToLRC(S.lyrics);
           precomputeLyricsLayout(canvas.width, canvas.height, selectAlign.value);
         });
         transInput.addEventListener('click', e => e.stopPropagation());
@@ -2603,7 +2623,7 @@ function stampLine(idx) {
   const cur = audio.currentTime || 0;
   const t   = Math.max(0, cur - S.syncOffset);
   S.lyrics[idx].time = Math.round(t * 100) / 100;
-  S.tapLines = S.lyrics.map(l => ({ text: l.text, time: l.time }));
+  S.tapLines = S.lyrics.map(l => ({ text: l.text, time: l.time, translation: l.translation || undefined }));
   lyricsEditor.value = lyricsToLRC(S.lyrics);
   editorFormat.textContent = 'Synced LRC';
   editorFormat.className = 'editor-format ok';
@@ -2617,7 +2637,7 @@ function enterTapMode() {
   S.tapMode = true;
   S.tapIdx  = 0;
   S.tapLines = (S.lyrics.length ? S.lyrics : parseLRC(lyricsEditor.value))
-    .map(l => ({ text: l.text, time: null }));
+    .map(l => ({ text: l.text, time: null, translation: l.translation || undefined }));
 
   btnTapToggle.classList.add('active');
   btnTapToggle.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> Tap Sync: ON`;
@@ -2687,8 +2707,8 @@ function resetTimings() {
   S.tapIdx = 0;
   S.lyricsType = 'none';
   // Rebuild tapLines from reset lyrics so they stay in sync
-  S.tapLines = S.lyrics.map(l => ({ text: l.text, time: null }));
-  lyricsEditor.value = S.lyrics.map(l => l.text).join('\n');
+  S.tapLines = S.lyrics.map(l => ({ text: l.text, time: null, translation: l.translation || undefined }));
+  lyricsEditor.value = lyricsToLRC(S.lyrics);
   editorFormat.textContent = 'No timestamps — tap Apply or use Tap Sync';
   editorFormat.className = 'editor-format';
   exitTapMode();
@@ -2802,7 +2822,7 @@ function loadProjectState() {
       editorFormat.className = 'editor-format';
     }
     
-    S.tapLines = S.lyrics.map(l => ({ text: l.text, time: S.lyricsType === 'synced' ? l.time : null }));
+    S.tapLines = S.lyrics.map(l => ({ text: l.text, time: S.lyricsType === 'synced' ? l.time : null, translation: l.translation || undefined }));
     S.tapIdx = 0;
     
     precomputeLyricsLayout(canvas.width, canvas.height, selectAlign.value);
@@ -3027,10 +3047,6 @@ async function startCompile(isShort = false, shortStartTime = 0, isSlideshow = f
   if (lyricsEditor && lyricsEditor.value.trim()) {
     const freshParsed = parseLRC(lyricsEditor.value);
     if (freshParsed && freshParsed.length > 0) {
-      // PRESERVE TRANSLATIONS
-      const oldTrans = (S.lyrics || []).map(l => l.translation || null);
-      freshParsed.forEach((line, i) => { if (oldTrans[i]) line.translation = oldTrans[i]; });
-      
       S.lyrics = freshParsed;
     }
   }
@@ -3450,6 +3466,7 @@ btnTranslate.addEventListener('click', async () => {
         if (S.lyrics[i]) S.lyrics[i].translation = t.trim();
       });
     }
+    lyricsEditor.value = lyricsToLRC(S.lyrics);
     renderLyricsList();
     precomputeLyricsLayout(canvas.width, canvas.height, selectAlign.value);
   } catch (err) {
@@ -3465,6 +3482,7 @@ if (btnClearTrans) {
     if (!S.lyrics || S.lyrics.length === 0) return;
     if (confirm("Are you sure you want to remove all translated lyrics?")) {
       S.lyrics.forEach(l => delete l.translation);
+      lyricsEditor.value = lyricsToLRC(S.lyrics);
       renderLyricsList();
       precomputeLyricsLayout(canvas.width, canvas.height, selectAlign.value);
     }
@@ -3476,17 +3494,31 @@ function groupEditorLyrics(groupSize) {
   const text = lyricsEditor.value;
   if (!text.trim()) return;
 
-  // Split into lines, strip timestamps, filter empty
+  // Split into lines, strip timestamps, filter empty, and extract translations
   const lines = text.split(/\r?\n/)
-    .map(l => l.replace(/^\[\d+:\d+[.:]?\d*\]\s*/, '').trim())
-    .filter(Boolean);
+    .map(l => {
+      let raw = l.replace(/^\[\d+:\d+[.:]?\d*\]\s*/, '').trim();
+      let translation = '';
+      if (raw.includes(' |trans| ')) {
+        const parts = raw.split(' |trans| ');
+        raw = parts[0].trim();
+        translation = parts[1].trim();
+      }
+      return { text: raw, translation };
+    })
+    .filter(obj => obj.text);
 
   if (lines.length === 0) return;
 
   const grouped = [];
   for (let i = 0; i < lines.length; i += groupSize) {
     const chunk = lines.slice(i, i + groupSize);
-    grouped.push(chunk.join(' / '));
+    let chunkText = chunk.map(c => c.text).join(' / ');
+    let chunkTrans = chunk.map(c => c.translation).filter(Boolean).join(' / ');
+    if (chunkTrans) {
+      chunkText += ` |trans| ${chunkTrans}`;
+    }
+    grouped.push(chunkText);
   }
 
   lyricsEditor.value = grouped.join('\n');
@@ -3541,45 +3573,55 @@ function updateTranslationIndicator() {
   }
 }
 
-if (translationsEditor) {
-  translationsEditor.addEventListener('input', () => {
-    if (!S.lyrics || S.lyrics.length === 0) return;
-    
-    const transText = translationsEditor.value;
-    const lines = transText.split('\n').map(l => l.trim());
-    let mapped = 0;
-    
-    S.lyrics.forEach((lyricObj, idx) => {
-      if (idx < lines.length && lines[idx]) {
-        lyricObj.translation = lines[idx];
-        mapped++;
-      } else {
-        delete lyricObj.translation;
-      }
-    });
-
-    const statusEl = document.getElementById('translation-match-status');
-    if (statusEl) {
-      if (transText.trim() === '') {
-        statusEl.textContent = 'Paste translations to map automatically';
-        statusEl.style.color = '#10B981';
-        statusEl.style.backgroundColor = 'rgba(16,185,129,0.05)';
-      } else if (lines.length === S.lyrics.length) {
-        statusEl.textContent = `✓ ${mapped} / ${S.lyrics.length} lines perfectly matched`;
-        statusEl.style.color = '#10B981';
-        statusEl.style.backgroundColor = 'rgba(16,185,129,0.05)';
-      } else {
-        statusEl.textContent = `⚠ ${mapped} / ${S.lyrics.length} lines matched (Mismatch!)`;
-        statusEl.style.color = '#EAB308';
-        statusEl.style.backgroundColor = 'rgba(234,179,8,0.1)';
-      }
+function applyTranslations() {
+  if (!S.lyrics || S.lyrics.length === 0) return 0;
+  
+  const transText = translationsEditor.value.trim();
+  // Do not filter out empty lines, so blank lines in the translation maintain 1-to-1 sync
+  const lines = transText.split('\n').map(l => l.trim());
+  let mapped = 0;
+  
+  S.lyrics.forEach((lyricObj, idx) => {
+    if (idx < lines.length && lines[idx]) {
+      lyricObj.translation = lines[idx];
+      mapped++;
+    } else {
+      delete lyricObj.translation;
     }
-
-    precomputeLyricsLayout(canvas.width, canvas.height, selectAlign.value);
-    renderLyricsList();
-    updateTranslationIndicator();
-    saveProjectState();
   });
+  
+  // Sync back to LRC editor natively
+  lyricsEditor.value = lyricsToLRC(S.lyrics);
+  
+  precomputeLyricsLayout(canvas.width, canvas.height, selectAlign.value);
+  renderLyricsList();
+  updateTranslationIndicator();
+  saveProjectState();
+  
+  // Find or create status label
+  let statusEl = document.getElementById('trans-status-label');
+  if (!statusEl) {
+    statusEl = document.createElement('div');
+    statusEl.id = 'trans-status-label';
+    statusEl.style.fontSize = '10px';
+    statusEl.style.marginTop = '4px';
+    translationsEditor.parentNode.appendChild(statusEl);
+  }
+  
+  if (!transText) {
+    statusEl.textContent = '';
+  } else if (lines.length === S.lyrics.length) {
+    statusEl.textContent = `✅ All ${lines.length} lines match!`;
+    statusEl.style.color = '#10B981';
+  } else {
+    statusEl.textContent = `⚠️ ${lines.length} translations vs ${S.lyrics.length} lyrics`;
+    statusEl.style.color = '#F59E0B';
+  }
+  return mapped;
+}
+
+if (translationsEditor) {
+  translationsEditor.addEventListener('input', applyTranslations);
 }
 
 // Editor apply — read textarea NOW, clear old lyrics, apply new ones, switch to Sync tab
@@ -3592,9 +3634,6 @@ btnApply.addEventListener('click', () => {
   // Detect LRC format (timestamps like [00:12.34] or [0:12])
   if (/\[\d{1,2}:\d{2}/.test(text)) {
     const parsed = parseLRC(text);
-    // Preserve existing translations from S.lyrics — merge by line index
-    const oldTrans = (S.lyrics || []).map(l => l.translation || null);
-    parsed.forEach((line, i) => { if (oldTrans[i]) line.translation = oldTrans[i]; });
     S.lyrics = parsed;
     S.lyricsType = 'synced';
     S.lastHighlightIdx = -1;
@@ -3602,7 +3641,7 @@ btnApply.addEventListener('click', () => {
     wrapCache.clear();
     editorFormat.textContent = 'Synced LRC';
     editorFormat.className = 'editor-format ok';
-    S.tapLines = parsed.map(l => ({ text: l.text, time: l.time }));
+    S.tapLines = parsed.map(l => ({ text: l.text, time: l.time, translation: l.translation || undefined }));
     S.tapIdx = 0;
     exitTapMode();
     precomputeLyricsLayout(canvas.width, canvas.height, selectAlign.value);
@@ -3613,9 +3652,6 @@ btnApply.addEventListener('click', () => {
     // Plain text — strip any existing timestamps from lines and spread evenly
     const plainText = text.split(/\r?\n/).map(l => l.replace(/^\[\d+:\d+[.:]?\d*\]\s*/, '').trim()).filter(Boolean).join('\n');
     const list = S.track ? spreadPlain(plainText, S.track.duration) : [];
-    // Preserve existing translations — merge by line index
-    const oldTrans2 = (S.lyrics || []).map(l => l.translation || null);
-    list.forEach((line, i) => { if (oldTrans2[i]) line.translation = oldTrans2[i]; });
     S.lyrics = list;
     S.lyricsType = 'plain';
     S.lastHighlightIdx = -1;
@@ -3623,7 +3659,7 @@ btnApply.addEventListener('click', () => {
     wrapCache.clear();
     editorFormat.textContent = 'Plain text (tap to sync)';
     editorFormat.className = 'editor-format';
-    S.tapLines = list.map(l => ({ text: l.text, time: null }));
+    S.tapLines = list.map(l => ({ text: l.text, time: null, translation: l.translation || undefined }));
     S.tapIdx = 0;
     exitTapMode();
     precomputeLyricsLayout(canvas.width, canvas.height, selectAlign.value);
