@@ -333,7 +333,7 @@ async function fetchLyricsList(title, artist) {
   const fetchAndMerge = async (url, label) => {
     try {
       console.log(`[LRCLIB] ${label}: ${url}`);
-      const { data } = await axios.get(url, { timeout: 10000, headers: LRCLIB_UA });
+      const { data } = await axios.get(url, { timeout: 30000, headers: LRCLIB_UA });
       if (Array.isArray(data)) {
         for (const record of data) {
           if (record.id) map.set(record.id, record);
@@ -969,6 +969,7 @@ app.get('/api/lyrics-search', async (req, res) => {
   if (!q) return res.status(400).json({ error: 'Missing q parameter' });
   try {
     const response = await axios.get(`https://lrclib.net/api/search?q=${encodeURIComponent(q)}`, {
+      timeout: 30000,
       headers: { 'User-Agent': 'NoisesStudio/1.0 (https://github.com/surfbryce/beautiful-lyrics)' }
     });
     res.json(response.data);
