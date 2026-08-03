@@ -3212,26 +3212,37 @@ async function startCompile(isShort = false, shortStartTime = 0, isSlideshow = f
     a.download = `${S.track.title} - Lyrics Video.mp4`;
     a.click();
     
-    // Generate Thumbnails Client-Side
+    // Generate Thumbnails via Backend API to get the proper YouTube Thumbnail layout
     setProgress(98, 'Generating thumbnails...');
-    const originalTime = S.videoTime;
-    const originalStyle = S.style;
-    const tThumb = S.lyrics && S.lyrics.length > 5 ? S.lyrics[5].time + 0.5 : (S.lyrics && S.lyrics.length > 0 ? S.lyrics[0].time : (S.track.duration || 0) / 2);
-    
-    // Style A (Default)
-    S.videoTime = tThumb;
-    S.style = 'default';
-    drawFrame();
-    const thumbnailDataA = canvas.toDataURL('image/jpeg', 0.9);
-    
-    // Style B (Text)
-    S.style = 'text';
-    drawFrame();
-    const thumbnailDataB = canvas.toDataURL('image/jpeg', 0.9);
-    
-    // Restore
-    S.videoTime = originalTime;
-    S.style = originalStyle;
+    const thumbPayloadA = {
+      title: S.track.title,
+      artist: S.track.artist,
+      artworkUrl: S.track.artworkUrl,
+      theme: 'default',
+      style: 'default'
+    };
+    const resA = await fetch('/api/thumbnail-preview', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(thumbPayloadA)
+    });
+    const blobA = await resA.blob();
+    const thumbnailDataA = URL.createObjectURL(blobA);
+
+    const thumbPayloadB = {
+      title: S.track.title,
+      artist: S.track.artist,
+      artworkUrl: S.track.artworkUrl,
+      theme: 'default',
+      style: 'text'
+    };
+    const resB = await fetch('/api/thumbnail-preview', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(thumbPayloadB)
+    });
+    const blobB = await resB.blob();
+    const thumbnailDataB = URL.createObjectURL(blobB);
     
     // Generate Metadata Client-Side
     setProgress(99, 'Generating metadata...');
