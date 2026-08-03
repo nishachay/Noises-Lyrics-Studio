@@ -3093,6 +3093,8 @@ async function startCompile(isShort = false, shortStartTime = 0, isSlideshow = f
   let audioBuffer = null;
   let audioCtx = null;
   let output = null;
+  let videoSource = null;
+  let audioSource = null;
   const startTimeMs = performance.now();
   let objectUrl = null;
 
@@ -3134,12 +3136,12 @@ async function startCompile(isShort = false, shortStartTime = 0, isSlideshow = f
     const ctx = canvas.getContext('2d');
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    const videoSource = new CanvasSource(canvas, {
+    videoSource = new CanvasSource(canvas, {
       codec: 'avc',
       quality: new Quality('high')
     });
 
-    const audioSource = new AudioBufferSource({
+    audioSource = new AudioBufferSource({
       codec: 'aac',
       quality: new Quality('high')
     });
@@ -3283,6 +3285,14 @@ async function startCompile(isShort = false, shortStartTime = 0, isSlideshow = f
     audioBuffer = null;
     output = null;
     audioCtx = null;
+    if (videoSource) {
+      try { videoSource.close(); } catch(e) {}
+      videoSource = null;
+    }
+    if (audioSource) {
+      try { audioSource.close(); } catch(e) {}
+      audioSource = null;
+    }
     // We intentionally do not revoke objectUrl here so the 'Download' button works on the Done screen.
     // It will be revoked on the next compile.
   }
