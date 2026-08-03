@@ -181,6 +181,7 @@ let audio = null;           // Native <audio> element
 let scrubbing = false;
 let activeSSE = null;
 let shouldCancelExport = false;
+let lastVideoObjectUrl = null;
 
 function initAudio(videoId) {
   if (!audio) {
@@ -3071,6 +3072,11 @@ async function startCompile(isShort = false, shortStartTime = 0, isSlideshow = f
 
   showView('progress');
 
+  if (lastVideoObjectUrl) {
+    URL.revokeObjectURL(lastVideoObjectUrl);
+    lastVideoObjectUrl = null;
+  }
+
   if (typeof Mediabunny === 'undefined') {
     setProgress(0, 'Error: Mediabunny library not loaded.');
     logLine('Mediabunny not found. Ensure the CDN script is in index.html.', 'error');
@@ -3195,6 +3201,7 @@ async function startCompile(isShort = false, shortStartTime = 0, isSlideshow = f
 
     const mp4Blob = new Blob([output.target.buffer], { type: 'video/mp4' });
     objectUrl = URL.createObjectURL(mp4Blob);
+    lastVideoObjectUrl = objectUrl;
     
     // Automatically trigger download
     const a = document.createElement('a');
@@ -3222,10 +3229,8 @@ async function startCompile(isShort = false, shortStartTime = 0, isSlideshow = f
     audioBuffer = null;
     output = null;
     audioCtx = null;
-    
-    if (objectUrl) {
-      setTimeout(() => URL.revokeObjectURL(objectUrl), 30000); // 30s cleanup
-    }
+    // We intentionally do not revoke objectUrl here so the 'Download' button works on the Done screen.
+    // It will be revoked on the next compile.
   }
 }
 
