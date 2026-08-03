@@ -1,6 +1,6 @@
 {
   "name": "noises-lyrics-studio",
-  "version": "9.1.37",
+  "version": "9.2.0",
   "description": "Dynamic web-based studio for timing and rendering lyrics videos",
   "main": "server.js",
   "scripts": {

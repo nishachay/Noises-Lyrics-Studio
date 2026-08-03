@@ -180,6 +180,7 @@ const selectLinesPerScreen = $('select-lines-per-screen');
 let audio = null;           // Native <audio> element
 let scrubbing = false;
 let activeSSE = null;
+let shouldCancelExport = false;
 
 function initAudio(videoId) {
   if (!audio) {
@@ -3061,6 +3062,7 @@ async function startCompile(isShort = false, shortStartTime = 0, isSlideshow = f
 
   lastPct = 0;
   progLog.innerHTML = '';
+  shouldCancelExport = false;
   setProgress(0, 'Initializing...');
   progTitle.textContent  = S.track.title + (isShort ? ' (Short)' : '');
   progArtist.textContent = S.track.artist;
@@ -3069,79 +3071,162 @@ async function startCompile(isShort = false, shortStartTime = 0, isSlideshow = f
 
   showView('progress');
 
-  const payload = {
-    id:             S.track.youtubeId || S.track.id || 'song',
-    videoUrl:       `https://www.youtube.com/watch?v=${S.track.youtubeId || S.track.id || ''}`,
-    title:          S.track.title,
-    artist:         S.track.artist,
-    duration:       S.track.duration,
-    lyrics:         JSON.stringify(S.lyrics),
-    artworkUrl:     S.track.artworkUrl || '',
-    offset:         S.syncOffset,
-    resolution:     selectRes.value,
-    fps:            selectFps.value,
-    alignment:      selectAlign.value,
-    linesPerScreen: selectLinesPerScreen ? selectLinesPerScreen.value : '1',
-    isShort:        isShort,
-    shortStartTime: shortStartTime,
-    isSlideshow:    isSlideshow,
-    slideshowIndices: JSON.stringify(window.slideshowIndices || []),
-    youtubeDuration: S.track.youtubeDuration || S.track.duration,
-    itunesDuration:  S.track.duration,
-  };
-  if (S.track.customAudioPath) payload.customAudioPath = S.track.customAudioPath;
+  if (typeof Mediabunny === 'undefined') {
+    setProgress(0, 'Error: Mediabunny library not loaded.');
+    logLine('Mediabunny not found. Ensure the CDN script is in index.html.', 'error');
+    return;
+  }
 
-  if (activeSSE) activeSSE.close();
+  const videoId = S.track.youtubeId || S.track.id;
+  if (!videoId) {
+    setProgress(0, 'Error: No video ID.');
+    logLine('No video ID found.', 'error');
+    return;
+  }
 
-  fetch('/api/render-job', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload)
-  })
-  .then(res => res.json())
-  .then(data => {
-    if (!data.jobId) throw new Error('No job ID returned');
+  let audioBuffer = null;
+  let audioCtx = null;
+  let output = null;
+  const startTimeMs = performance.now();
+  let objectUrl = null;
+
+  try {
+    setProgress(2, 'Fetching audio...');
+    const audioUrl = S.track.customAudioPath || `/api/stream/${videoId}`;
+    const audioRes = await fetch(audioUrl);
+    if (!audioRes.ok) throw new Error('Failed to fetch audio stream');
     
-    activeSSE = new EventSource(`/api/render?jobId=${data.jobId}`);
-    
-    activeSSE.onmessage = e => {
-      const msg = JSON.parse(e.data);
-      if (msg.error) {
-        activeSSE.close();
-        logLine(`ERROR: ${msg.error}`, 'error');
-        setProgress(lastPct, 'Failed.');
-        return;
-      }
-      switch (msg.status) {
-        case 'downloading': setProgress(msg.progress ?? 5, msg.message); break;
-        case 'rendering':   setProgress(msg.progress ?? 18, msg.message); break;
-        case 'progress':    setProgress(msg.progress, `Rendering... ${msg.progress}%`); break;
-        case 'error':
-          activeSSE.close();
-          setProgress(lastPct, 'Error!');
-          logLine(msg.error || 'Unknown error occurred', 'error');
-          showView('publish');
-          break;
-        case 'completed':
-          activeSSE.close();
-          setProgress(100, 'Done!');
-          logLine('Video ready!', 'ok');
-          showDone(msg);
-          break;
-      }
-      logLine(msg.message || '');
-    };
+    setProgress(5, 'Downloading audio buffer...');
+    const audioArrayBuffer = await audioRes.arrayBuffer();
+    if (shouldCancelExport) throw new Error('Cancelled');
 
-    activeSSE.onerror = () => {
-      if (activeSSE.readyState === EventSource.CLOSED) return;
-      activeSSE.close();
-      logLine('Connection lost.', 'error');
-    };
-  })
-  .catch(err => {
-    setProgress(lastPct, 'Failed to start job.');
-    logLine('Error starting render job: ' + err.message, 'error');
-  });
+    setProgress(7, 'Decoding audio...');
+    audioCtx = new (window.OfflineAudioContext || window.AudioContext)(2, 1, 44100);
+    audioBuffer = await audioCtx.decodeAudioData(audioArrayBuffer);
+    if (shouldCancelExport) throw new Error('Cancelled');
+    
+    // Close context if possible
+    if (audioCtx.close && !(audioCtx instanceof OfflineAudioContext)) {
+      audioCtx.close().catch(console.error);
+    }
+
+    setProgress(8, 'Starting render...');
+
+    const { Output, Mp4OutputFormat, BufferTarget, CanvasSource, AudioBufferSource, Quality } = Mediabunny;
+
+    output = new Output({
+      format: new Mp4OutputFormat({ fastStart: 'in-memory' }),
+      target: new BufferTarget()
+    });
+
+    // Force canvas size to 1920x1080
+    const canvas = document.getElementById('preview-canvas');
+    canvas.width = 1920;
+    canvas.height = 1080;
+    
+    // Clear canvas
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    const videoSource = new CanvasSource(canvas, {
+      codec: 'avc',
+      quality: new Quality('high')
+    });
+
+    const audioSource = new AudioBufferSource({
+      codec: 'aac',
+      quality: new Quality('high')
+    });
+
+    output.addVideoTrack(videoSource, { frameRate: 30 });
+    output.addAudioTrack(audioSource);
+
+    await output.start();
+    if (shouldCancelExport) throw new Error('Cancelled');
+
+    audioSource.add(audioBuffer);
+
+    const fps = 30;
+    // For short export, limit duration to 30s max
+    const startSec = isShort ? shortStartTime : 0;
+    const maxDur = isShort ? Math.min(30, audioBuffer.duration - startSec) : audioBuffer.duration;
+    const endSec = startSec + maxDur;
+    const totalFrames = Math.ceil((endSec - startSec) * fps);
+
+    let framesProcessed = 0;
+
+    for (let i = 0; i < totalFrames; i++) {
+      if (shouldCancelExport) throw new Error('Cancelled');
+      
+      const time = startSec + (i / fps);
+      S.videoTime = time;
+      
+      // Draw lyrics
+      drawFrame(); 
+      
+      await videoSource.add(time); 
+      framesProcessed++;
+
+      // Yield every 5 frames
+      if (framesProcessed % 5 === 0) {
+        await new Promise(r => setTimeout(r, 0));
+        if (shouldCancelExport) throw new Error('Cancelled');
+        
+        // Progress mapping: Render is 8% to 95%
+        const renderPct = 8 + ((framesProcessed / totalFrames) * 87);
+        
+        // Estimate time
+        const elapsed = (performance.now() - startTimeMs) / 1000;
+        const fpsReal = framesProcessed / elapsed;
+        const remainingFrames = totalFrames - framesProcessed;
+        const estSec = Math.round(remainingFrames / fpsReal);
+        
+        setProgress(renderPct, `Rendering... (Est. ${estSec}s left)`);
+      }
+    }
+
+    setProgress(95, 'Finalizing video...');
+    await output.finalize();
+
+    if (shouldCancelExport) throw new Error('Cancelled');
+    
+    setProgress(100, 'Done!');
+    logLine(`Video ready in ${Math.round((performance.now() - startTimeMs) / 1000)}s!`, 'ok');
+
+    const mp4Blob = new Blob([output.target.buffer], { type: 'video/mp4' });
+    objectUrl = URL.createObjectURL(mp4Blob);
+    
+    // Automatically trigger download
+    const a = document.createElement('a');
+    a.href = objectUrl;
+    a.download = `${S.track.title} - Lyrics Video.mp4`;
+    a.click();
+    
+    showDone({ 
+      isClientSide: true, 
+      downloadUrl: objectUrl,
+      downloadFilename: `${S.track.title} - Lyrics Video.mp4`
+    }); 
+
+  } catch (err) {
+    if (err.message === 'Cancelled') {
+      logLine('Export cancelled by user.', 'error');
+      setProgress(0, 'Cancelled');
+    } else {
+      logLine('Export error: ' + err.message, 'error');
+      setProgress(lastPct, 'Error!');
+    }
+  } finally {
+    // Explicit cleanup
+    shouldCancelExport = false;
+    audioBuffer = null;
+    output = null;
+    audioCtx = null;
+    
+    if (objectUrl) {
+      setTimeout(() => URL.revokeObjectURL(objectUrl), 30000); // 30s cleanup
+    }
+  }
 }
 
 function setProgress(pct, label) {
@@ -3165,7 +3250,13 @@ let lastThumbnailA = null;
 let lastThumbnailB = null;
 
 function showDone(msg) {
-  btnDlVideo.href = `/api/download/${msg.fileId}`;
+  if (msg.isClientSide) {
+    btnDlVideo.href = msg.downloadUrl;
+    btnDlVideo.download = msg.downloadFilename;
+  } else {
+    btnDlVideo.href = `/api/download/${msg.fileId}`;
+    btnDlVideo.removeAttribute('download');
+  }
   
   const btnDlThumbA = document.getElementById('btn-dl-thumb-a');
   const btnDlThumbB = document.getElementById('btn-dl-thumb-b');
@@ -3823,6 +3914,7 @@ if (selectLinesPerScreen) {
 
 // Cancel render
 btnCancel.addEventListener('click', () => {
+  shouldCancelExport = true;
   if (activeSSE) activeSSE.close();
   showView('studio');
   startCanvasLoop();
