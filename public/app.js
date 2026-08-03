@@ -3212,10 +3212,50 @@ async function startCompile(isShort = false, shortStartTime = 0, isSlideshow = f
     a.download = `${S.track.title} - Lyrics Video.mp4`;
     a.click();
     
+    // Generate Thumbnails Client-Side
+    setProgress(98, 'Generating thumbnails...');
+    const originalTime = S.videoTime;
+    const originalStyle = S.style;
+    const tThumb = S.lyrics && S.lyrics.length > 5 ? S.lyrics[5].time + 0.5 : (S.lyrics && S.lyrics.length > 0 ? S.lyrics[0].time : (S.track.duration || 0) / 2);
+    
+    // Style A (Default)
+    S.videoTime = tThumb;
+    S.style = 'default';
+    drawFrame();
+    const thumbnailDataA = canvas.toDataURL('image/jpeg', 0.9);
+    
+    // Style B (Text)
+    S.style = 'text';
+    drawFrame();
+    const thumbnailDataB = canvas.toDataURL('image/jpeg', 0.9);
+    
+    // Restore
+    S.videoTime = originalTime;
+    S.style = originalStyle;
+    
+    // Generate Metadata Client-Side
+    setProgress(99, 'Generating metadata...');
+    const hasTranslation = S.lyrics && S.lyrics.some(l => l.translation && l.translation.trim() !== '');
+    const youtubeTitle = `${S.track.artist} - ${S.track.title} (Lyrics${hasTranslation ? ' & English Translation' : ''})`;
+    const lyricLines = S.lyrics ? S.lyrics.map(l => l.text).join('\n') : '';
+    const tags = `#${(S.track.artist||'').replace(/\s+/g,'')} #${(S.track.title||'').replace(/\s+/g,'')} #Lyrics #NoisesMusic #NoisesHipHop #NoisesDHH #NoisesKpop #NoisesGeet`;
+    
+    const disclaimer = `\n\n────────────────────────────────────────────────────────────\n⚠️ COPYRIGHT DISCLAIMER:\nWe do not own the rights to this song. All credits go to the original artists and their respective record labels. This video is created for entertainment purposes only.\n────────────────────────────────────────────────────────────`;
+    const networkBlock = `\n\n🌐 Follow Our Network:\n- Noises Music: https://youtube.com/@NoisesMusic\n- Noises HipHop: https://youtube.com/@NoisesHipHop\n- Noises DHH: https://youtube.com/@NoisesDHH\n- Noises Kpop: https://youtube.com/@NoisesKpop\n- Noises Geet: https://youtube.com/@NoisesGeet`;
+    const ytVideoUrl = S.track.youtubeId ? `https://www.youtube.com/watch?v=${S.track.youtubeId}` : '';
+    
+    const youtubeDescription = `🎵 ${S.track.artist} - ${S.track.title} (Lyrics Video)\n\n${ytVideoUrl}\n\n${lyricLines}\n\n${tags}${networkBlock}${disclaimer}`;
+    const youtubeTags = `${S.track.artist}, ${S.track.title}, Lyrics, Pop, Music`;
+
     showDone({ 
       isClientSide: true, 
       downloadUrl: objectUrl,
-      downloadFilename: `${S.track.title} - Lyrics Video.mp4`
+      downloadFilename: `${S.track.title} - Lyrics Video.mp4`,
+      thumbnailDataA,
+      thumbnailDataB,
+      youtubeTitle,
+      youtubeDescription,
+      youtubeTags
     }); 
 
   } catch (err) {
@@ -3271,6 +3311,17 @@ function showDone(msg) {
   if (btnDlThumbA && msg.thumbnailIdA) btnDlThumbA.href = `/api/download/${msg.thumbnailIdA}`;
   if (btnDlThumbB && msg.thumbnailIdB) btnDlThumbB.href = `/api/download/${msg.thumbnailIdB}`;
 
+  if (msg.isClientSide) {
+    if (btnDlThumbA && msg.thumbnailDataA) {
+      btnDlThumbA.href = msg.thumbnailDataA;
+      btnDlThumbA.download = `${S.track.title} - Thumbnail A.jpg`;
+    }
+    if (btnDlThumbB && msg.thumbnailDataB) {
+      btnDlThumbB.href = msg.thumbnailDataB;
+      btnDlThumbB.download = `${S.track.title} - Thumbnail B.jpg`;
+    }
+  }
+
   lastThumbnailA = msg.thumbnailIdA;
   lastThumbnailB = msg.thumbnailIdB;
   
@@ -3292,7 +3343,13 @@ function showDone(msg) {
       loaderA.style.display = 'block';
       loaderA.textContent = 'Generating A...';
     }
-    if (msg.thumbnailIdA) {
+    if (msg.isClientSide && msg.thumbnailDataA) {
+      imgA.onload = () => {
+        if (loaderA) loaderA.style.display = 'none';
+        imgA.classList.add('loaded');
+      };
+      imgA.src = msg.thumbnailDataA;
+    } else if (msg.thumbnailIdA) {
       imgA.onload = () => {
         if (loaderA) loaderA.style.display = 'none';
         imgA.classList.add('loaded');
@@ -3313,7 +3370,13 @@ function showDone(msg) {
       loaderB.style.display = 'block';
       loaderB.textContent = 'Generating B...';
     }
-    if (msg.thumbnailIdB) {
+    if (msg.isClientSide && msg.thumbnailDataB) {
+      imgB.onload = () => {
+        if (loaderB) loaderB.style.display = 'none';
+        imgB.classList.add('loaded');
+      };
+      imgB.src = msg.thumbnailDataB;
+    } else if (msg.thumbnailIdB) {
       imgB.onload = () => {
         if (loaderB) loaderB.style.display = 'none';
         imgB.classList.add('loaded');
