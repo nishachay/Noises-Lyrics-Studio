@@ -161,6 +161,41 @@ app.post('/api/thumbnail-preview', async (req, res) => {
 });
 
 // ----------------------------------------------------
+// AUTO-SAVE EXPORT TO DISK
+// ----------------------------------------------------
+app.post('/api/save-export', express.raw({ limit: '500mb', type: '*/*' }), (req, res) => {
+  try {
+    const filename = req.query.filename || 'export.mp4';
+    const targetDir = 'E:\\noises studio\\need to upload';
+    if (!fs.existsSync(targetDir)) {
+      fs.mkdirSync(targetDir, { recursive: true });
+    }
+    const targetPath = path.join(targetDir, filename);
+    fs.writeFileSync(targetPath, req.body);
+    res.json({ success: true, path: targetPath });
+  } catch (err) {
+    console.error('Save Export Error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/save-thumbnail', express.raw({ limit: '50mb', type: '*/*' }), (req, res) => {
+  try {
+    const filename = req.query.filename || 'thumbnail.jpg';
+    const targetDir = 'E:\\noises studio\\need to upload';
+    if (!fs.existsSync(targetDir)) {
+      fs.mkdirSync(targetDir, { recursive: true });
+    }
+    const targetPath = path.join(targetDir, filename);
+    fs.writeFileSync(targetPath, req.body);
+    res.json({ success: true, path: targetPath });
+  } catch (err) {
+    console.error('Save Thumbnail Error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ----------------------------------------------------
 // YT UPLOAD ENDPOINT
 // ----------------------------------------------------
 app.post('/api/youtube-upload', async (req, res) => {

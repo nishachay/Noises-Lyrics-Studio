@@ -3208,11 +3208,20 @@ async function startCompile(isShort = false, shortStartTime = 0, isSlideshow = f
     objectUrl = URL.createObjectURL(mp4Blob);
     lastVideoObjectUrl = objectUrl;
     
-    // Automatically trigger download
-    const a = document.createElement('a');
-    a.href = objectUrl;
-    a.download = `${S.track.title} - Lyrics Video.mp4`;
-    a.click();
+    // // Automatically trigger download (Disabled: auto-saving to E:\noises studio\need to upload)
+    // const a = document.createElement('a');
+    // a.href = objectUrl;
+    // a.download = `${S.track.title} - Lyrics Video.mp4`;
+    // a.click();
+    
+    // Save video to backend auto-save folder
+    try {
+      setProgress(96, 'Saving video to E:\\noises studio\\need to upload...');
+      await fetch('/api/save-export?filename=' + encodeURIComponent(`${S.track.artist} - ${S.track.title} - Lyrics Video.mp4`), {
+        method: 'POST',
+        body: mp4Blob
+      });
+    } catch(e) { console.error('Auto-save failed:', e); }
     
     // Generate Thumbnails via Backend API to get the proper YouTube Thumbnail layout
     setProgress(98, 'Generating thumbnails...');
@@ -3231,6 +3240,13 @@ async function startCompile(isShort = false, shortStartTime = 0, isSlideshow = f
     const blobA = await resA.blob();
     const thumbnailDataA = URL.createObjectURL(blobA);
 
+    try {
+      await fetch('/api/save-thumbnail?filename=' + encodeURIComponent(`${S.track.artist} - ${S.track.title} - Thumb A.jpg`), {
+        method: 'POST',
+        body: blobA
+      });
+    } catch(e) {}
+
     const thumbPayloadB = {
       title: S.track.title,
       artist: S.track.artist,
@@ -3245,6 +3261,13 @@ async function startCompile(isShort = false, shortStartTime = 0, isSlideshow = f
     });
     const blobB = await resB.blob();
     const thumbnailDataB = URL.createObjectURL(blobB);
+
+    try {
+      await fetch('/api/save-thumbnail?filename=' + encodeURIComponent(`${S.track.artist} - ${S.track.title} - Thumb B.jpg`), {
+        method: 'POST',
+        body: blobB
+      });
+    } catch(e) {}
     
     // Generate Metadata Client-Side
     setProgress(99, 'Generating metadata...');
