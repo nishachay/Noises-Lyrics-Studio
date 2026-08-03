@@ -893,17 +893,10 @@
     <div id="competitor-list" style="flex: 1; overflow-y: auto; padding: 24px; display: flex; flex-direction: column; gap: 8px; background: var(--bg-a);">
       <div style="text-align:center; padding: 40px; color:var(--text-3);">Loading latest uploads...</div>
     </div>
-  </div>
-</div>
-
-<script src="https://cdn.jsdelivr.net/npm/mediabunny@1.52.2/dist/mediabunny.cjs"></script>
-<script src="app.js?v=9.1.10"></script>
+  <script type="module">
+    import * as Mediabunny from 'https://cdn.jsdelivr.net/npm/mediabunny@1.52.2/dist/bundles/mediabunny.mjs';
+    window.Mediabunny = Mediabunny;
+  </script>
+  <script src="app.js?v=9.2.0"></script>
 </body>
 </html>
-
-
-
-
-
-
-
