@@ -3107,7 +3107,7 @@ async function startCompile(isShort = false, shortStartTime = 0, isSlideshow = f
     if (shouldCancelExport) throw new Error('Cancelled');
 
     setProgress(7, 'Decoding audio...');
-    audioCtx = new (window.OfflineAudioContext || window.AudioContext)(2, 1, 44100);
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
     audioBuffer = await audioCtx.decodeAudioData(audioArrayBuffer);
     if (shouldCancelExport) throw new Error('Cancelled');
     
@@ -3150,7 +3150,8 @@ async function startCompile(isShort = false, shortStartTime = 0, isSlideshow = f
     await output.start();
     if (shouldCancelExport) throw new Error('Cancelled');
 
-    audioSource.add(audioBuffer);
+    await audioSource.add(audioBuffer);
+    audioSource.close();
 
     const fps = 30;
     // For short export, limit duration to 30s max
@@ -3190,6 +3191,8 @@ async function startCompile(isShort = false, shortStartTime = 0, isSlideshow = f
         setProgress(renderPct, `Rendering... (Est. ${estSec}s left)`);
       }
     }
+
+    videoSource.close();
 
     setProgress(95, 'Finalizing video...');
     await output.finalize();
