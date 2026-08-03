@@ -3230,7 +3230,7 @@ async function startCompile(isShort = false, shortStartTime = 0, isSlideshow = f
       artist: S.track.artist,
       artworkUrl: S.track.artworkUrl,
       theme: 'default',
-      style: 'default'
+      style: 'A'
     };
     const resA = await fetch('/api/thumbnail-preview', {
       method: 'POST',
@@ -3252,7 +3252,7 @@ async function startCompile(isShort = false, shortStartTime = 0, isSlideshow = f
       artist: S.track.artist,
       artworkUrl: S.track.artworkUrl,
       theme: 'default',
-      style: 'text'
+      style: 'B'
     };
     const resB = await fetch('/api/thumbnail-preview', {
       method: 'POST',
