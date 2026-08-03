@@ -3269,19 +3269,37 @@ async function startCompile(isShort = false, shortStartTime = 0, isSlideshow = f
       });
     } catch(e) {}
     
-    // Generate Metadata Client-Side
+    // Generate Metadata via Backend API (to get SEO tags and proper formatting)
     setProgress(99, 'Generating metadata...');
-    const hasTranslation = S.lyrics && S.lyrics.some(l => l.translation && l.translation.trim() !== '');
-    const youtubeTitle = `${S.track.artist} - ${S.track.title} (Lyrics${hasTranslation ? ' & English Translation' : ''})`;
-    const lyricLines = S.lyrics ? S.lyrics.map(l => l.text).join('\n') : '';
-    const tags = `#${(S.track.artist||'').replace(/\s+/g,'')} #${(S.track.title||'').replace(/\s+/g,'')} #Lyrics #NoisesMusic #NoisesHipHop #NoisesDHH #NoisesKpop #NoisesGeet`;
     
-    const disclaimer = `\n\n────────────────────────────────────────────────────────────\n⚠️ COPYRIGHT DISCLAIMER:\nWe do not own the rights to this song. All credits go to the original artists and their respective record labels. This video is created for entertainment purposes only.\n────────────────────────────────────────────────────────────`;
-    const networkBlock = `\n\n🌐 Follow Our Network:\n- Noises Music: https://youtube.com/@NoisesMusic\n- Noises HipHop: https://youtube.com/@NoisesHipHop\n- Noises DHH: https://youtube.com/@NoisesDHH\n- Noises Kpop: https://youtube.com/@NoisesKpop\n- Noises Geet: https://youtube.com/@NoisesGeet`;
-    const ytVideoUrl = S.track.youtubeId ? `https://www.youtube.com/watch?v=${S.track.youtubeId}` : '';
+    let youtubeTitle = '';
+    let youtubeDescription = '';
+    let youtubeTags = '';
+    let youtubeUploadTime = '';
     
-    const youtubeDescription = `🎵 ${S.track.artist} - ${S.track.title} (Lyrics Video)\n\n${ytVideoUrl}\n\n${lyricLines}\n\n${tags}${networkBlock}${disclaimer}`;
-    const youtubeTags = `${S.track.artist}, ${S.track.title}, Lyrics, Pop, Music`;
+    try {
+      const metaRes = await fetch('/api/generate-metadata', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          songArtist: S.track.artist,
+          songTitle: S.track.title,
+          videoUrl: '', 
+          lyrics: S.lyrics,
+          hasTranslation: S.lyrics && S.lyrics.some(l => l.translation && l.translation.trim() !== ''),
+          channel: 'Pop' 
+        })
+      });
+      const metaData = await metaRes.json();
+      youtubeTitle = metaData.youtubeTitle;
+      youtubeDescription = metaData.youtubeDescription;
+      youtubeTags = metaData.youtubeTags;
+      youtubeUploadTime = metaData.youtubeUploadTime;
+    } catch (e) {
+      console.error('Failed to generate metadata from backend:', e);
+      // Fallback
+      youtubeTitle = `${S.track.artist} - ${S.track.title} (Lyrics)`;
+    }
 
     showDone({ 
       isClientSide: true, 
@@ -3291,7 +3309,8 @@ async function startCompile(isShort = false, shortStartTime = 0, isSlideshow = f
       thumbnailDataB,
       youtubeTitle,
       youtubeDescription,
-      youtubeTags
+      youtubeTags,
+      youtubeUploadTime
     }); 
 
   } catch (err) {
@@ -3374,6 +3393,9 @@ function showDone(msg) {
   
   const ytTags = document.getElementById('yt-tags');
   if (ytTags) ytTags.value = msg.youtubeTags || '';
+  
+  const ytUpload = document.getElementById('yt-upload');
+  if (ytUpload) ytUpload.value = msg.youtubeUploadTime || '';
 
   doneSub.textContent = `${S.track.artist} · ${S.track.title}`;
 
