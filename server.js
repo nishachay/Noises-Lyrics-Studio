@@ -1372,7 +1372,23 @@ app.post('/api/generate-metadata', express.json(), async (req, res) => {
     const networkBlock = `\n\n🌐 Follow Our Network:\n- Noises Music: https://youtube.com/@NoisesMusic\n- Noises HipHop: https://youtube.com/@NoisesHipHop\n- Noises DHH: https://youtube.com/@NoisesDHH\n- Noises Kpop: https://youtube.com/@NoisesKpop\n- Noises Geet: https://youtube.com/@NoisesGeet`;
 
     const officialBlock = officialLinks ? `\n\n${officialLinks}` : '';
-    const youtubeDescription = `🎵 ${songArtist} - ${songTitle} (Lyrics Video)${officialBlock}\n\n${lyricLines}\n\n${tags}${seoBlock}${networkBlock}${disclaimer}`;
+    
+    const headerBlock = `🎵 ${songArtist} - ${songTitle} (Lyrics Video)${officialBlock}`;
+    const footerBlock = `\n\n${tags}${seoBlock}${networkBlock}${disclaimer}`;
+    
+    // Calculate how much space the lyrics can take (YouTube limit is 5000 characters)
+    // We leave a buffer of 50 characters just to be safe.
+    let finalLyricLines = lyricLines;
+    const truncationNotice = `\n\n(... Full lyrics are in the video ...)`;
+    const budget = 5000 - headerBlock.length - footerBlock.length - 50;
+    
+    if (finalLyricLines.length > budget) {
+      // We must truncate the lyrics, accounting for the length of the truncation notice itself
+      const safeLength = budget - truncationNotice.length;
+      finalLyricLines = finalLyricLines.substring(0, safeLength) + truncationNotice;
+    }
+
+    const youtubeDescription = `${headerBlock}\n\n${finalLyricLines}${footerBlock}`;
 
     const fallbackTags = `${songArtist}, ${songTitle}, Lyrics, Pop, Music`;
     const youtubeTags  = seoKeywords.length > 0 ? seoKeywords.join(', ') + `, ${fallbackTags}` : fallbackTags;
