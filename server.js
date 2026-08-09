@@ -1334,15 +1334,12 @@ app.post('/api/generate-metadata', express.json(), async (req, res) => {
     
     const conf = channelConfigs[channel] || channelConfigs['Pop'];
 
-    const searchQ = encodeURIComponent(`${songArtist} ${songTitle}`);
-    const officialLinks = `🎧 Official Song Links:\n- Spotify: https://open.spotify.com/search/${searchQ}/tracks\n- Apple Music: https://music.apple.com/us/search?term=${searchQ}\n- YouTube: https://www.youtube.com/results?search_query=${searchQ}`;
-
     const tags          = `#${songArtist.replace(/\s+/g,'')} #${songTitle.replace(/\s+/g,'')} #Lyrics ${conf.tag}`;
     const seoBlock      = seoKeywords.length > 0 ? `\n\nSearch terms:\n${seoKeywords.join(', ')}` : '';
     const disclaimer    = `\n\n────────────────────────────────────────────────────────────\n⚠️ COPYRIGHT DISCLAIMER:\nWe do not own the rights to this song. All credits go to the original artists and their respective record labels. This video is created for entertainment purposes only.\n────────────────────────────────────────────────────────────`;
     const networkBlock = `\n\n🌐 Follow Our Network:\n- Noises Music: https://youtube.com/@NoisesMusic\n- Noises HipHop: https://youtube.com/@NoisesHipHop\n- Noises DHH: https://youtube.com/@NoisesDHH\n- Noises Kpop: https://youtube.com/@NoisesKpop\n- Noises Geet: https://youtube.com/@NoisesGeet`;
 
-    const youtubeDescription = `🎵 ${songArtist} - ${songTitle} (Lyrics Video)\n\n${officialLinks}\n\n${lyricLines}\n\n${tags}${seoBlock}${networkBlock}${disclaimer}`;
+    const youtubeDescription = `🎵 ${songArtist} - ${songTitle} (Lyrics Video)\n\n${lyricLines}\n\n${tags}${seoBlock}${networkBlock}${disclaimer}`;
 
     const fallbackTags = `${songArtist}, ${songTitle}, Lyrics, Pop, Music`;
     const youtubeTags  = seoKeywords.length > 0 ? seoKeywords.join(', ') + `, ${fallbackTags}` : fallbackTags;
