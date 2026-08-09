@@ -1320,6 +1320,29 @@ app.post('/api/generate-metadata', express.json(), async (req, res) => {
       console.log('[SEO/meta] Could not fetch autocomplete tags:', e.message);
     }
 
+    // Fetch real official links for description
+    let officialLinks = '';
+    try {
+      const linkLines = [];
+      
+      // 1. Apple Music Link
+      const q = encodeURIComponent(`${songArtist} ${songTitle}`);
+      const itunesUrlReq = `https://itunes.apple.com/search?term=${q}&media=music&entity=song&limit=1`;
+      const { data: itunesData } = await axios.get(itunesUrlReq, { timeout: 5000 });
+      const appleUrl = itunesData && itunesData.results && itunesData.results.length > 0 ? itunesData.results[0].trackViewUrl : '';
+      if (appleUrl) linkLines.push(`- Apple Music: ${appleUrl}`);
+
+      // 2. YouTube Official Link
+      const ytData = await searchYoutube(`${songArtist} ${songTitle} official audio`);
+      if (ytData && ytData.length > 0) linkLines.push(`- YouTube: ${ytData[0].webpage_url}`);
+
+      if (linkLines.length > 0) {
+        officialLinks = `🎧 Official Audio:\n${linkLines.join('\n')}`;
+      }
+    } catch (e) {
+      console.log('[SEO/meta] Could not fetch official links:', e.message);
+    }
+
     const youtubeTitle = `${songArtist} - ${songTitle} (Lyrics${hasTranslation ? ' & English Translation' : ''})`;
     const lyricLines   = lyrics.map(l => (typeof l === 'string' ? l : l.text || '')).join('\n');
 
@@ -1339,7 +1362,8 @@ app.post('/api/generate-metadata', express.json(), async (req, res) => {
     const disclaimer    = `\n\n────────────────────────────────────────────────────────────\n⚠️ COPYRIGHT DISCLAIMER:\nWe do not own the rights to this song. All credits go to the original artists and their respective record labels. This video is created for entertainment purposes only.\n────────────────────────────────────────────────────────────`;
     const networkBlock = `\n\n🌐 Follow Our Network:\n- Noises Music: https://youtube.com/@NoisesMusic\n- Noises HipHop: https://youtube.com/@NoisesHipHop\n- Noises DHH: https://youtube.com/@NoisesDHH\n- Noises Kpop: https://youtube.com/@NoisesKpop\n- Noises Geet: https://youtube.com/@NoisesGeet`;
 
-    const youtubeDescription = `🎵 ${songArtist} - ${songTitle} (Lyrics Video)\n\n${lyricLines}\n\n${tags}${seoBlock}${networkBlock}${disclaimer}`;
+    const officialBlock = officialLinks ? `\n\n${officialLinks}` : '';
+    const youtubeDescription = `🎵 ${songArtist} - ${songTitle} (Lyrics Video)${officialBlock}\n\n${lyricLines}\n\n${tags}${seoBlock}${networkBlock}${disclaimer}`;
 
     const fallbackTags = `${songArtist}, ${songTitle}, Lyrics, Pop, Music`;
     const youtubeTags  = seoKeywords.length > 0 ? seoKeywords.join(', ') + `, ${fallbackTags}` : fallbackTags;
