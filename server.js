@@ -1398,11 +1398,16 @@ app.post('/api/generate-metadata', express.json(), async (req, res) => {
     const youtubeDescription = `${headerBlock}\n\n${finalLyricLines}${footerBlock}`;
 
     // Properly separate multiple artists in the actual YouTube tags box as well
-    const fallbackTags = `${artistArray.join(', ')}, ${songTitle}, Lyrics, Pop, Music`;
-    let youtubeTags  = seoKeywords.length > 0 ? seoKeywords.join(', ') + `, ${fallbackTags}` : fallbackTags;
-    // YouTube tags limit is 500 characters, so safely truncate if SEO tags are too massive
-    if (youtubeTags.length > 500) {
-      youtubeTags = youtubeTags.substring(0, 497) + '...';
+    const allTags = [...(seoKeywords || []), ...artistArray, songTitle, 'Lyrics', 'Pop', 'Music'];
+    let youtubeTags = '';
+    for (const tag of allTags) {
+      if (!tag) continue;
+      const addition = youtubeTags ? `, ${tag}` : tag;
+      if (youtubeTags.length + addition.length <= 500) {
+        youtubeTags += addition;
+      } else {
+        break;
+      }
     }
 
     // Generate a suggested upload time (Tomorrow at specific channel IST time)
