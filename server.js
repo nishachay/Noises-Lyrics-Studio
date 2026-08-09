@@ -1362,11 +1362,13 @@ app.post('/api/generate-metadata', express.json(), async (req, res) => {
     
     const conf = channelConfigs[channel] || channelConfigs['Pop'];
 
-    const artistTags = songArtist
+    const artistArray = songArtist
       .split(/[,&]| feat\.? | ft\.? /i)
-      .map(a => a.replace(/[\s,\&\(\)\[\]\"\'\.]/g, ''))
-      .filter(a => a.length > 0)
-      .map(a => `#${a}`)
+      .map(a => a.trim())
+      .filter(a => a.length > 0);
+
+    const artistTags = artistArray
+      .map(a => '#' + a.replace(/[\s\(\)\[\]\"\'\.]/g, ''))
       .join(' ');
 
     const titleTag = '#' + songTitle.replace(/[\s\(\)\[\]\"\'\.,]/g, '');
@@ -1395,8 +1397,13 @@ app.post('/api/generate-metadata', express.json(), async (req, res) => {
 
     const youtubeDescription = `${headerBlock}\n\n${finalLyricLines}${footerBlock}`;
 
-    const fallbackTags = `${songArtist}, ${songTitle}, Lyrics, Pop, Music`;
-    const youtubeTags  = seoKeywords.length > 0 ? seoKeywords.join(', ') + `, ${fallbackTags}` : fallbackTags;
+    // Properly separate multiple artists in the actual YouTube tags box as well
+    const fallbackTags = `${artistArray.join(', ')}, ${songTitle}, Lyrics, Pop, Music`;
+    let youtubeTags  = seoKeywords.length > 0 ? seoKeywords.join(', ') + `, ${fallbackTags}` : fallbackTags;
+    // YouTube tags limit is 500 characters, so safely truncate if SEO tags are too massive
+    if (youtubeTags.length > 500) {
+      youtubeTags = youtubeTags.substring(0, 497) + '...';
+    }
 
     // Generate a suggested upload time (Tomorrow at specific channel IST time)
     const now = new Date();
