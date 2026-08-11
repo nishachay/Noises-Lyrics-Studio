@@ -3300,7 +3300,7 @@ async function startCompile(isShort = false, shortStartTime = 0, isSlideshow = f
           videoUrl: '', 
           lyrics: S.lyrics,
           hasTranslation: S.lyrics && S.lyrics.some(l => l.translation && l.translation.trim() !== ''),
-          channel: 'Pop' 
+          channel: document.getElementById('pm-target-channel')?.value || 'Pop'
         })
       });
       const metaData = await metaRes.json();
