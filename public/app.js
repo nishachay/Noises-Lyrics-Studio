@@ -181,6 +181,7 @@ let audio = null;           // Native <audio> element
 let scrubbing = false;
 let activeSSE = null;
 let shouldCancelExport = false;
+let isRendering = false; // Locked during render — blocks all keyboard/click controls
 let lastVideoObjectUrl = null;
 
 function initAudio(videoId) {
@@ -3064,6 +3065,7 @@ async function startCompile(isShort = false, shortStartTime = 0, isSlideshow = f
   lastPct = 0;
   progLog.innerHTML = '';
   shouldCancelExport = false;
+  isRendering = true;
   setProgress(0, 'Initializing...');
   progTitle.textContent  = S.track.title + (isShort ? ' (Short)' : '');
   progArtist.textContent = S.track.artist;
@@ -3324,6 +3326,7 @@ async function startCompile(isShort = false, shortStartTime = 0, isSlideshow = f
   } finally {
     // Explicit cleanup
     shouldCancelExport = false;
+    isRendering = false;
     audioBuffer = null;
     output = null;
     audioCtx = null;
@@ -4847,6 +4850,8 @@ function flashIndicator(content) {
 document.addEventListener('keydown', (e) => {
   // Ignore if typing in an input or textarea
   if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.isContentEditable) return;
+  // Lock ALL controls during rendering to prevent canvas sync corruption
+  if (isRendering) { e.preventDefault(); e.stopPropagation(); return; }
 
   if (e.code === 'Space') {
     e.preventDefault();
@@ -4886,6 +4891,7 @@ document.addEventListener('keydown', (e) => {
 const previewCanvas = document.getElementById('preview-canvas');
 if (previewCanvas) {
   previewCanvas.addEventListener('click', () => {
+    if (isRendering) return; // Locked during render
     togglePlay();
     if (S.isPlaying) {
       flashIndicator('<svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>');
