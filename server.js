@@ -1320,32 +1320,17 @@ app.post('/api/generate-metadata', express.json(), async (req, res) => {
       console.log('[SEO/meta] Could not fetch autocomplete tags:', e.message);
     }
 
-    // Fetch real official links for description
+    // Fetch real official YouTube link for description
     let officialLinks = '';
-    const linkLines = [];
     const searchStr = `${songArtist} ${songTitle}`;
     
-    // 1. Apple Music Link
-    try {
-      const q = encodeURIComponent(searchStr);
-      const itunesUrlReq = `https://itunes.apple.com/search?term=${q}&media=music&entity=song&limit=1`;
-      const { data: itunesData } = await axios.get(itunesUrlReq, { timeout: 5000 });
-      const appleUrl = itunesData && itunesData.results && itunesData.results.length > 0 ? itunesData.results[0].trackViewUrl : '';
-      if (appleUrl) linkLines.push(`- Apple Music: ${appleUrl}`);
-    } catch (e) {
-      console.log('[SEO/meta] Could not fetch Apple Music link:', e.message);
-    }
-
-    // 2. YouTube Official Link
     try {
       const ytData = await searchYoutube(`${searchStr} official audio`);
-      if (ytData && ytData.length > 0) linkLines.push(`- YouTube: ${ytData[0].webpage_url}`);
+      if (ytData && ytData.length > 0) {
+        officialLinks = `🎧 Official Audio:\n- YouTube: ${ytData[0].webpage_url}`;
+      }
     } catch (e) {
       console.log('[SEO/meta] Could not fetch YouTube Official link:', e.message);
-    }
-
-    if (linkLines.length > 0) {
-      officialLinks = `🎧 Official Audio:\n${linkLines.join('\n')}`;
     }
 
     const youtubeTitle = `${songArtist} - ${songTitle} (Lyrics${hasTranslation ? ' & English Translation' : ''})`;
