@@ -195,6 +195,9 @@ function initAudio(videoId) {
       const isInitial = !S.audioReady;
       S.audioReady = true;
       S.audioDuration = audio.duration || 0;
+      if (S.track && audio.duration) {
+        S.track.duration = audio.duration;
+      }
       btnPlay.disabled = false;
       audioOverlay.classList.add('hidden');
       
