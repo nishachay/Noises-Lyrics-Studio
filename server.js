@@ -1336,13 +1336,38 @@ app.post('/api/generate-metadata', express.json(), async (req, res) => {
     const youtubeTitle = `${songArtist} - ${songTitle} (Lyrics${hasTranslation ? ' & English Translation' : ''})`;
     const lyricLines   = lyrics.map(l => (typeof l === 'string' ? l : l.text || '')).join('\n');
 
-    // Channel specific configurations
+    // Channel specific configurations with curated SEO channel tags
     const channelConfigs = {
-      'Pop': { tag: '#NoisesMusic', time: '2:00 PM IST', url: 'https://youtube.com/@NoisesMusic' },
-      'Hip-Hop': { tag: '#NoisesHipHop', time: '11:00 AM IST', url: 'https://youtube.com/@NoisesHipHop' },
-      'Hindi': { tag: '#NoisesGeet', time: '7:00 PM IST', url: 'https://youtube.com/@NoisesGeet' },
-      'DHH': { tag: '#NoisesDHH', time: '9:00 PM IST', url: 'https://youtube.com/@NoisesDHH' },
-      'K-Pop': { tag: '#NoisesKpop', time: '6:00 PM IST', url: 'https://youtube.com/@NoisesKpop' }
+      'Pop': { 
+        tag: '#NoisesMusic', 
+        time: '2:00 PM IST', 
+        url: 'https://youtube.com/@NoisesMusic',
+        channelTags: ['Pop', 'Pop Music', 'Pop Songs', 'Lyrics Video', 'Billboard Hits', 'Trending Music'] 
+      },
+      'Hip-Hop': { 
+        tag: '#NoisesHipHop', 
+        time: '11:00 AM IST', 
+        url: 'https://youtube.com/@NoisesHipHop',
+        channelTags: ['Hip Hop', 'Rap', 'Trap', 'US Rap', 'Hip Hop Lyrics', 'Rap Music', 'Trap Beats'] 
+      },
+      'Hindi': { 
+        tag: '#NoisesGeet', 
+        time: '7:00 PM IST', 
+        url: 'https://youtube.com/@NoisesGeet',
+        channelTags: ['Hindi Songs', 'Bollywood Songs', 'Hindi Lyrics', 'Bollywood Music', 'New Hindi Songs', 'Geet'] 
+      },
+      'DHH': { 
+        tag: '#NoisesDHH', 
+        time: '9:00 PM IST', 
+        url: 'https://youtube.com/@NoisesDHH',
+        channelTags: ['DHH', 'Desi Hip Hop', 'Indian Rap', 'Hindi Rap', 'Gully Rap', 'Desi Rap', 'Underground Rap', 'DHH Lyrics'] 
+      },
+      'K-Pop': { 
+        tag: '#NoisesKpop', 
+        time: '6:00 PM IST', 
+        url: 'https://youtube.com/@NoisesKpop',
+        channelTags: ['KPop', 'K-Pop', 'Korean Music', 'KPop Lyrics', 'KPop English Translation', 'KPop Easy Lyrics'] 
+      }
     };
     
     const conf = channelConfigs[channel] || channelConfigs['Pop'];
@@ -1382,8 +1407,19 @@ app.post('/api/generate-metadata', express.json(), async (req, res) => {
 
     const youtubeDescription = `${headerBlock}\n\n${finalLyricLines}${footerBlock}`;
 
-    // Properly separate multiple artists in the actual YouTube tags box as well
-    const allTags = [...(seoKeywords || []), ...artistArray, songTitle, 'Lyrics', 'Pop', 'Music'];
+    // Properly separate multiple artists and channel-specific tags in the actual YouTube tags box
+    const songSpecificTags = [`${songTitle} Lyrics`, `${songArtist} Lyrics`, `${songArtist} ${songTitle}`];
+    const channelTags = conf.channelTags || ['Pop', 'Music'];
+    
+    const allTags = [
+      ...artistArray, 
+      songTitle, 
+      ...songSpecificTags,
+      ...(seoKeywords || []), 
+      ...channelTags,
+      'Lyrics',
+      'Lyrics Video'
+    ];
     let youtubeTags = '';
     for (const tag of allTags) {
       if (!tag) continue;
