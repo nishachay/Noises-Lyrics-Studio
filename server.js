@@ -479,50 +479,22 @@ function scoreYoutubeResult(y, targetTitle, targetArtist, targetDur) {
 // Only used when iTunes lookup fails.
 // ══════════════════════════════════════════════════════════════
 function cleanYoutubeMeta(rawTitle, rawChannel) {
-  let artist = (rawChannel || '')
-    .replace(/\s*[-–]\s*Topic$/i, '')
-    .replace(/\s*VEVO$/i, '')
-    .replace(/\s*Official$/i, '')
-    .replace(/\s*Music$/i, '')
-    .trim();
-  
-  if (artist.toLowerCase() === 'topic') artist = '';
-
+  let artist = (rawChannel || '').replace(/\s*[-–]\s*Topic$/i, '').replace(/\s*VEVO$/i, '').replace(/\s*Official$/i, '').replace(/\s*Music$/i, '').trim();
   let title  = rawTitle || '';
   if (title.includes(' - ')) { 
     const [l, r] = title.split(' - '); 
-    if (!artist || artist.toLowerCase() === 'topic') artist = l.trim(); 
+    artist = l.trim(); 
     title = r.trim(); 
   } else if (title.includes(' | ')) {
     const parts = title.split(' | ');
     title = parts[0].trim();
-    if (parts.length > 1 && (!artist || artist.toLowerCase() === 'topic' || artist.toLowerCase() === 'krsna' || artist.toLowerCase() === 'kettle')) {
+    if (parts.length > 1 && (!artist || artist.toLowerCase() === 'krsna' || artist.toLowerCase() === 'kettle')) {
       artist = parts[1].trim();
     }
   }
-
-  const NOISE = [
-    /\[.*?\]/g, 
-    /\(official\s*(music\s*)?video\)/gi, 
-    /\(official\s*audio\)/gi, 
-    /\(lyric[s]?\s*video\)/gi, 
-    /\(visualizer\)/gi, 
-    /\(official\)/gi, 
-    /\bfull\s*album\b/gi,
-    /\bfull\s*video\b/gi,
-    /\balbum\s*version\b/gi,
-    /\bft\.?\b.*/gi, 
-    /\bfeat\.?\b.*/gi, 
-    /\bofficial\b/gi, 
-    /\baudio\b/gi, 
-    /\bvideo\b/gi
-  ];
+  const NOISE = [/\[.*?\]/g, /\(official\s*(music\s*)?video\)/gi, /\(official\s*audio\)/gi, /\(lyric[s]?\s*video\)/gi, /\(visualizer\)/gi, /\(official\)/gi, /\bft\.?\b.*/gi, /\bfeat\.?\b.*/gi, /\bofficial\b/gi, /\baudio\b/gi, /\bvideo\b/gi];
   for (const rx of NOISE) title = title.replace(rx, '');
-
-  const finalTitle = title.trim().replace(/\s+/g, ' ') || rawTitle;
-  const finalArtist = (artist && artist.toLowerCase() !== 'topic') ? artist : '';
-
-  return { title: finalTitle, artist: finalArtist };
+  return { title: title.trim().replace(/\s+/g, ' ') || rawTitle, artist: artist || rawChannel };
 }
 
 // ══════════════════════════════════════════════════════════════
@@ -546,31 +518,40 @@ app.get('/api/trending', async (req, res) => {
     const playlists = {
       pop: 'https://open.spotify.com/playlist/37i9dQZF1DX4JAvHpjipBk',     // New Music Friday (Global Drops)
       hiphop: 'https://open.spotify.com/playlist/37i9dQZF1DWY4xHQp97fN6',  // New Joints (New Hip-Hop Drops)
-      hindi: 'https://open.spotify.com/playlist/37i9dQZF1DX0XUfTFmBDM0',   // Hot Hits Hindi
-      dhh: 'https://open.spotify.com/playlist/37i9dQZF1DX2N2aYmE2Z4M',     // Desi Hip Hop
-      kpop: 'https://open.spotify.com/playlist/37i9dQZF1DX4WZSTj25q2A'     // K-Pop ON!
+      hindi: 'https://open.spotify.com/playlist/37i9dQZF1DX0XUfTFmNBRM',   // Hot Hits Hindi (Stable)
+      dhh: 'https://open.spotify.com/playlist/37i9dQZF1DX1ct2TQrAvRf',     // Rap 91 (Stable DHH Drops)
+      kpop: 'https://open.spotify.com/playlist/37i9dQZF1DX9tPFwDMOaN1'     // K-Pop ON! (Stable K-Pop Drops)
+    };
+    
+    const url = (playlists[category] || playlists['pop']) + '?_t=' + Date.now();
+
+    // getData returns the playlist metadata including coverArt
+    const data = await getData(url);
+    const playlistArtwork = (data.coverArt && data.coverArt.sources && data.coverArt.sources.length > 0) 
+                            ? data.coverArt.sources[0].url : null;
+    
+    const tracks = await getTracks(url);
+
+    const songs = tracks.slice(0, 50).map(t => {
+      // spotify-url-info getTracks returns { artist: 'Name', name: 'Title', duration: ... }
+      return {
+        title: t.name || t.title || 'Unknown Title',
+        artist: t.artist || t.subtitle || 'Unknown Artist',
+        artworkUrl: playlistArtwork, // Use playlist cover as fallback since tracks lack individual art
+        duration: t.duration ? Math.round(t.duration / 1000) : (t.duration_ms ? Math.round(t.duration_ms / 1000) : 0)
+      };
+    });
+
+    // Cache for only 5 minutes to ensure freshness
+    trendingCache[category] = {
+      timestamp: Date.now(),
+      data: songs
     };
 
-    const targetUrl = playlists[category] || playlists['pop'];
-    console.log(`[Trending] Fetching Spotify playlist for: ${category}`);
-
-    const tracks = await getTracks(targetUrl);
-    if (!tracks || !tracks.length) {
-      throw new Error('No tracks returned from Spotify embed');
-    }
-
-    // Clean and return top 15 trending tracks
-    const formatted = tracks.slice(0, 15).map(t => ({
-      title: t.name,
-      artist: t.artists?.[0]?.name || t.artist || 'Unknown Artist',
-      artworkUrl: t.album?.images?.[0]?.url || t.coverArt?.sources?.[0]?.url || null
-    }));
-
-    trendingCache[category] = { timestamp: Date.now(), data: formatted };
-    res.json(formatted);
+    res.json(songs);
   } catch (err) {
-    console.error('[Trending] Failed to fetch Spotify playlist:', err.message);
-    res.status(500).json({ error: 'Failed to fetch trending insights' });
+    console.error('[Trending] Failed to fetch Spotify Playlists:', err.message);
+    res.status(500).json({ error: 'Failed to fetch trending songs' });
   }
 });
 
@@ -644,27 +625,18 @@ app.get('/api/search-metadata', async (req, res) => {
         let finalArtworkUrl = `https://i.ytimg.com/vi/${info.id}/hqdefault.jpg`;
         let finalAlbum = '';
         try {
-          const searchQuery = meta.artist ? `${meta.title} ${meta.artist}` : meta.title;
-          const itunesHits = await searchItunes(searchQuery);
+          const itunesHits = await searchItunes(`${meta.title} ${meta.artist}`);
           if (itunesHits && itunesHits.length > 0) {
-            // Find an iTunes hit that matches the YouTube video's actual duration (within 10s)
-            const hit = itunesHits.find(h => Math.abs(Math.round(h.durationMs / 1000) - info.duration) <= 10);
-            if (hit) {
-              finalArtworkUrl = hit.artworkUrl || finalArtworkUrl;
-              finalAlbum = hit.albumName || hit.album || '';
-              if (!meta.artist || meta.artist.toLowerCase() === 'topic') {
-                meta.artist = hit.artistName || meta.artist;
-              }
-              if (hit.trackName) meta.title = hit.trackName;
-            }
+            finalArtworkUrl = itunesHits[0].artworkUrl || finalArtworkUrl;
+            finalAlbum = itunesHits[0].album || '';
           }
         } catch (_) {}
         const results = [{
           source: 'youtube',
-          title: meta.title || info.title,
-          artist: meta.artist || info.uploader || 'DIVINE',
+          title: meta.title,
+          artist: meta.artist,
           album: finalAlbum,
-          duration: info.duration, // Hard lock to YouTube's exact audio duration
+          duration: info.duration,
           artworkUrl: finalArtworkUrl,
           youtubeId: info.id
         }];
