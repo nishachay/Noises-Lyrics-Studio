@@ -191,6 +191,14 @@ function initAudio(videoId) {
     audio.style.display = 'none';
     document.body.appendChild(audio);
 
+    audio.addEventListener('loadedmetadata', () => {
+      if (S.track && audio.duration) {
+        S.track.duration = audio.duration;
+        S.audioDuration = audio.duration;
+        updatePlayerUIElements();
+      }
+    });
+
     audio.addEventListener('canplay', () => {
       const isInitial = !S.audioReady;
       S.audioReady = true;
