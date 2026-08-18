@@ -292,8 +292,9 @@ async function downloadAudio(id, url) {
   // Tier 1: DASH m4a (fast, high quality — fails with 403 on some protected tracks)
   if (await tryFormat('DASH m4a', ['-f', 'bestaudio[ext=m4a][protocol^=http]/bestaudio[ext=m4a]', '-x', '--audio-format', 'm4a'])) return audioPath;
 
-  // Tier 2: HLS m3u8 — YouTube never 403s these; works on all tracks including HYBE/BTS
-  if (await tryFormat('HLS m3u8', ['-f', 'bestaudio[protocol=m3u8_native]/bestaudio[protocol=m3u8]', '-x', '--audio-format', 'm4a'])) return audioPath;
+  // Tier 2: HLS m3u8 combined stream — YouTube never 403s these; works on ALL tracks
+  // Formats 91-96 are HLS combined (video+audio); we extract audio via ffmpeg -x
+  if (await tryFormat('HLS m3u8', ['-f', '91/92/93/94/95/96', '-x', '--audio-format', 'm4a'])) return audioPath;
 
   // Tier 3: Let yt-dlp pick anything downloadable
   if (await tryFormat('best available', ['-f', 'bestaudio/best', '-x', '--audio-format', 'm4a'])) return audioPath;
