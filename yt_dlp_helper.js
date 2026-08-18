@@ -244,6 +244,10 @@ function getAuthArgs() {
 }
 
 // ── DOWNLOAD AUDIO ───────────────────────────────────────────────────────────
+// Format cascade (in order):
+//   1. DASH m4a  — best quality, but some HYBE/BTS tracks return HTTP 403 on DASH CDN
+//   2. HLS m3u8  — always accessible, no 403, slightly lower quality ceiling
+//   3. bestaudio/best — yt-dlp picks whatever it can download
 async function downloadAudio(id, url) {
   const audioPath = path.join(TEMP_DIR, `${id}.m4a`);
   if (fs.existsSync(audioPath) && fs.statSync(audioPath).size > 1000) {
@@ -251,41 +255,53 @@ async function downloadAudio(id, url) {
     return audioPath;
   }
   await ensureYtdlp();
-  const out = path.join(TEMP_DIR, `${id}.%(ext)s`);
-
-  // Resolve the absolute path to the Node.js executable so yt-dlp can find
-  // it for JS runtime even if PATH is stripped in the server subprocess env.
+  const outTemplate = path.join(TEMP_DIR, `${id}.%(ext)s`);
   const nodeBin = process.execPath;
 
-  const baseArgs = [
+  const commonArgs = [
     '--js-runtimes', `node:${nodeBin}`,
+    '--no-warnings', '--no-playlist',
+    '--concurrent-fragments', '4',
     ...getAuthArgs(),
-    '-f', 'bestaudio[ext=m4a]/bestaudio/best',
-    '-x', '--audio-format', 'm4a',
     '--ffmpeg-location', ffmpegInstaller.path,
-    '-o', out,
+    '-o', outTemplate,
     url,
   ];
 
-  try {
-    console.log(`[Audio] Downloading ${id} (Standard)`);
-    await spawnYtdlp(['--no-warnings', '--no-playlist', '--concurrent-fragments', '4', ...baseArgs]);
-  } catch (err) {
-    console.warn(`[Audio] Standard download failed. Trying with Chrome cookies...`);
+  // Try a format string. Return true if audio landed on disk.
+  async function tryFormat(label, formatArgs) {
     try {
-      await spawnYtdlp(['--no-warnings', '--no-playlist', '--concurrent-fragments', '4', '--cookies-from-browser', 'chrome', ...baseArgs]);
-    } catch (err2) {
-      console.warn(`[Audio] Chrome cookie fallback failed. Trying with Edge cookies...`);
-      try {
-        await spawnYtdlp(['--no-warnings', '--no-playlist', '--concurrent-fragments', '4', '--cookies-from-browser', 'edge', ...baseArgs]);
-      } catch (err3) {
-        console.error(`[Audio] All download attempts failed for ${id}`);
+      console.log(`[Audio] ${label} for ${id}...`);
+      await spawnYtdlp([...commonArgs, ...formatArgs]);
+    } catch (e) {
+      console.warn(`[Audio] ${label} failed: ${e.message.split('\n')[0].trim()}`);
+    }
+    if (fs.existsSync(audioPath) && fs.statSync(audioPath).size > 1000) return true;
+    // yt-dlp may have written a different extension — normalise to .m4a
+    const alts = ['.webm', '.opus', '.mp3', '.ogg', '.m4a'];
+    for (const ext of alts) {
+      const p = path.join(TEMP_DIR, `${id}${ext}`);
+      if (p !== audioPath && fs.existsSync(p) && fs.statSync(p).size > 1000) {
+        fs.renameSync(p, audioPath);
+        return true;
       }
     }
+    return false;
   }
 
-  return fs.existsSync(audioPath) ? audioPath : null;
+  // Tier 1: DASH m4a (fast, high quality — fails with 403 on some protected tracks)
+  if (await tryFormat('DASH m4a', ['-f', 'bestaudio[ext=m4a][protocol^=http]/bestaudio[ext=m4a]', '-x', '--audio-format', 'm4a'])) return audioPath;
+
+  // Tier 2: HLS m3u8 — YouTube never 403s these; works on all tracks including HYBE/BTS
+  if (await tryFormat('HLS m3u8', ['-f', 'bestaudio[protocol=m3u8_native]/bestaudio[protocol=m3u8]', '-x', '--audio-format', 'm4a'])) return audioPath;
+
+  // Tier 3: Let yt-dlp pick anything downloadable
+  if (await tryFormat('best available', ['-f', 'bestaudio/best', '-x', '--audio-format', 'm4a'])) return audioPath;
+
+  console.error(`[Audio] All format strategies exhausted for ${id}.`);
+  return null;
 }
+
 
 // ── GET DIRECT AUDIO URL (for instant streaming without download) ────────────
 async function getDirectAudioUrl(url) {
