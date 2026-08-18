@@ -1176,10 +1176,19 @@ app.get('/api/render', async (req, res) => {
     // 1. Download audio
     let audioPath = null;
     if (!isSlideshow) {
-      if (customAudioPath && customAudioPath.includes('temp') && fs.existsSync(path.resolve(customAudioPath))) {
-        console.log('[Render] Using manually uploaded custom audio:', customAudioPath);
-        audioPath = path.resolve(customAudioPath);
-      } else {
+      if (customAudioPath) {
+        // customAudioPath may be a browser URL like /temp/filename.mp3
+        // OR (legacy) an absolute disk path. Resolve either to a real path.
+        let resolvedAudio = customAudioPath;
+        if (customAudioPath.startsWith('/temp/')) {
+          resolvedAudio = path.join(__dirname, 'temp', path.basename(customAudioPath));
+        }
+        if (resolvedAudio.includes('temp') && fs.existsSync(path.resolve(resolvedAudio))) {
+          console.log('[Render] Using manually uploaded custom audio:', resolvedAudio);
+          audioPath = path.resolve(resolvedAudio);
+        }
+      }
+      if (!audioPath) {
         send({ status: 'downloading', message: 'Downloading audio…', progress: 5 });
         audioPath = await downloadAudio(id, decodeURIComponent(videoUrl));
         if (!audioPath) { send({ error: 'Audio download failed' }); return res.end(); }
@@ -1567,9 +1576,12 @@ app.post('/api/upload-audio', upload.single('audio'), (req, res) => {
   try {
     if (!req.file) return res.status(400).json({ error: 'No audio file uploaded' });
     const ext = path.extname(req.file.originalname) || '.mp3';
-    const newPath = path.join(__dirname, 'temp', req.file.filename + ext);
+    const filename = req.file.filename + ext;
+    const newPath = path.join(__dirname, 'temp', filename);
     fs.renameSync(req.file.path, newPath);
-    res.json({ path: newPath, originalName: req.file.originalname });
+    // Return a browser-accessible URL path (served via /temp static route)
+    // instead of an absolute disk path — the browser can't fetch a disk path.
+    res.json({ path: `/temp/${filename}`, originalName: req.file.originalname });
   } catch (err) {
     console.error('[Upload]', err);
     res.status(500).json({ error: err.message });

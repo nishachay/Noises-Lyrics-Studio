@@ -251,7 +251,13 @@ async function downloadAudio(id, url) {
   }
   await ensureYtdlp();
   const out = path.join(TEMP_DIR, `${id}.%(ext)s`);
+
+  // Resolve the absolute path to the Node.js executable so yt-dlp can find
+  // it for JS runtime even if PATH is stripped in the server subprocess env.
+  const nodeBin = process.execPath;
+
   const baseArgs = [
+    '--js-runtimes', `node:${nodeBin}`,
     ...getAuthArgs(),
     '-f', 'bestaudio[ext=m4a]/bestaudio/best',
     '-x', '--audio-format', 'm4a',
@@ -262,15 +268,15 @@ async function downloadAudio(id, url) {
 
   try {
     console.log(`[Audio] Downloading ${id} (Standard)`);
-    await spawnYtdlpSingle(baseArgs);
+    await spawnYtdlp(['--no-warnings', '--no-playlist', '--concurrent-fragments', '4', ...baseArgs]);
   } catch (err) {
     console.warn(`[Audio] Standard download failed. Trying with Chrome cookies...`);
     try {
-      await spawnYtdlpSingle(['--cookies-from-browser', 'chrome', ...baseArgs]);
+      await spawnYtdlp(['--no-warnings', '--no-playlist', '--concurrent-fragments', '4', '--cookies-from-browser', 'chrome', ...baseArgs]);
     } catch (err2) {
       console.warn(`[Audio] Chrome cookie fallback failed. Trying with Edge cookies...`);
       try {
-        await spawnYtdlpSingle(['--cookies-from-browser', 'edge', ...baseArgs]);
+        await spawnYtdlp(['--no-warnings', '--no-playlist', '--concurrent-fragments', '4', '--cookies-from-browser', 'edge', ...baseArgs]);
       } catch (err3) {
         console.error(`[Audio] All download attempts failed for ${id}`);
       }
