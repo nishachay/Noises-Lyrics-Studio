@@ -61,9 +61,10 @@ function spawnYtdlp(args) {
 }
 
 function spawnYtdlpSingle(args) {
-  // Add PoToken and iOS player client args to bypass YouTube's heavy throttling (the 50kB/s bug)
+  // Use process.execPath (absolute path to node binary) so yt-dlp can find
+  // Node.js for JS runtime even if PATH is stripped in the subprocess env.
   const extras = [
-    '--js-runtimes', 'node', 
+    '--js-runtimes', `node:${process.execPath}`,
     '--no-warnings', 
     '--no-playlist',
     ...getAuthArgs(),
