@@ -872,8 +872,8 @@ function drawCoverBackground(ctx, W, H, coverImg) {
   ctx.imageSmoothingEnabled = true;
   ctx.imageSmoothingQuality = 'high';
   
-  // Apply a soft blur and slight dim to cover art details/competing text
-  ctx.filter = 'blur(10px) brightness(85%)';
+  // Apply a strong blur and dim to completely kill cover art text/competing details
+  ctx.filter = 'blur(22px) brightness(80%)';
   
   // Crop & scale to cover 16:9 canvas
   const iW = coverImg.width;
@@ -1446,7 +1446,7 @@ function drawSharedIntro(ctx, W, H, coverImg, title, artist, font) {
     
     // Baseline font sizes
     let titleSz = Math.round(H * 0.095);
-    let artistSz = Math.round(H * 0.048);
+    let artistSz = Math.round(H * 0.065); // raised from 0.048 — short names like "The Police" were too small
     
     const gap1 = Math.round(H * 0.05);
     const gap2 = Math.round(H * 0.02);
@@ -1581,10 +1581,10 @@ function drawThumbnailBContent(ctx, W, H, title, artist, font) {
     }
 
     // Step 2: Bulletproof Artist Scaling Math
-    // Ideal is 35% of the final title size (for premium typography hierarchy)
-    let idealArtistSz = Math.round(titleSz * 0.35);
-    // Legibility floor: shouldn't go below ~6% of canvas height (e.g. 43px on 720p)
-    let floorArtistSz = Math.round(H * 0.06);
+    // Ideal is 45% of the final title size (enough to read clearly without competing with title)
+    let idealArtistSz = Math.round(titleSz * 0.45);
+    // Legibility floor: never below ~9% of canvas height (64px on 720p) — "The Police" was 43px before
+    let floorArtistSz = Math.round(H * 0.09);
     // Hierarchy ceiling: NEVER be bigger than 75% of the title size (so it's always secondary)
     let ceilArtistSz = Math.round(titleSz * 0.75);
 
