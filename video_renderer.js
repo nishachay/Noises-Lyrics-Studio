@@ -872,8 +872,9 @@ function drawCoverBackground(ctx, W, H, coverImg) {
   ctx.imageSmoothingEnabled = true;
   ctx.imageSmoothingQuality = 'high';
   
-  // Apply a strong blur and dim to completely kill cover art text/competing details
-  ctx.filter = 'blur(22px) brightness(80%)';
+  // Blur: 15px kills any text printed on the cover art while keeping colors/shapes recognisable.
+  // (22px was too aggressive — turned everything into a colour blob)
+  ctx.filter = 'blur(15px) brightness(82%)';
   
   // Crop & scale to cover 16:9 canvas
   const iW = coverImg.width;
@@ -1617,17 +1618,8 @@ function drawThumbnailBContent(ctx, W, H, title, artist, font) {
     const titleY  = groupTop + titleAscent;
     const artistY = groupTop + titleTrueH + gap + artistAscent;
 
-    // Draw a dark gradient band behind the text for perfect separation
-    ctx.save();
-    const bgGradient = ctx.createLinearGradient(0, groupTop - H*0.15, 0, groupTop + totalGroupH + H*0.15);
-    bgGradient.addColorStop(0, 'rgba(0, 0, 0, 0.0)');
-    bgGradient.addColorStop(0.2, 'rgba(0, 0, 0, 0.15)');
-    bgGradient.addColorStop(0.5, 'rgba(0, 0, 0, 0.35)');
-    bgGradient.addColorStop(0.8, 'rgba(0, 0, 0, 0.15)');
-    bgGradient.addColorStop(1, 'rgba(0, 0, 0, 0.0)');
-    ctx.fillStyle = bgGradient;
-    ctx.fillRect(0, 0, W, H);
-    ctx.restore();
+    // Note: no gradient band behind text — the 3-layer text shadow (below) handles contrast cleanly
+    // without leaving a visible dark rectangle over the cover art.
 
     // Multi-layer drop shadow text helper (uses alphabetic baseline for true precision)
     const drawPremiumText = (text, yPos, fontSize, weight = 'bold') => {
