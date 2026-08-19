@@ -2467,7 +2467,7 @@ function renderLyricsList() {
       const stampBtn = document.createElement('button');
       stampBtn.className = 'btn-stamp';
       stampBtn.title = 'Stamp current playhead time onto this line';
-      stampBtn.innerHTML = `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>`;
+      stampBtn.innerHTML = `<i class="ph-bold ph-hand-tap" style="font-size:11px;"></i>`;
       stampBtn.addEventListener('click', e => { e.stopPropagation(); stampLine(idx); });
       controls.appendChild(stampBtn);
       
@@ -2654,7 +2654,7 @@ function enterTapMode() {
     .map(l => ({ text: l.text, time: null, translation: l.translation || undefined }));
 
   btnTapToggle.classList.add('active');
-  btnTapToggle.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> Tap Sync: ON`;
+  btnTapToggle.innerHTML = `<i class="ph-bold ph-hand-tap" style="font-size:12px; margin-right:4px;"></i> Tap Sync: ON`;
   tapBanner.classList.remove('hidden');
   tapFooter.classList.remove('hidden');
 
@@ -2665,7 +2665,7 @@ function enterTapMode() {
 function exitTapMode() {
   S.tapMode = false;
   btnTapToggle.classList.remove('active');
-  btnTapToggle.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> Tap Sync`;
+  btnTapToggle.innerHTML = `<i class="ph-bold ph-hand-tap" style="font-size:12px; margin-right:4px;"></i> Tap Sync`;
   tapBanner.classList.add('hidden');
   tapFooter.classList.add('hidden');
 }
@@ -4209,8 +4209,8 @@ function renderLyricsResults(results) {
     // Icon
     const isSynced = !!r.syncedLyrics;
     const icon = isSynced 
-      ? `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>`
-      : `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#666" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="9" x2="20" y2="9"/><line x1="4" y1="15" x2="20" y2="15"/><line x1="10" y1="3" x2="8" y2="21"/><line x1="16" y1="3" x2="14" y2="21"/></svg>`;
+      ? `<i class="ph-bold ph-check-square" style="font-size:18px; color:#10b981;"></i>`
+      : `<i class="ph-bold ph-square" style="font-size:18px; color:#666;"></i>`;
       
     // Text
     const lang = detectLanguage(r.syncedLyrics || r.plainLyrics);
@@ -4873,9 +4873,9 @@ document.addEventListener('keydown', (e) => {
     }
     togglePlay();
     if (S.isPlaying) {
-      flashIndicator('<svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>');
+      flashIndicator('<i class="ph-fill ph-pause"></i>');
     } else {
-      flashIndicator('<svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>');
+      flashIndicator('<i class="ph-fill ph-play"></i>');
     }
   } else if (e.code === 'ArrowRight') {
     e.preventDefault();
@@ -4905,9 +4905,9 @@ if (previewCanvas) {
     if (isRendering) return; // Locked during render
     togglePlay();
     if (S.isPlaying) {
-      flashIndicator('<svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>');
+      flashIndicator('<i class="ph-fill ph-pause"></i>');
     } else {
-      flashIndicator('<svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>');
+      flashIndicator('<i class="ph-fill ph-play"></i>');
     }
   });
 }
@@ -5174,7 +5174,7 @@ function renderCompetitors(filter = 'All') {
         ${esc(item.channel)}
       </div>
       <button class="btn-add-radar" style="background:transparent; border:none; color:var(--text-3); cursor:pointer; padding:6px; margin-left:8px; border-radius:6px; transition:all 0.2s; display:flex; align-items:center; justify-content:center; width:28px; height:28px;" aria-label="Add to To-Do" title="Add to To-Do">
-        <svg class="icon-plus" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+        <i class="ph-bold ph-plus icon-plus" style="font-size:16px;"></i>
       </button>
     `;
     
@@ -5186,11 +5186,11 @@ function renderCompetitors(filter = 'All') {
       saveTodos();
       renderTodos();
       
-      btn.innerHTML = '<svg class="icon-check" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>';
+      btn.innerHTML = '<i class="ph-bold ph-check icon-check" style="font-size:16px; color:var(--accent);"></i>';
       btn.style.background = 'rgba(16,185,129,0.1)';
       
       setTimeout(() => {
-        btn.innerHTML = '<svg class="icon-plus" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>';
+        btn.innerHTML = '<i class="ph-bold ph-plus icon-plus" style="font-size:16px;"></i>';
         btn.style.background = 'transparent';
       }, 2000);
     });
