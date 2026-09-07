@@ -5,8 +5,8 @@
 
 set -e
 
-# Change directory to the repository folder
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# Change directory to the repository folder (resolving any symlinks)
+SCRIPT_DIR="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" && pwd)"
 cd "$SCRIPT_DIR"
 
 echo "===================================================="
