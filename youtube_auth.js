@@ -35,8 +35,8 @@ try {
 }
 
 const CLIENT_ID = process.env.YOUTUBE_CLIENT_ID || '';
-const CLIENT_SECRET = process.env.YOUTUBE_CLIENT_SECRET || '';
-const REDIRECT_URI = 'http://localhost:3000/api/youtube-callback';
+const PORT = process.env.PORT || 3000;
+const REDIRECT_URI = process.env.YOUTUBE_REDIRECT_URI || `http://localhost:${PORT}/api/youtube-callback`;
 
 const SCOPES = [
   'https://www.googleapis.com/auth/youtube.upload',

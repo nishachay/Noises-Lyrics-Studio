@@ -163,13 +163,20 @@ app.post('/api/thumbnail-preview', async (req, res) => {
 // ----------------------------------------------------
 // AUTO-SAVE EXPORT TO DISK
 // ----------------------------------------------------
+const getUploadDir = () => {
+  const dir = process.platform === 'win32'
+    ? 'E:\\noises studio\\need to upload'
+    : path.join(__dirname, 'output', 'need_to_upload');
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir, { recursive: true });
+  }
+  return dir;
+};
+
 app.post('/api/save-export', express.raw({ limit: '500mb', type: '*/*' }), (req, res) => {
   try {
     const filename = req.query.filename || 'export.mp4';
-    const targetDir = 'E:\\noises studio\\need to upload';
-    if (!fs.existsSync(targetDir)) {
-      fs.mkdirSync(targetDir, { recursive: true });
-    }
+    const targetDir = getUploadDir();
     const targetPath = path.join(targetDir, filename);
     fs.writeFileSync(targetPath, req.body);
     res.json({ success: true, path: targetPath });
@@ -182,10 +189,7 @@ app.post('/api/save-export', express.raw({ limit: '500mb', type: '*/*' }), (req,
 app.post('/api/save-thumbnail', express.raw({ limit: '50mb', type: '*/*' }), (req, res) => {
   try {
     const filename = req.query.filename || 'thumbnail.jpg';
-    const targetDir = 'E:\\noises studio\\need to upload';
-    if (!fs.existsSync(targetDir)) {
-      fs.mkdirSync(targetDir, { recursive: true });
-    }
+    const targetDir = getUploadDir();
     const targetPath = path.join(targetDir, filename);
     fs.writeFileSync(targetPath, req.body);
     res.json({ success: true, path: targetPath });

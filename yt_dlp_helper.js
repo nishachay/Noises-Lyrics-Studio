@@ -6,9 +6,11 @@ const { spawn } = require('child_process');
 const axios = require('axios');
 const ffmpegInstaller = require('@ffmpeg-installer/ffmpeg');
 
-const BIN_DIR  = path.join(__dirname, 'bin');
-const YTDLP    = path.join(BIN_DIR, 'yt-dlp.exe');
-const TEMP_DIR = path.join(__dirname, 'temp');
+const isWin    = process.platform === 'win32';
+const YTDLP_BIN = isWin ? 'yt-dlp.exe' : 'yt-dlp';
+const BIN_DIR   = path.join(__dirname, 'bin');
+const YTDLP     = path.join(BIN_DIR, YTDLP_BIN);
+const TEMP_DIR  = path.join(__dirname, 'temp');
 
 [BIN_DIR, TEMP_DIR].forEach(d => { if (!fs.existsSync(d)) fs.mkdirSync(d, { recursive: true }); });
 
@@ -17,6 +19,9 @@ let hasUpdatedYtdlp = false;
 // ── Ensure yt-dlp binary ─────────────────────────────────────────────────────
 async function ensureYtdlp() {
   if (fs.existsSync(YTDLP)) {
+    if (!isWin) {
+      try { fs.chmodSync(YTDLP, 0o755); } catch (_) {}
+    }
     if (!hasUpdatedYtdlp) {
       console.log('[yt-dlp] Checking for updates in the background...');
       hasUpdatedYtdlp = true;
@@ -27,14 +32,19 @@ async function ensureYtdlp() {
     }
     return;
   }
-  console.log('[yt-dlp] Downloading binary...');
-  const res = await axios({ method: 'get', responseType: 'stream',
-    url: 'https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp.exe' });
+  console.log(`[yt-dlp] Downloading ${YTDLP_BIN} binary...`);
+  const downloadUrl = isWin
+    ? 'https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp.exe'
+    : 'https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp';
+  const res = await axios({ method: 'get', responseType: 'stream', url: downloadUrl });
   await new Promise((ok, fail) => {
-    const w = fs.createWriteStream(YTDLP);
+    const w = fs.createWriteStream(YTDLP, { mode: 0o755 });
     res.data.pipe(w);
     w.on('finish', ok); w.on('error', fail);
   });
+  if (!isWin) {
+    try { fs.chmodSync(YTDLP, 0o755); } catch (_) {}
+  }
   console.log('[yt-dlp] Downloaded.');
 }
 

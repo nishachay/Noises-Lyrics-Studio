@@ -3229,7 +3229,7 @@ async function startCompile(isShort = false, shortStartTime = 0, isSlideshow = f
     
     // Save video to backend auto-save folder
     try {
-      setProgress(96, 'Saving video to E:\\noises studio\\need to upload...');
+      setProgress(96, 'Saving video to output folder...');
       await fetch('/api/save-export?filename=' + encodeURIComponent(`${S.track.artist} - ${S.track.title} - Lyrics Video.mp4`), {
         method: 'POST',
         body: mp4Blob
