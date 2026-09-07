@@ -3133,7 +3133,7 @@ async function startCompile(isShort = false, shortStartTime = 0, isSlideshow = f
 
     setProgress(8, 'Starting render...');
 
-    const { Output, Mp4OutputFormat, BufferTarget, CanvasSource, AudioBufferSource, Quality } = Mediabunny;
+    const { Output, Mp4OutputFormat, BufferTarget, CanvasSource, AudioBufferSource, Quality, canEncodeAudio } = Mediabunny;
 
     output = new Output({
       format: new Mp4OutputFormat({ fastStart: 'in-memory' }),
@@ -3149,15 +3149,57 @@ async function startCompile(isShort = false, shortStartTime = 0, isSlideshow = f
     const ctx = canvas.getContext('2d');
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
+    // --- Video codec probe: avc → vp9 → vp8 ---
+    // H.264 (AVC) may not be supported on Linux/Firefox without hardware codecs.
+    // VP9 and VP8 are software-encoded in Chromium and always available.
+    let videoCodec = 'avc';
+    const videoProbeConfig = { codec: 'avc', width: 1920, height: 1080 };
+    try {
+      const videoSupport = await VideoEncoder.isConfigSupported({ codec: 'avc1.42E01E', width: 1920, height: 1080, bitrate: 8_000_000, framerate: 30 });
+      if (!videoSupport.supported) {
+        const vp9Support = await VideoEncoder.isConfigSupported({ codec: 'vp09.00.10.08', width: 1920, height: 1080, bitrate: 8_000_000, framerate: 30 });
+        if (vp9Support.supported) {
+          videoCodec = 'vp9';
+          logLine('H.264 not supported on this browser; using VP9 video codec.', 'warn');
+        } else {
+          videoCodec = 'vp8';
+          logLine('Falling back to VP8 video codec.', 'warn');
+        }
+      }
+    } catch (e) { /* VideoEncoder may not exist in very old browsers; Mediabunny will handle it */ }
+
     videoSource = new CanvasSource(canvas, {
-      codec: 'avc',
+      codec: videoCodec,
       quality: new Quality('high')
     });
 
-    audioSource = new AudioBufferSource({
-      codec: 'aac',
-      quality: new Quality('high')
-    });
+    // --- Audio codec probe: aac → opus → pcm-f32 ---
+    // AAC encoding via WebCodecs is not supported on Linux Firefox and some Chromium builds
+    // without platform codecs. Opus is software-encoded and universally available.
+    let audioCodec = 'aac';
+    try {
+      const aacOk = canEncodeAudio
+        ? await canEncodeAudio('aac', { numberOfChannels: audioBuffer.numberOfChannels, sampleRate: audioBuffer.sampleRate })
+        : (await AudioEncoder.isConfigSupported({ codec: 'mp4a.40.2', numberOfChannels: audioBuffer.numberOfChannels, sampleRate: audioBuffer.sampleRate, bitrate: 128_000 })).supported;
+      if (!aacOk) {
+        const opusOk = canEncodeAudio
+          ? await canEncodeAudio('opus', { numberOfChannels: audioBuffer.numberOfChannels, sampleRate: audioBuffer.sampleRate })
+          : (await AudioEncoder.isConfigSupported({ codec: 'opus', numberOfChannels: audioBuffer.numberOfChannels, sampleRate: audioBuffer.sampleRate, bitrate: 128_000 })).supported;
+        if (opusOk) {
+          audioCodec = 'opus';
+          logLine('AAC not supported on this browser; using Opus audio codec.', 'warn');
+        } else {
+          audioCodec = 'pcm-f32';
+          logLine('Falling back to PCM audio (lossless, larger file).', 'warn');
+        }
+      }
+    } catch (e) { /* probe failed — keep aac as default and let Mediabunny report the error */ }
+
+    audioSource = new AudioBufferSource(
+      audioCodec === 'pcm-f32'
+        ? { codec: audioCodec }
+        : { codec: audioCodec, quality: new Quality('high') }
+    );
 
     output.addVideoTrack(videoSource, { frameRate: 30 });
     output.addAudioTrack(audioSource);
