@@ -1108,7 +1108,7 @@ ${seoTags}
           `[1:a]afade=t=in:ss=0:d=1,afade=t=out:st=${renderDuration - 2}:d=2[a]`,
         '-map', '0:v', '-map', '[a]',
         '-c:v', 'libx264', '-preset', 'fast', '-crf', '18',
-        '-fps_mode', 'cfr',                  // Force Constant Frame Rate to avoid audio drift
+        '-vsync', 'cfr',                     // Force Constant Frame Rate (bundled ffmpeg is 4.x — -fps_mode not available until 5.1)
         '-r', `${FPS}`,                      // Set explicit output frame rate
         '-pix_fmt', 'yuv420p',
         '-c:a', 'aac', '-b:a', '192k',
