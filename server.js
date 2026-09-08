@@ -14,7 +14,7 @@ const upload = multer({
 });
 
 const { searchYoutube, searchItunes, searchDeezer, downloadArtwork, downloadAudio, getDirectAudioUrl, getVideoInfo, fetchYouTubeCaptions } = require('./yt_dlp_helper');
-const { renderVideo, getAudioAmplitude, detectAudioStart } = require('./video_renderer');
+const { renderVideo } = require('./video_renderer');
 
 // YTMusic integration
 const YTMusic = require('ytmusic-api').default || require('ytmusic-api');
@@ -164,9 +164,9 @@ app.post('/api/thumbnail-preview', async (req, res) => {
 // AUTO-SAVE EXPORT TO DISK
 // ----------------------------------------------------
 const getUploadDir = () => {
-  const dir = process.platform === 'win32'
-    ? 'E:\\noises studio\\need to upload'
-    : path.join(__dirname, 'output', 'need_to_upload');
+  // Unified output directory — both client-side exports and server-side renders
+  // land here so the YouTube upload panel can always find the files.
+  const dir = path.join(__dirname, 'output');
   if (!fs.existsSync(dir)) {
     fs.mkdirSync(dir, { recursive: true });
   }
@@ -1727,7 +1727,7 @@ app.get('/api/fetch-raw-lyrics', async (req, res) => {
     const htmlRes = await axios.get(songUrl, { 
       timeout: 10000,
       headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'
+        'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36'
       }
     });
     
@@ -1933,7 +1933,7 @@ app.get('/api/todays-plan', async (req, res) => {
   }
 });
 
-app.listen(PORT, () => {
+app.listen(PORT, '127.0.0.1', () => {
     console.log('═'.repeat(52));
     console.log(`  Noises Music — http://localhost:${PORT}`);
     console.log('═'.repeat(52));

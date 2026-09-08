@@ -1075,11 +1075,23 @@ function renderVideo({
       const suffix = hasTranslation ? "(Lyrics & English Translation)" : "(Lyrics)";
       
       const seoTitle = `${songArtist} - ${songTitle} ${suffix}`;
-      const seoDesc = `Enjoy the beautifully styled lyrics and English translation for "${songTitle}" by ${songArtist}.\\n\\nRendered dynamically via Noises Music Studio.`;
+      const seoDesc = `Enjoy the beautifully styled lyrics and English translation for "${songTitle}" by ${songArtist}.
+
+Rendered dynamically via Noises Music Studio.`;
       const autoTags = seoKeywords && seoKeywords.length > 0 ? seoKeywords.join(', ') + ', ' : '';
       const seoTags = `${autoTags}${songArtist}, ${songTitle}, Lyrics, ${hasTranslation ? 'English Translation, ' : ''}Pop, Music, Audio`;
       
-      const metadataContent = `== YOUTUBE SEO METADATA ==\\n\\nTITLE:\\n${seoTitle}\\n\\nDESCRIPTION:\\n${seoDesc}\\n\\nTAGS:\\n${seoTags}\\n`;
+      const metadataContent = `== YOUTUBE SEO METADATA ==
+
+TITLE:
+${seoTitle}
+
+DESCRIPTION:
+${seoDesc}
+
+TAGS:
+${seoTags}
+`;
       fs.writeFileSync(txtPath, metadataContent);
       console.log(`[Renderer] SEO Metadata saved ✓`);
 
@@ -1096,7 +1108,7 @@ function renderVideo({
           `[1:a]afade=t=in:ss=0:d=1,afade=t=out:st=${renderDuration - 2}:d=2[a]`,
         '-map', '0:v', '-map', '[a]',
         '-c:v', 'libx264', '-preset', 'fast', '-crf', '18',
-        '-vsync', 'cfr',                     // Force Constant Frame Rate to avoid audio drift
+        '-fps_mode', 'cfr',                  // Force Constant Frame Rate to avoid audio drift
         '-r', `${FPS}`,                      // Set explicit output frame rate
         '-pix_fmt', 'yuv420p',
         '-c:a', 'aac', '-b:a', '192k',

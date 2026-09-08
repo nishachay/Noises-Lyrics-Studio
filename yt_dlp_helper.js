@@ -332,9 +332,9 @@ async function getDirectAudioUrl(url) {
       const raw = await spawnYtdlpSingle(['--cookies-from-browser', 'chrome', ...baseArgs]);
       return raw.trim().split('\n')[0];
     } catch (e2) {
-      console.warn('[YouTube] getDirectAudioUrl Chrome fallback failed, trying Edge cookies...');
+      console.warn('[YouTube] getDirectAudioUrl Chrome fallback failed, trying Firefox cookies...');
       try {
-        const raw = await spawnYtdlpSingle(['--cookies-from-browser', 'edge', ...baseArgs]);
+        const raw = await spawnYtdlpSingle(['--cookies-from-browser', 'firefox', ...baseArgs]);
         return raw.trim().split('\n')[0];
       } catch (e3) {
         console.error('[YouTube] getDirectAudioUrl all attempts failed:', e3.message);

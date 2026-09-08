@@ -34,7 +34,8 @@ try {
   console.warn('Error reading .env file in youtube_auth.js:', e.message);
 }
 
-const CLIENT_ID = process.env.YOUTUBE_CLIENT_ID || '';
+const CLIENT_ID     = process.env.YOUTUBE_CLIENT_ID     || '';
+const CLIENT_SECRET = process.env.YOUTUBE_CLIENT_SECRET || '';
 const PORT = process.env.PORT || 3000;
 const REDIRECT_URI = process.env.YOUTUBE_REDIRECT_URI || `http://localhost:${PORT}/api/youtube-callback`;
 

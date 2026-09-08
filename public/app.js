@@ -3248,7 +3248,7 @@ async function startCompile(isShort = false, shortStartTime = 0, isSlideshow = f
     objectUrl = URL.createObjectURL(mp4Blob);
     lastVideoObjectUrl = objectUrl;
     
-    // // Automatically trigger download (Disabled: auto-saving to E:\noises studio\need to upload)
+    // // Automatically trigger download (Disabled: auto-saved to output/ via /api/save-export)
     // const a = document.createElement('a');
     // a.href = objectUrl;
     // a.download = `${S.track.title} - Lyrics Video.mp4`;
