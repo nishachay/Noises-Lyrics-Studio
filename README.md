@@ -142,9 +142,25 @@ never from the payload or a committed file.
   Mediabunny for client-side MP4 encoding.
 - **Backend:** Node.js + Express (search, lyrics, artwork, thumbnails, optional
   upload).
-- **Assets:** [yt-dlp](https://github.com/yt-dlp/yt-dlp) for audio, the iTunes
-  Search API for artwork, Google Suggest for SEO keywords, and public lyrics
-  sources.
+- **Assets:** [yt-dlp](https://github.com/yt-dlp/yt-dlp) for audio.
+
+### Data sources
+
+The app is a client for several third-party services. It sends only the search
+terms you type; it does not upload your media anywhere (unless you switch on
+YouTube upload).
+
+| Purpose | Service |
+|---|---|
+| Audio download | YouTube, via [yt-dlp](https://github.com/yt-dlp/yt-dlp) |
+| Track search | YouTube Music (`ytmusic-api`), iTunes, Deezer, Spotify links, `youtube-sr` |
+| Artwork | iTunes Search API |
+| Lyrics | [LRCLIB](https://lrclib.net/), Genius, YouTube captions |
+| Charts / trending | kworb.net |
+| Keyword suggestions | Google Suggest |
+| Translation | Google Translate |
+
+You are responsible for respecting each service's terms of use.
 
 ## Licences
 

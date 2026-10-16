@@ -169,7 +169,7 @@ function getNextPublishTime(channelLabel, dryRun = false) {
   //   1. .data/schedule.json  -> { "<channelLabel>": "HH:MM" }
   //   2. the UPLOAD_TIME_IST env var ("HH:MM")
   //   3. the neutral default below
-  // The time is interpreted as a 24h clock in the YouTube quota timezone (PT).
+  // The value is a 24h wall-clock time; the scheduler UI labels it "IST".
   let scheduleCfg = {};
   try {
     const cfgPath = path.join(DATA_DIR, 'schedule.json');

@@ -1022,7 +1022,7 @@ app.get('/api/lyrics-search', async (req, res) => {
   try {
     const response = await axios.get(`https://lrclib.net/api/search?q=${encodeURIComponent(q)}`, {
       timeout: 30000,
-      headers: { 'User-Agent': 'NoisesStudio/1.0 (https://github.com/surfbryce/beautiful-lyrics)' }
+      headers: { 'User-Agent': 'NoisesLyricsStudio/1.0' }
     });
     res.json(response.data);
   } catch (err) {

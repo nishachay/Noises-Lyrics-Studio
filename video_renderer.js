@@ -1,8 +1,11 @@
 'use strict';
 
 // ════════════════════════════════════════════════════════════════
-// NOISES MUSIC — VIDEO RENDERER
+// NOISES LYRICS STUDIO — SERVER-SIDE VIDEO RENDERER
 // Beautiful Lyrics-inspired design, written for correctness, speed.
+//
+// NOTE: The browser UI renders video client-side (WebCodecs/Mediabunny).
+// This Node renderer is used by the optional cloud render (run-cloud.js).
 // ════════════════════════════════════════════════════════════════
 
 const fs      = require('fs');

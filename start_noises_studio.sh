@@ -39,7 +39,7 @@ fi
 for check_port in 3000 3001; do
   pids=$(fuser "${check_port}/tcp" 2>/dev/null || true)
   for pid in $pids; do
-    if pwdx "$pid" 2>/dev/null | grep -qi "noises studio"; then
+    if pwdx "$pid" 2>/dev/null | grep -qF "$SCRIPT_DIR"; then
       echo "      Terminating previous Noises Studio instance (PID $pid on port $check_port)..."
       kill -9 "$pid" 2>/dev/null || true
     fi
