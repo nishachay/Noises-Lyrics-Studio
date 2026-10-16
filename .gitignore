@@ -1,25 +1,66 @@
+# Dependencies
 node_modules/
-temp/
+
+# Secrets & environment
+.env
+.env.*
+!.env.example
+cookies*
+*cookies*.txt
+*client_secret*
+github_token.txt
+youtube_auth.json
+youtube_client_secret.json
+
+# Runtime state (tokens, schedules, quota, competitor list, todos)
+tokens/
+.data/
+
+# Generated output, renders, temp and thumbnails
 output/
-backup_zip/
+temp/
 temp_unzip/
-beautiful-lyrics-ref/
-.agents/
+backup_zip/
+thumbnails/
 *.zip
+
+# Bundled yt-dlp binaries (the app uses a system-installed yt-dlp)
+bin/yt-dlp
+bin/yt-dlp.exe
+bin/yt-dlp.exe.old
+
+# Media — never commit audio or video
+*.mp3
+*.wav
+*.m4a
+*.flac
+*.aac
+*.ogg
+*.mp4
+*.webm
+*.mov
+*.mkv
+
+# Images (keep the app logos and allow docs screenshots/GIFs)
 *.png
 *.jpg
+*.jpeg
+!.gitattributes
+!public/logo.png
+!public/logo_white.png
+!docs/*.png
+!docs/*.jpg
+!docs/*.jpeg
+!docs/*.gif
+
+# Local scratch / one-off files
+scratch/
+.agents/
+beautiful-lyrics-ref/
+public/app.backup.js
+old_style.css
+test_saavn.json
 test_*.js
 measure*.js
 verify_font.js
-.env
-tokens/
-scratch/
-public/app.backup.js
-bin/yt-dlp.exe.old
-bin/yt-dlp
 fix_slashes.js
-old_style.css
-test_saavn.json
-youtube_auth.json
-youtube_client_secret.json
-github_token.txt
