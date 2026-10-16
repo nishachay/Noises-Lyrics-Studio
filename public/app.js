@@ -4666,21 +4666,31 @@ const channelAuthState = {
   pop: false, hiphop: false, hindi: false, dhh: false, kpop: false
 };
 
+// Whether YouTube upload (OAuth client id/secret) is configured on the server.
+let youtubeConfigured = true;
+
 async function updateYouTubeChannelNames() {
   try {
     const res = await fetch('/api/youtube-status');
-    const status = await res.json();
+    const data = await res.json();
+    const status = data.channels || {};
+    youtubeConfigured = data.configured !== false;
     for (const [ch, info] of Object.entries(status)) {
       const btn = document.getElementById(`btn-yt-${ch}`);
       if (btn) {
         channelAuthState[ch] = info.authenticated;
-        if (info.authenticated && info.name) {
+        const label = ch.charAt(0).toUpperCase() + ch.slice(1);
+        if (!youtubeConfigured) {
+          btn.innerHTML = `🔒 ${label}`;
+          btn.title = 'Set up YouTube upload: see README';
+          btn.style.background = 'rgba(255,255,255,0.1)';
+          btn.style.opacity = '0.5';
+        } else if (info.authenticated && info.name) {
           btn.innerHTML = `▶ ${info.name}`;
           btn.title = `Authenticated as: ${info.name}`;
           btn.style.background = btn.getAttribute('data-bg');
           btn.style.opacity = '1';
         } else {
-          const label = ch.charAt(0).toUpperCase() + ch.slice(1);
           btn.innerHTML = `🔑 Auth ${label}`;
           btn.title = `Click to authenticate ${label} channel`;
           btn.style.background = 'rgba(255,255,255,0.1)';
@@ -4696,6 +4706,15 @@ async function updateYouTubeChannelNames() {
 // Add event listeners to the buttons dynamically
 document.querySelectorAll('.yt-publish-btn').forEach(btn => {
   btn.addEventListener('click', () => {
+    if (!youtubeConfigured) {
+      const statusEl = document.getElementById('yt-publish-status');
+      if (statusEl) {
+        statusEl.style.display = 'block';
+        statusEl.style.color = '#f59e0b';
+        statusEl.innerText = 'Set up YouTube upload: see README';
+      }
+      return;
+    }
     const channel = btn.getAttribute('data-channel');
     if (channelAuthState[channel]) {
       publishToYouTube(channel);

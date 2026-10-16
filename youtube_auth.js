@@ -44,9 +44,12 @@ const SCOPES = [
   'https://www.googleapis.com/auth/youtube.readonly' // Useful for getting channel name
 ];
 
-const TOKENS_DIR = path.join(__dirname, 'tokens');
-if (!fs.existsSync(TOKENS_DIR)) {
-  fs.mkdirSync(TOKENS_DIR);
+// All runtime state (OAuth tokens, quota counters, schedules) lives under
+// .data/, which is gitignored. Nothing here is ever committed.
+const DATA_DIR = path.join(__dirname, '.data');
+const TOKENS_DIR = path.join(DATA_DIR, 'tokens');
+for (const d of [DATA_DIR, TOKENS_DIR]) {
+  if (!fs.existsSync(d)) fs.mkdirSync(d, { recursive: true });
 }
 
 function getOAuth2Client() {
@@ -67,7 +70,7 @@ function getAuthUrl(channelIdLabel) {
 }
 
 /**
- * Handles the OAuth callback, gets the refresh token, and saves it to tokens/<channel>.json
+ * Handles the OAuth callback, gets the refresh token, and saves it to .data/tokens/<channel>.json
  */
 async function handleCallback(code, channelIdLabel) {
   const oauth2Client = getOAuth2Client();
@@ -110,9 +113,9 @@ function isChannelAuthenticated(channelIdLabel) {
 }
 
 // --- Auto-Scheduler State ---
-const SCHEDULE_FILE = path.join(__dirname, 'scheduled_dates.json');
-const QUOTA_FILE = path.join(__dirname, 'quota.json');
-const DAILY_STATUS_FILE = path.join(__dirname, 'daily_status.json');
+const SCHEDULE_FILE = path.join(DATA_DIR, 'scheduled_dates.json');
+const QUOTA_FILE = path.join(DATA_DIR, 'quota.json');
+const DAILY_STATUS_FILE = path.join(DATA_DIR, 'daily_status.json');
 
 function getTodayString() {
   // Use PT for YouTube quota (which resets at midnight PT)

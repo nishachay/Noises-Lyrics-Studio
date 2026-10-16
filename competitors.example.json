@@ -1,0 +1,7 @@
+{
+  "_comment": "Copy this file to .data/competitors.json and replace the placeholder channel IDs with the channels you want to track. Each key is a category label; each value is a list of YouTube channel IDs.",
+  "Example Genre": [
+    "UC0000000000000000000000",
+    "UC1111111111111111111111"
+  ]
+}

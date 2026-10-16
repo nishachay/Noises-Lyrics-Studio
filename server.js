@@ -90,9 +90,9 @@ app.get('/api/youtube-auth', (req, res) => {
   if (!process.env.YOUTUBE_CLIENT_ID || !process.env.YOUTUBE_CLIENT_SECRET) {
     return res.status(500).send(`
       <div style="font-family:sans-serif; padding:40px; text-align:center; color:#333;">
-        <h2 style="color:#ef4444;">YouTube API Keys Missing!</h2>
-        <p>You need to provide your <b>YOUTUBE_CLIENT_ID</b> and <b>YOUTUBE_CLIENT_SECRET</b> in a <code>.env</code> file in the root folder before authenticating.</p>
-        <p style="font-size:12px; color:#666;">Check the comments at the top of <i>youtube_auth.js</i> for instructions on how to get these keys from Google Cloud Console.</p>
+        <h2 style="color:#ef4444;">Set up YouTube upload: see README</h2>
+        <p>YouTube upload is an optional feature. Provide your own <b>YOUTUBE_CLIENT_ID</b> and <b>YOUTUBE_CLIENT_SECRET</b> (in a <code>.env</code> file or the environment) before authenticating.</p>
+        <p style="font-size:12px; color:#666;">See the "Optional: YouTube upload" section of README.md for how to create your own Google OAuth client.</p>
       </div>
     `);
   }
@@ -115,12 +115,13 @@ app.get('/api/youtube-callback', async (req, res) => {
 });
 
 app.get('/api/youtube-status', (req, res) => {
+  const configured = !!(process.env.YOUTUBE_CLIENT_ID && process.env.YOUTUBE_CLIENT_SECRET);
   const channels = ['pop', 'hiphop', 'hindi', 'dhh', 'kpop'];
   const status = {};
   channels.forEach(ch => {
     status[ch] = ytAuth.isChannelAuthenticated(ch);
   });
-  res.json(status);
+  res.json({ configured, channels: status });
 });
 
 app.get('/api/quota', (req, res) => {
@@ -208,6 +209,10 @@ app.post('/api/youtube-upload', async (req, res) => {
     return res.status(400).json({ error: 'Missing required parameters' });
   }
 
+  if (!process.env.YOUTUBE_CLIENT_ID || !process.env.YOUTUBE_CLIENT_SECRET) {
+    return res.status(400).json({ error: 'Set up YouTube upload: see README' });
+  }
+
   try {
     const editUrl = await ytAuth.uploadToYouTube({
       channelIdLabel: channel,
@@ -230,7 +235,8 @@ app.post('/api/youtube-upload', async (req, res) => {
 
 const OUTPUT_DIR = path.join(__dirname, 'output');
 const TEMP_DIR   = path.join(__dirname, 'temp');
-[OUTPUT_DIR, TEMP_DIR].forEach(d => { if (!fs.existsSync(d)) fs.mkdirSync(d, { recursive: true }); });
+const DATA_DIR   = path.join(__dirname, '.data');
+[OUTPUT_DIR, TEMP_DIR, DATA_DIR].forEach(d => { if (!fs.existsSync(d)) fs.mkdirSync(d, { recursive: true }); });
 
 // ══════════════════════════════════════════════════════════════
 // FONTS
@@ -1784,7 +1790,7 @@ app.get('/api/fetch-raw-lyrics', async (req, res) => {
 // GET & POST /api/todos
 // ══════════════════════════════════════════════════════════════
 app.get('/api/todos', (req, res) => {
-  const fp = path.join(__dirname, 'todos.json');
+  const fp = path.join(DATA_DIR, 'todos.json');
   if (!fs.existsSync(fp)) return res.json([]);
   try {
     res.json(JSON.parse(fs.readFileSync(fp, 'utf-8')));
@@ -1794,7 +1800,7 @@ app.get('/api/todos', (req, res) => {
 });
 
 app.post('/api/todos', express.json(), (req, res) => {
-  const fp = path.join(__dirname, 'todos.json');
+  const fp = path.join(DATA_DIR, 'todos.json');
   try {
     fs.writeFileSync(fp, JSON.stringify(req.body, null, 2), 'utf-8');
     res.json({ success: true });
@@ -1813,7 +1819,7 @@ app.get('/api/competitors', async (req, res) => {
     return res.json(competitorCache.data);
   }
 
-  const fp = path.join(__dirname, 'competitors.json');
+  const fp = path.join(DATA_DIR, 'competitors.json');
   if (!fs.existsSync(fp)) return res.json([]);
   
   let competitors = {};
