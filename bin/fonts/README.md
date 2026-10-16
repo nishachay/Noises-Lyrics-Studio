@@ -6,7 +6,7 @@ lyrics consistently on every platform.
 
 | File | Family | Source |
 |------|--------|--------|
-| `PlusJakartaSans-Bold.otf`, `PlusJakartaSans-Bold.ttf`, `PlusJakartaSans-Medium.ttf`, `PlusJakartaSans[wght].ttf` | Plus Jakarta Sans | Tokotype (Gumpita Rahayu) — https://github.com/tokotype/PlusJakartaSans |
+| `PlusJakartaSans-Bold.ttf`, `PlusJakartaSans-Medium.ttf` | Plus Jakarta Sans | Tokotype (Gumpita Rahayu) — https://github.com/tokotype/PlusJakartaSans |
 | `Tokotype-PlusJakartaSans-Bold.ttf`, `Tokotype-PlusJakartaSans-Medium.ttf` | Plus Jakarta Sans (Tokotype release) | Tokotype — https://github.com/tokotype/PlusJakartaSans |
 | `NotoSansDevanagari.ttf`, `NotoSansDevanagari-Bold.ttf` | Noto Sans Devanagari | Google — https://fonts.google.com/noto/specimen/Noto+Sans+Devanagari |
 | `NotoSansKR.ttf`, `NotoSansKR-Bold.otf` | Noto Sans KR | Google — https://fonts.google.com/noto/specimen/Noto+Sans+KR |
