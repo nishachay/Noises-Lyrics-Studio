@@ -158,7 +158,7 @@ async function searchItunes(query) {
     console.log(`[iTunes] Searching: "${query}"`);
     const { data } = await axios.get(url, {
       timeout: 10000,
-      headers: { 'User-Agent': 'NoisesMusic/2.0' }
+      headers: { 'User-Agent': 'NoisesLyricsStudio/2.0' }
     });
 
     if (!data.results?.length) {
@@ -383,7 +383,7 @@ async function searchDeezer(query) {
     console.log(`[Deezer] Searching: "${query}"`);
     const { data } = await axios.get(url, {
       timeout: 10000,
-      headers: { 'User-Agent': 'NoisesMusic/2.0' }
+      headers: { 'User-Agent': 'NoisesLyricsStudio/2.0' }
     });
 
     // Check for Deezer error envelope (returns HTTP 200 even on errors)

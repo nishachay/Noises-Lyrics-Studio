@@ -165,16 +165,26 @@ function getNextPublishTime(channelLabel, dryRun = false) {
     scheduleState = JSON.parse(fs.readFileSync(SCHEDULE_FILE, 'utf8'));
   }
 
-  const now = new Date();
-  let targetHour = 0; let targetMin = 0;
-  switch(channelLabel.toLowerCase()) {
-    case 'kpop': targetHour = 14; targetMin = 30; break;
-    case 'hindi': targetHour = 18; targetMin = 0; break;
-    case 'dhh': targetHour = 20; targetMin = 0; break;
-    case 'pop': targetHour = 21; targetMin = 30; break;
-    case 'hiphop': targetHour = 1; targetMin = 30; break;
-    default: return null;
-  }
+  // Publish time is configurable. It is read (in order) from:
+  //   1. .data/schedule.json  -> { "<channelLabel>": "HH:MM" }
+  //   2. the UPLOAD_TIME_IST env var ("HH:MM")
+  //   3. the neutral default below
+  // The time is interpreted as a 24h clock in the YouTube quota timezone (PT).
+  let scheduleCfg = {};
+  try {
+    const cfgPath = path.join(DATA_DIR, 'schedule.json');
+    if (fs.existsSync(cfgPath)) scheduleCfg = JSON.parse(fs.readFileSync(cfgPath, 'utf8'));
+  } catch (_) {}
+
+  const defaultHhmm = process.env.UPLOAD_TIME_IST || '18:00';
+  const hhmm = scheduleCfg[channelLabel] || defaultHhmm;
+  const [hStr, mStr] = String(hhmm).split(':');
+  let targetHour = parseInt(hStr, 10);
+  let targetMin = parseInt(mStr, 10);
+  if (!Number.isFinite(targetHour)) targetHour = 18;
+  if (!Number.isFinite(targetMin)) targetMin = 0;
+
+  let now = new Date();
 
   let targetDate = new Date(now);
   targetDate.setHours(targetHour, targetMin, 0, 0);

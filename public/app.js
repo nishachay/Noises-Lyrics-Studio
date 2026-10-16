@@ -1624,7 +1624,7 @@ async function fetchAndFillMetadata() {
     const _pmChannel = document.getElementById('pm-target-channel');
     const _lockedTimes = getChannelTimes();
     const _channelKey = _pmChannel ? _pmChannel.value : 'Pop';
-    const _lockedTime = _lockedTimes[_channelKey] || '2:00 PM IST';
+    const _lockedTime = _lockedTimes[_channelKey] || '6:00 PM IST';
     const now = new Date();
     const tomorrow = new Date(now);
     tomorrow.setDate(tomorrow.getDate() + 1);
@@ -1659,10 +1659,10 @@ async function fetchAndFillMetadata() {
 }
 
 const DEFAULT_CHANNEL_TIMES = {
-  'Pop': '2:00 PM IST',
-  'Hip-Hop': '11:00 AM IST',
-  'Hindi': '7:00 PM IST',
-  'DHH': '9:00 PM IST',
+  'Pop': '6:00 PM IST',
+  'Hip-Hop': '6:00 PM IST',
+  'Hindi': '6:00 PM IST',
+  'DHH': '6:00 PM IST',
   'K-Pop': '6:00 PM IST'
 };
 
@@ -1693,7 +1693,7 @@ function updateChannelCardUI() {
   if (pmTargetChannel) {
     const activeVal = pmTargetChannel.value || 'Pop';
     const badge = document.getElementById('pm-slot-badge');
-    if (badge) badge.textContent = `⏰ ${times[activeVal] || '2:00 PM IST'}`;
+    if (badge) badge.textContent = `⏰ ${times[activeVal] || '6:00 PM IST'}`;
   }
 }
 
@@ -1728,10 +1728,10 @@ const btnPmSaveTimes = document.getElementById('btn-pm-save-times');
 if (btnPmSaveTimes) {
   btnPmSaveTimes.addEventListener('click', () => {
     const times = {
-      'Pop': document.getElementById('edit-time-Pop').value.trim() || '2:00 PM IST',
-      'Hip-Hop': document.getElementById('edit-time-Hip-Hop').value.trim() || '11:00 AM IST',
-      'Hindi': document.getElementById('edit-time-Hindi').value.trim() || '7:00 PM IST',
-      'DHH': document.getElementById('edit-time-DHH').value.trim() || '9:00 PM IST',
+      'Pop': document.getElementById('edit-time-Pop').value.trim() || '6:00 PM IST',
+      'Hip-Hop': document.getElementById('edit-time-Hip-Hop').value.trim() || '6:00 PM IST',
+      'Hindi': document.getElementById('edit-time-Hindi').value.trim() || '6:00 PM IST',
+      'DHH': document.getElementById('edit-time-DHH').value.trim() || '6:00 PM IST',
       'K-Pop': document.getElementById('edit-time-K-Pop').value.trim() || '6:00 PM IST'
     };
     localStorage.setItem('noises_channel_times', JSON.stringify(times));
@@ -1759,7 +1759,7 @@ document.querySelectorAll('.pm-channel-card').forEach(card => {
 
     const channelTimes = getChannelTimes();
     const badge = document.getElementById('pm-slot-badge');
-    if (badge) badge.textContent = `⏰ ${channelTimes[val] || '2:00 PM IST'}`;
+    if (badge) badge.textContent = `⏰ ${channelTimes[val] || '6:00 PM IST'}`;
     fetchAndFillMetadata();
   });
 });

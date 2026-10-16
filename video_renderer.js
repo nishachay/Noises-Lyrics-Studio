@@ -1077,7 +1077,7 @@ function renderVideo({
       const seoTitle = `${songArtist} - ${songTitle} ${suffix}`;
       const seoDesc = `Enjoy the beautifully styled lyrics and English translation for "${songTitle}" by ${songArtist}.
 
-Rendered dynamically via Noises Music Studio.`;
+Rendered dynamically via Noises Lyrics Studio.`;
       const autoTags = seoKeywords && seoKeywords.length > 0 ? seoKeywords.join(', ') + ', ' : '';
       const seoTags = `${autoTags}${songArtist}, ${songTitle}, Lyrics, ${hasTranslation ? 'English Translation, ' : ''}Pop, Music, Audio`;
       

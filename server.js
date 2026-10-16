@@ -238,6 +238,14 @@ const TEMP_DIR   = path.join(__dirname, 'temp');
 const DATA_DIR   = path.join(__dirname, '.data');
 [OUTPUT_DIR, TEMP_DIR, DATA_DIR].forEach(d => { if (!fs.existsSync(d)) fs.mkdirSync(d, { recursive: true }); });
 
+// Optional social links appended to generated YouTube descriptions. Set the
+// SOCIAL_LINKS env var to a pre-formatted string to include your own links
+// (e.g. "Follow me:\n- YouTube: https://youtube.com/@yourchannel"). Empty by default.
+function socialBlock() {
+  const links = (process.env.SOCIAL_LINKS || '').trim();
+  return links ? `\n\n${links}` : '';
+}
+
 // ══════════════════════════════════════════════════════════════
 // FONTS
 // ══════════════════════════════════════════════════════════════
@@ -301,7 +309,7 @@ function spreadPlainLyrics(plain, duration) {
 // Tries artist name variants to handle "YE" ↔ "Kanye West" etc.
 // ══════════════════════════════════════════════════════════════
 const LRCLIB    = 'https://lrclib.net/api';
-const LRCLIB_UA = { 'User-Agent': 'NoisesMusic/2.0 (https://noises.music)' };
+const LRCLIB_UA = { 'User-Agent': 'NoisesLyricsStudio/2.0' };
 
 // Build artist name variants to maximise LRCLIB match rate
 function artistVariants(artist) {
@@ -1296,11 +1304,11 @@ app.get('/api/render', async (req, res) => {
     
 
     
-    const tags               = `#${songArtist.replace(/\s+/g,'')} #${songTitle.replace(/\s+/g,'')} #Lyrics #NoisesMusic #NoisesHipHop #NoisesDHH #NoisesKpop #NoisesGeet`;
+    const tags               = `#${songArtist.replace(/\s+/g,'')} #${songTitle.replace(/\s+/g,'')} #Lyrics`;
     const seoBlock           = seoKeywords.length > 0 ? `\n\nSearch terms:\n${seoKeywords.join(', ')}` : '';
     const disclaimer         = `\n\n────────────────────────────────────────────────────────────\n⚠️ COPYRIGHT DISCLAIMER:\nWe do not own the rights to this song. All credits go to the original artists and their respective record labels. This video is created for entertainment purposes only.\n────────────────────────────────────────────────────────────`;
     
-    const networkBlock       = `\n\n🌐 Follow Our Network:\n- Noises Music: https://youtube.com/@NoisesMusic\n- Noises HipHop: https://youtube.com/@NoisesHipHop\n- Noises DHH: https://youtube.com/@NoisesDHH\n- Noises Kpop: https://youtube.com/@NoisesKpop\n- Noises Geet: https://youtube.com/@NoisesGeet`;
+    const networkBlock       = socialBlock();
     
     const youtubeDescription = `🎵 ${songArtist} - ${songTitle} (Lyrics Video)\n\n${decodeURIComponent(videoUrl)}\n\n${lyricLines}\n\n${tags}${seoBlock}${networkBlock}${disclaimer}`;
     
@@ -1355,38 +1363,13 @@ app.post('/api/generate-metadata', express.json(), async (req, res) => {
     const youtubeTitle = `${songArtist} - ${songTitle} (Lyrics${hasTranslation ? ' & English Translation' : ''})`;
     const lyricLines   = lyrics.map(l => (typeof l === 'string' ? l : l.text || '')).join('\n');
 
-    // Channel specific configurations with curated SEO channel tags
+    // Genre-specific SEO search keywords (no personal channel info).
     const channelConfigs = {
-      'Pop': { 
-        tag: '#NoisesMusic', 
-        time: '2:00 PM IST', 
-        url: 'https://youtube.com/@NoisesMusic',
-        channelTags: ['Pop', 'Pop Music', 'Pop Songs', 'Lyrics Video', 'Billboard Hits', 'Trending Music'] 
-      },
-      'Hip-Hop': { 
-        tag: '#NoisesHipHop', 
-        time: '11:00 AM IST', 
-        url: 'https://youtube.com/@NoisesHipHop',
-        channelTags: ['Hip Hop', 'Rap', 'Trap', 'US Rap', 'Hip Hop Lyrics', 'Rap Music', 'Trap Beats'] 
-      },
-      'Hindi': { 
-        tag: '#NoisesGeet', 
-        time: '7:00 PM IST', 
-        url: 'https://youtube.com/@NoisesGeet',
-        channelTags: ['Hindi Songs', 'Bollywood Songs', 'Hindi Lyrics', 'Bollywood Music', 'New Hindi Songs', 'Geet'] 
-      },
-      'DHH': { 
-        tag: '#NoisesDHH', 
-        time: '9:00 PM IST', 
-        url: 'https://youtube.com/@NoisesDHH',
-        channelTags: ['DHH', 'Desi Hip Hop', 'Indian Rap', 'Hindi Rap', 'Gully Rap', 'Desi Rap', 'Underground Rap', 'DHH Lyrics'] 
-      },
-      'K-Pop': { 
-        tag: '#NoisesKpop', 
-        time: '6:00 PM IST', 
-        url: 'https://youtube.com/@NoisesKpop',
-        channelTags: ['KPop', 'K-Pop', 'Korean Music', 'KPop Lyrics', 'KPop English Translation', 'KPop Easy Lyrics'] 
-      }
+      'Pop':     { channelTags: ['Pop', 'Pop Music', 'Pop Songs', 'Lyrics Video', 'Billboard Hits', 'Trending Music'] },
+      'Hip-Hop': { channelTags: ['Hip Hop', 'Rap', 'Trap', 'US Rap', 'Hip Hop Lyrics', 'Rap Music', 'Trap Beats'] },
+      'Hindi':   { channelTags: ['Hindi Songs', 'Bollywood Songs', 'Hindi Lyrics', 'Bollywood Music', 'New Hindi Songs', 'Geet'] },
+      'DHH':     { channelTags: ['DHH', 'Desi Hip Hop', 'Indian Rap', 'Hindi Rap', 'Gully Rap', 'Desi Rap', 'Underground Rap', 'DHH Lyrics'] },
+      'K-Pop':   { channelTags: ['KPop', 'K-Pop', 'Korean Music', 'KPop Lyrics', 'KPop English Translation', 'KPop Easy Lyrics'] }
     };
     
     const conf = channelConfigs[channel] || channelConfigs['Pop'];
@@ -1402,10 +1385,10 @@ app.post('/api/generate-metadata', express.json(), async (req, res) => {
 
     const titleTag = '#' + songTitle.replace(/[\s\(\)\[\]\"\'\.,]/g, '');
 
-    const tags          = `${artistTags} ${titleTag} #Lyrics ${conf.tag}`;
+    const tags          = `${artistTags} ${titleTag} #Lyrics`;
     const seoBlock      = seoKeywords.length > 0 ? `\n\nSearch terms:\n${seoKeywords.join(', ')}` : '';
     const disclaimer    = `\n\n────────────────────────────────────────────────────────────\n⚠️ COPYRIGHT DISCLAIMER:\nWe do not own the rights to this song. All credits go to the original artists and their respective record labels. This video is created for entertainment purposes only.\n────────────────────────────────────────────────────────────`;
-    const networkBlock = `\n\n🌐 Follow Our Network:\n- Noises Music: https://youtube.com/@NoisesMusic\n- Noises HipHop: https://youtube.com/@NoisesHipHop\n- Noises DHH: https://youtube.com/@NoisesDHH\n- Noises Kpop: https://youtube.com/@NoisesKpop\n- Noises Geet: https://youtube.com/@NoisesGeet`;
+    const networkBlock = socialBlock();
 
     const officialBlock = officialLinks ? `\n\n${officialLinks}` : '';
     
@@ -1456,7 +1439,7 @@ app.post('/api/generate-metadata', express.json(), async (req, res) => {
     tomorrow.setDate(tomorrow.getDate() + 1);
     const dateOptions = { weekday: 'long', month: 'short', day: 'numeric' };
     const dateString = tomorrow.toLocaleDateString('en-US', dateOptions);
-    const youtubeUploadTime = `${dateString} @ ${conf.time}`;
+    const youtubeUploadTime = `${dateString} @ ${process.env.UPLOAD_TIME_IST || '6:00 PM IST'}`;
 
     res.json({ youtubeTitle, youtubeDescription, youtubeTags, youtubeUploadTime });
   } catch (err) {
@@ -1941,7 +1924,7 @@ app.get('/api/todays-plan', async (req, res) => {
 
 app.listen(PORT, '127.0.0.1', () => {
     console.log('═'.repeat(52));
-    console.log(`  Noises Music — http://localhost:${PORT}`);
+    console.log(`  Noises Lyrics Studio — http://localhost:${PORT}`);
     console.log('═'.repeat(52));
   });
 });
