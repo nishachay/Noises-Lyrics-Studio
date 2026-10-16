@@ -1138,6 +1138,11 @@ app.post('/api/generate-metadata', express.json(), async (req, res) => {
   try {
     const { songArtist = '', songTitle = '', videoUrl = '', lyrics = [], hasTranslation = false, channel = 'Pop' } = req.body;
 
+    // Reject blank/whitespace-only title or artist so we never build a junk title.
+    if (!String(songTitle).trim() || !String(songArtist).trim()) {
+      return res.status(400).json({ error: 'songTitle and songArtist are required' });
+    }
+
     // Auto-generate SEO Tags from YouTube autocomplete
     let seoKeywords = [];
     try {
