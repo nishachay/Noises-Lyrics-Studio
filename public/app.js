@@ -369,7 +369,7 @@ let blurCanvas = null;        // Low-res album art for background blur
 let artworkStats = null;      // { saturation, brightness, r, g, b }
 let artImg = null;            // Full artwork Image object
 let logoImg = new Image();    // White logo image for watermarks
-logoImg.src = 'logo_white.png';
+logoImg.src = 'logo.png';
 let blobCanvas = null;        // Offscreen canvas for color blobs
 let blobCtx = null;
 
@@ -4762,7 +4762,7 @@ if (btnPreviewThumb) {
             artist: S.track.artist,
             artworkUrl: S.track.artworkUrl,
             theme: 'dark',
-            logoPath: 'public/logo_white.png',
+            logoPath: 'public/logo.png',
             style
           })
         });

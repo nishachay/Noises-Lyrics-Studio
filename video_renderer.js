@@ -996,7 +996,7 @@ function renderVideo({
       // ── Load cover art ────────────────────────────────────────
       let coverImg = null, colors = null, logoImg = null;
       
-      const logoPath = path.join(__dirname, 'public', 'logo_white.png');
+      const logoPath = path.join(__dirname, 'public', 'logo.png');
       if (fs.existsSync(logoPath)) {
         try {
           logoImg = await loadImage(logoPath);
