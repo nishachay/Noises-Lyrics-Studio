@@ -1,0 +1,37 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    env:
+      PORT: 3000
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: '.nvmrc'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Start the server and check it responds
+        run: |
+          node server.js > server.log 2>&1 &
+          SERVER_PID=$!
+          echo "Server PID: $SERVER_PID"
+          # Wait for the server to accept connections and answer with HTTP 200.
+          curl --retry 30 --retry-all-errors --retry-connrefused --retry-delay 2 \
+            -fsS "http://127.0.0.1:${PORT}/" -o /dev/null
+          echo "HTTP check passed."
+          kill "$SERVER_PID"
+
+      - name: Show server log on failure
+        if: failure()
+        run: cat server.log || true
