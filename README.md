@@ -148,7 +148,9 @@ never from the payload or a committed file.
 
 ## Licences
 
-- This project is released under the [MIT License](LICENSE).
+- This project is released under the **GNU General Public License v3.0 or later**
+  (`GPL-3.0-or-later`) — see [LICENSE](LICENSE). It is GPL because it uses
+  [`ytmusic-api`](https://www.npmjs.com/package/ytmusic-api), which is GPL-3.0.
 - The fonts in `bin/fonts/` are under the SIL Open Font License 1.1 — see
   [`bin/fonts/README.md`](bin/fonts/README.md) and
   [`bin/fonts/OFL.txt`](bin/fonts/OFL.txt).
