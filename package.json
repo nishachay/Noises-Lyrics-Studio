@@ -1,22 +1,32 @@
 {
   "name": "noises-lyrics-studio",
   "version": "9.3.7",
-  "description": "Dynamic web-based studio for timing and rendering lyrics videos",
+  "description": "Turn a song name into a full lyric video: synced lyrics, rendered video, thumbnail and SEO.",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
     "dev": "node server.js"
   },
   "keywords": [
-    "karaoke",
     "lyrics",
-    "video",
-    "generator",
+    "lyric-video",
+    "video-generator",
+    "karaoke",
+    "nodejs",
+    "express",
     "ffmpeg",
+    "yt-dlp",
     "canvas"
   ],
-  "author": "",
-  "license": "ISC",
+  "author": "Nishachay Shelke",
+  "license": "GPL-3.0-or-later",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/nishachay/Noises-Lyrics-Studio-public.git"
+  },
+  "engines": {
+    "node": ">=20"
+  },
   "dependencies": {
     "@ffmpeg-installer/ffmpeg": "^1.1.0",
     "@napi-rs/canvas": "^0.1.52",
