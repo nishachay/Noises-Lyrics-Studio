@@ -1,0 +1,51 @@
+name: Cloud Video Render
+
+# Manual only — this workflow NEVER runs on push or pull_request.
+# Start it from the Actions tab ("Run workflow") with a URL to the audio and a
+# URL to the project JSON payload. See README.md → "Optional: Cloud render".
+on:
+  workflow_dispatch:
+    inputs:
+      audioUrl:
+        description: "Direct URL to the audio file (mp3/m4a)"
+        required: true
+      jsonUrl:
+        description: "Direct URL to the project JSON payload"
+        required: true
+
+jobs:
+  render:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install FFmpeg
+        run: sudo apt-get update && sudo apt-get install -y ffmpeg
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Download project files
+        run: |
+          mkdir -p temp
+          echo "Downloading audio..."
+          curl -L -o temp/audio.mp3 "${{ inputs.audioUrl }}"
+          echo "Downloading project JSON..."
+          curl -L -o temp/project.json "${{ inputs.jsonUrl }}"
+
+      - name: Render and (optionally) upload
+        # Credentials come only from GitHub Secrets / env vars — never bundled.
+        env:
+          YOUTUBE_CLIENT_ID: ${{ secrets.YOUTUBE_CLIENT_ID }}
+          YOUTUBE_CLIENT_SECRET: ${{ secrets.YOUTUBE_CLIENT_SECRET }}
+          YOUTUBE_REDIRECT_URI: ${{ secrets.YOUTUBE_REDIRECT_URI }}
+          YOUTUBE_REFRESH_TOKEN: ${{ secrets.YOUTUBE_REFRESH_TOKEN }}
+          YOUTUBE_CHANNEL_NAME: ${{ secrets.YOUTUBE_CHANNEL_NAME }}
+        run: node run-cloud.js temp/project.json temp/audio.mp3
