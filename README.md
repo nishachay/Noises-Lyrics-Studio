@@ -1,39 +1,161 @@
 # Noises Lyrics Studio
 
-A dynamic, browser-based studio for timing, rendering, and publishing premium lyrics videos. Built specifically for automated YouTube channels and music creators, Noises Lyrics Studio handles the entire pipeline from fetching audio to rendering client-side 1080p MP4s.
+**Type a song name, get a full lyric video back: synced lyrics, rendered video, thumbnail and SEO.**
+
+Noises Lyrics Studio is a local, browser-based studio for turning a song into a
+polished lyrics video. Search for a track (or upload your own audio), sync the
+lyrics, render a 1080p MP4 in the browser, and generate a thumbnail plus
+YouTube-ready title, description and tags — all on your own machine.
+
+![Demo](docs/demo.gif)
+
+> `docs/demo.gif` is a placeholder — see the owner TODO below.
 
 ## Features
 
-* **Instant Audio & Artwork Fetching:** Search a song name or paste a URL. The studio automatically resolves the highest quality audio and fetches square, high-res cover art.
-* **Smart Lyrics Syncing:** Pulls time-synced lyrics automatically. Includes a manual "Tap Sync" mode to lock in exact timing by tapping your spacebar to the beat.
-* **Hardware Accelerated Rendering:** Compiles 1080p 60fps videos directly in your browser using the WebCodecs API and Mediabunny. Zero server costs, zero memory leaks, and incredibly fast export times.
-* **A/B Testing Thumbnails:** Automatically generates two unique, stylized YouTube thumbnails for A/B testing your click-through rates.
-* **Automated YouTube Metadata:** Generates highly optimized YouTube SEO tags, descriptions with official streaming links (Spotify, Apple Music), and suggested publish times based on channel configurations.
+### Core (no configuration needed)
+- **Song search** by name or URL, across several public music sources.
+- **Audio download** with a **yt-dlp you install yourself** (nothing is bundled).
+- **Automatic lyrics** with time-synced lines, plus a manual **Tap Sync** mode.
+- **Client-side rendering** to 1080p MP4 using the WebCodecs API and
+  [Mediabunny](https://mediabunny.dev/) — no server rendering, no uploads.
+- **A/B thumbnails** — two styled YouTube thumbnails per project.
+- **SEO metadata** — title, description and tags, including official streaming
+  links and suggested publish times.
+- **Upload your own audio** — skip search entirely and use a local file.
 
-## Architecture & Tech Stack
+### Optional (bring your own credentials)
+These are off until you configure them. When they are unconfigured, the app
+hides or disables them with a clear message and everything else keeps working.
 
-* **Frontend:** Vanilla JavaScript, HTML5 Canvas for real-time video previewing, and WebCodecs (`VideoEncoder`, `AudioEncoder`) for client-side MP4 generation.
-* **Backend:** Node.js with Express.
-* **Integrations:** iTunes API for artwork, Google Suggest API for real-time SEO tags, and robust fallback engines for lyrics and audio.
+- **YouTube upload** — publish straight to your own channel using your own
+  Google OAuth client.
+- **Scheduling** — suggested publish times, stored locally in `.data/`.
+- **Quota tracking / daily status** — your upload quota dashboard.
+- **Competitor / channel tracking** — follow other channels' latest uploads via
+  your own `.data/competitors.json`.
+- **Cloud render** — render on GitHub Actions instead of your machine, using
+  repository **Secrets** (manual dispatch only).
 
-## Getting Started
+## Requirements
 
-### Prerequisites
-* [Node.js](https://nodejs.org/) (v16 or higher recommended)
-* A modern browser with WebCodecs support (Google Chrome or Microsoft Edge)
+- **Node.js 20+** (see `.nvmrc`).
+- **yt-dlp**, installed separately and available on your `PATH`
+  ([installation guide](https://github.com/yt-dlp/yt-dlp#installation)). On
+  Windows, download `yt-dlp.exe` and put the folder on your `PATH`; otherwise set
+  `YTDLP_PATH` in `.env` to its full path.
+- **A Chromium-based browser** (Chrome or Edge) with WebCodecs support for the
+  client-side renderer.
+- **ffmpeg** is only needed for the optional **cloud render** (the GitHub Actions
+  workflow installs it automatically). Local rendering happens in the browser.
 
-### Installation
-1. Clone the repository.
-2. Run `npm install` to install backend dependencies.
-3. (Windows) Double click `Start_Noises_Studio.bat` to automatically start the local server and open the UI. Alternatively, run `npm start` and visit `http://localhost:3000` in your browser.
+## Setup
 
-## Workflow
+```bash
+git clone <your-fork-url> noises-lyrics-studio
+cd noises-lyrics-studio
+npm install
+cp .env.example .env      # then edit .env if you want the optional features
+npm start
+```
 
-1. **Search & Load:** Press `Ctrl K` to open the search palette and load a track.
-2. **Review Lyrics:** Verify the automatically synced lyrics or edit them in the Raw Editor.
-3. **Customize Style:** Adjust the font size, tracking, glow intensity, and background particles.
-4. **Export:** Hit Compile. The application will render the video entirely in your browser and automatically save the final `.mp4` and thumbnails.
-5. **Publish:** Copy the generated SEO metadata, description, and titles directly into YouTube Studio.
+Then open <http://localhost:3000>.
+
+On Windows you can also double-click **`start.bat`**; on macOS/Linux run
+**`./start_noises_studio.sh`**. Both install dependencies and launch the server.
+
+### Configuration
+
+All configuration lives in `.env` (see `.env.example`). Everything except
+`PORT` is optional:
+
+| Variable | Purpose |
+|---|---|
+| `PORT` | Local web server port (default `3000`). |
+| `YTDLP_PATH` | Full path to yt-dlp if it is not on your `PATH`. |
+| `YTDLP_COOKIES` | Path to a Netscape `cookies.txt` for age/region-locked videos. |
+| `YOUTUBE_CLIENT_ID` / `YOUTUBE_CLIENT_SECRET` / `YOUTUBE_REDIRECT_URI` | Your Google OAuth client for YouTube upload. |
+| `UPLOAD_TIME_IST` | Default publish time for scheduling (24h `HH:MM`). |
+| `SOCIAL_LINKS` | Extra text appended to generated descriptions. |
+
+## Using it
+
+1. **Search & load** — press `Ctrl/⌘+K` and search for a song, or click
+   **Upload Audio File** to use your own track.
+2. **Review the lyrics** — check the auto-synced timing, or fix it in the raw
+   editor / Tap Sync.
+3. **Style it** — tweak font size, tracking, glow and background.
+4. **Compile** — the browser renders the MP4; the thumbnail and SEO text are
+   generated alongside it.
+5. **Publish** — copy the metadata into YouTube Studio yourself, or connect
+   YouTube upload (below).
+
+### Upload your own audio
+
+Prefer a file you already have? Click **Upload Audio File** in the sidebar (or
+the button in the audio-error dialog), pick an MP3/WAV/M4A, and the studio uses
+that instead of downloading anything. Then continue as usual.
+
+## Optional feature setup
+
+### YouTube upload (your own OAuth client)
+
+1. In [Google Cloud Console](https://console.cloud.google.com/), create a
+   project and enable the **YouTube Data API v3**.
+2. Configure the OAuth consent screen (External; add yourself as a test user).
+3. Create an **OAuth client ID** of type *Web application* with the redirect URI
+   `http://localhost:3000/api/youtube-callback`.
+4. Put the client ID and secret in `.env` as `YOUTUBE_CLIENT_ID` and
+   `YOUTUBE_CLIENT_SECRET`.
+5. Restart the app and click an upload button to authorize. Tokens are stored in
+   the gitignored `.data/tokens/` folder.
+
+Until this is configured, the upload buttons show **“Set up YouTube upload: see
+README”**.
+
+### Competitor / channel tracking
+
+Copy `competitors.example.json` to `.data/competitors.json` and replace the
+placeholder channel IDs with the channels you want to follow.
+
+### Cloud render (GitHub Actions)
+
+Cloud render runs **only** when you start it manually from your repo's
+**Actions** tab (*Cloud Video Render* → *Run workflow*); it never runs on push.
+Give it a URL to the audio file and a URL to the project JSON payload.
+
+Set these **repository Secrets** (Settings → Secrets and variables → Actions):
+
+| Secret | Purpose |
+|---|---|
+| `YOUTUBE_CLIENT_ID` / `YOUTUBE_CLIENT_SECRET` | Your Google OAuth client. |
+| `YOUTUBE_REDIRECT_URI` | Your OAuth redirect URI. |
+| `YOUTUBE_REFRESH_TOKEN` | A refresh token for non-interactive upload (optional). |
+| `YOUTUBE_CHANNEL_NAME` | Friendly name for that channel (optional). |
+
+The workflow reads credentials **only** from Secrets/environment variables —
+never from the payload or a committed file.
+
+## Architecture & tech stack
+
+- **Frontend:** vanilla JavaScript, HTML5 Canvas, WebCodecs (`VideoEncoder`) +
+  Mediabunny for client-side MP4 encoding.
+- **Backend:** Node.js + Express (search, lyrics, artwork, thumbnails, optional
+  upload).
+- **Assets:** [yt-dlp](https://github.com/yt-dlp/yt-dlp) for audio, the iTunes
+  Search API for artwork, Google Suggest for SEO keywords, and public lyrics
+  sources.
+
+## Licences
+
+- This project is released under the [MIT License](LICENSE).
+- The fonts in `bin/fonts/` are under the SIL Open Font License 1.1 — see
+  [`bin/fonts/README.md`](bin/fonts/README.md) and
+  [`bin/fonts/OFL.txt`](bin/fonts/OFL.txt).
 
 ## Disclaimer
-This project is built for automated channel workflows. We do not own the rights to the audio downloaded via the search tool. All credits go to the original artists and their respective record labels.
+
+**Only use audio and lyrics you have the rights to. This tool doesn't host or
+distribute any media.** Downloaded audio and fetched lyrics belong to their
+respective artists, labels and rights-holders. Respect the terms of service of
+every source this app calls.
