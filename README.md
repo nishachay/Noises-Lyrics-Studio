@@ -62,7 +62,9 @@ npm start
 Then open <http://localhost:3000>.
 
 On Windows you can also double-click **`start.bat`**; on macOS/Linux run
-**`./start_noises_studio.sh`**. Both install dependencies and launch the server.
+**`./start.sh`**. Both install dependencies and launch the server. The launcher
+requires Node.js 20+ and, if the port is already in use, prints a clear message
+and exits instead of touching other processes.
 
 ### Configuration
 

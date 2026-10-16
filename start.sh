@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ==============================================================================
-# NOISES LYRICS STUDIO — LINUX LAUNCHER
+# NOISES LYRICS STUDIO — macOS / LINUX LAUNCHER
 # ==============================================================================
 
 set -e
@@ -13,11 +13,7 @@ echo "===================================================="
 echo " Noises Lyrics Studio"
 echo "===================================================="
 
-# 1. Pull latest updates from GitHub
-echo "[1/4] Checking for updates from GitHub..."
-git pull --rebase --autostash 2>/dev/null || echo "      (Offline or no git upstream changes)"
-
-# 2. Load Node.js via nvm or system
+# Load Node.js via nvm if available
 if [ -s "$HOME/.nvm/nvm.sh" ]; then
   export NVM_DIR="$HOME/.nvm"
   # shellcheck source=/dev/null
@@ -25,28 +21,20 @@ if [ -s "$HOME/.nvm/nvm.sh" ]; then
   nvm use 20 >/dev/null 2>&1 || nvm use default >/dev/null 2>&1 || true
 fi
 
-# Ensure Node.js is at least v18
+# 1. Require Node.js 20 or higher (matches package.json "engines")
+echo "[1/4] Checking Node.js version..."
 NODE_VER=$(node -v 2>/dev/null || echo "v0")
 NODE_MAJOR=$(echo "$NODE_VER" | tr -d 'v' | cut -d'.' -f1)
 
-if [ "$NODE_MAJOR" -lt 18 ]; then
-  echo "ERROR: Node.js 18 or higher is required. Found: $NODE_VER"
-  echo "Please check that nvm with Node 20 is loaded."
+if [ "$NODE_MAJOR" -lt 20 ]; then
+  echo "ERROR: Node.js 20 or higher is required. Found: ${NODE_VER}"
+  echo "Install Node 20 (https://nodejs.org) or load it with nvm:  nvm use 20"
   exit 1
 fi
 
-# 3. Clean up any previous Noises Studio instance on port 3000 or 3001
-for check_port in 3000 3001; do
-  pids=$(fuser "${check_port}/tcp" 2>/dev/null || true)
-  for pid in $pids; do
-    if pwdx "$pid" 2>/dev/null | grep -qF "$SCRIPT_DIR"; then
-      echo "      Terminating previous Noises Studio instance (PID $pid on port $check_port)..."
-      kill -9 "$pid" 2>/dev/null || true
-    fi
-  done
-done
+# 2. Make sure the port is free. This script never terminates other processes.
+PORT="${PORT:-3000}"
 
-# 4. Determine available port (prefer 3000, fallback to 3001+)
 is_port_free() {
   node -e "
     const net = require('net');
@@ -56,29 +44,24 @@ is_port_free() {
   " "$1" 2>/dev/null
 }
 
-PORT=3000
-if ! is_port_free 3000; then
-  if is_port_free 3001; then
-    PORT=3001
-  elif is_port_free 3002; then
-    PORT=3002
-  fi
-  echo "      Notice: Port 3000 is in use by another app. Running on port ${PORT} instead."
+if ! is_port_free "$PORT"; then
+  echo "ERROR: port ${PORT} is already in use by another process."
+  echo "Free that port, or start on a different one:  PORT=3001 ./start.sh"
+  exit 1
 fi
-export PORT
 
-APP_VERSION=$(node -e 'try { console.log(require("./package.json").version); } catch(e) { console.log("unknown"); }' 2>/dev/null || echo "9.3.7")
+APP_VERSION=$(node -e 'try { console.log(require("./package.json").version); } catch(e) { console.log("unknown"); }' 2>/dev/null || echo "unknown")
 echo "      Using Node $(node -v) — App version: v${APP_VERSION} on port ${PORT}"
 
-# 5. Install dependencies if node_modules is missing
+# 3. Install dependencies if node_modules is missing
 if [ ! -d "node_modules" ]; then
   echo "[2/4] Installing dependencies (first run)..."
   npm install
 else
-  echo "[2/4] Dependencies verified ✓"
+  echo "[2/4] Dependencies verified"
 fi
 
-# 6. Open browser in background once server is responsive
+# 4. Open the browser in the background once the server is responsive
 echo "[3/4] Launching browser monitor..."
 (
   for i in $(seq 1 40); do
@@ -91,6 +74,6 @@ echo "[3/4] Launching browser monitor..."
   xdg-open "http://localhost:${PORT}" 2>/dev/null || sensible-browser "http://localhost:${PORT}" 2>/dev/null || true
 ) &
 
-# 7. Start server
+# 5. Start the server
 echo "[4/4] Starting server on http://localhost:${PORT}..."
 npm start
