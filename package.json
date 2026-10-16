@@ -22,7 +22,7 @@
   "license": "GPL-3.0-or-later",
   "repository": {
     "type": "git",
-    "url": "https://github.com/nishachay/Noises-Lyrics-Studio-public.git"
+    "url": "https://github.com/nishachay/Noises-Lyrics-Studio.git"
   },
   "engines": {
     "node": ">=20"
