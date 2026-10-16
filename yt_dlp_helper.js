@@ -7,45 +7,44 @@ const axios = require('axios');
 const ffmpegInstaller = require('@ffmpeg-installer/ffmpeg');
 
 const isWin    = process.platform === 'win32';
-const YTDLP_BIN = isWin ? 'yt-dlp.exe' : 'yt-dlp';
-const BIN_DIR   = path.join(__dirname, 'bin');
-const YTDLP     = path.join(BIN_DIR, YTDLP_BIN);
+
+// yt-dlp is NOT bundled or downloaded by this app. The user installs it themselves:
+//   https://github.com/yt-dlp/yt-dlp#installation
+// We run the executable named by the YTDLP_PATH env var if set, otherwise `yt-dlp`
+// (or `yt-dlp.exe` on Windows) resolved from the system PATH.
+const YTDLP = process.env.YTDLP_PATH || (isWin ? 'yt-dlp.exe' : 'yt-dlp');
+const YTDLP_INSTALL_URL = 'https://github.com/yt-dlp/yt-dlp#installation';
+
 const TEMP_DIR  = path.join(__dirname, 'temp');
+if (!fs.existsSync(TEMP_DIR)) fs.mkdirSync(TEMP_DIR, { recursive: true });
 
-[BIN_DIR, TEMP_DIR].forEach(d => { if (!fs.existsSync(d)) fs.mkdirSync(d, { recursive: true }); });
+let _ytdlpAvailable = null; // cached availability check
 
-let hasUpdatedYtdlp = false;
+// ── Check that the system yt-dlp is available ────────────────────────────────
+// Resolves true/false (never throws). `YTDLP` may be a bare command name or an
+// absolute path from YTDLP_PATH.
+function isYtdlpAvailable() {
+  if (!_ytdlpAvailable) {
+    _ytdlpAvailable = new Promise(resolve => {
+      let p;
+      try {
+        p = spawn(YTDLP, ['--version'], { timeout: 15000 });
+      } catch (_) { return resolve(false); }
+      let out = '';
+      p.stdout.on('data', d => out += d);
+      p.on('error', () => resolve(false));
+      p.on('close', code => resolve(code === 0 && out.trim().length > 0));
+    });
+  }
+  return _ytdlpAvailable;
+}
 
-// ── Ensure yt-dlp binary ─────────────────────────────────────────────────────
+// ── Ensure yt-dlp is installed ───────────────────────────────────────────────
+// Throws a friendly, actionable error if it is missing. Callers catch this, so
+// the server never crashes when yt-dlp is absent.
 async function ensureYtdlp() {
-  if (fs.existsSync(YTDLP)) {
-    if (!isWin) {
-      try { fs.chmodSync(YTDLP, 0o755); } catch (_) {}
-    }
-    if (!hasUpdatedYtdlp) {
-      console.log('[yt-dlp] Checking for updates in the background...');
-      hasUpdatedYtdlp = true;
-      spawn(YTDLP, ['-U']).on('close', code => {
-        if (code === 0) console.log('[yt-dlp] Successfully updated to the latest anti-bot patch.');
-        else console.log('[yt-dlp] Update check finished (already up to date or failed).');
-      });
-    }
-    return;
-  }
-  console.log(`[yt-dlp] Downloading ${YTDLP_BIN} binary...`);
-  const downloadUrl = isWin
-    ? 'https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp.exe'
-    : 'https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp';
-  const res = await axios({ method: 'get', responseType: 'stream', url: downloadUrl });
-  await new Promise((ok, fail) => {
-    const w = fs.createWriteStream(YTDLP, { mode: 0o755 });
-    res.data.pipe(w);
-    w.on('finish', ok); w.on('error', fail);
-  });
-  if (!isWin) {
-    try { fs.chmodSync(YTDLP, 0o755); } catch (_) {}
-  }
-  console.log('[yt-dlp] Downloaded.');
+  if (await isYtdlpAvailable()) return;
+  throw new Error(`yt-dlp is not installed. Install it: ${YTDLP_INSTALL_URL}`);
 }
 
 // ── Spawn yt-dlp ─────────────────────────────────────────────────────────────
@@ -244,10 +243,12 @@ async function downloadArtwork(artworkUrl, id) {
 }
 
 // ── GET AUTH ARGS ──────────────────────────────────────────────────────────────
+// Cookies are OPTIONAL. They are only passed if the user points YTDLP_COOKIES at
+// an existing cookies file (e.g. for age-restricted or region-locked videos).
 function getAuthArgs() {
-  const cookiePath = path.join(__dirname, 'cookies.txt');
-  if (fs.existsSync(cookiePath)) {
-    console.log('[yt-dlp] Using local cookies.txt for authentication bypass');
+  const cookiePath = process.env.YTDLP_COOKIES;
+  if (cookiePath && fs.existsSync(cookiePath)) {
+    console.log('[yt-dlp] Using cookies from YTDLP_COOKIES');
     return ['--cookies', cookiePath];
   }
   return [];
@@ -611,4 +612,5 @@ module.exports = {
   getVideoInfo,
   fetchYouTubeCaptions,
   ensureYtdlp,
+  isYtdlpAvailable,
 };
