@@ -1,12 +1,14 @@
 @echo off
 title Noises Lyrics Studio
-cd /d "e:\noises lyric"
+cd /d "%~dp0"
 echo ====================================================
 echo Pulling latest updates from GitHub...
 call git pull --rebase --autostash
 echo ====================================================
 echo Cleaning up zombie Node processes...
 taskkill /F /IM node.exe >nul 2>&1
+echo ====================================================
+where yt-dlp >nul 2>&1 || echo NOTE: yt-dlp was not found on PATH. Install it: https://github.com/yt-dlp/yt-dlp#installation
 echo ====================================================
 for /f "delims=" %%A in ('powershell -Command "(Get-Content package.json | ConvertFrom-Json).version"') do set "APP_VERSION=%%A"
 echo Starting Noises Lyrics Studio (v%APP_VERSION%)...
