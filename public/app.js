@@ -2005,7 +2005,6 @@ async function resolveSong(metadata) {
   resolving = true;
   matchSkeleton(true);
   btnCompile.disabled = true;
-  if(btnCloudExport) btnCloudExport.disabled = true;
   if (btnShort) btnShort.disabled = true;
   if (btnSlideshow) btnSlideshow.disabled = true;
   lyricsSource.disabled = true;
@@ -2119,7 +2118,6 @@ async function resolveSong(metadata) {
 
     resolving = false;
     btnCompile.disabled = false;
-    if(btnCloudExport) btnCloudExport.disabled = false;
     if (btnShort) btnShort.disabled = false;
     if (btnSlideshow) btnSlideshow.disabled = false;
     lyricsSource.disabled = false;
@@ -3596,74 +3594,6 @@ btnCompile.addEventListener('click', () => {
   startCompile();
 });
 
-const btnCloudExport = document.getElementById('btn-cloud-export');
-if (btnCloudExport) {
-  btnCloudExport.addEventListener('click', async () => {
-    if (!S.track || !S.lyrics.length) return;
-    
-    const channelSelect = document.querySelector('input[name="export-dest"]:checked');
-    if (!channelSelect || channelSelect.value === 'local') {
-      // Local selected, will not upload to YouTube
-    }
-
-    const pubModal = document.getElementById('publish-modal');
-    if (pubModal) pubModal.classList.add('hidden');
-
-    showView('progress');
-    progLog.innerHTML = '';
-    setProgress(5, 'Preparing payload for cloud...');
-    progTitle.textContent  = S.track.title + ' (Cloud Render)';
-    progArtist.textContent = S.track.artist;
-    if (S.track.artworkUrl) { progArt.src = S.track.artworkUrl; progArt.style.display = 'block'; }
-    else progArt.style.display = 'none';
-
-    try {
-      const formData = new FormData();
-      
-      const projectData = {
-        id: S.track.youtubeId || S.track.id || 'song',
-        videoUrl: `https://www.youtube.com/watch?v=${S.track.youtubeId || S.track.id || ''}`,
-        artworkUrl: S.track.artworkUrl,
-        songTitle: S.track.title,
-        songArtist: S.track.artist,
-        duration: S.track.duration,
-        lyrics: S.lyrics,
-        offset: S.syncOffset,
-        outRes: document.getElementById('select-res').value,
-        outFps: parseInt(document.getElementById('select-fps').value, 10),
-        outAlign: document.getElementById('select-align').value,
-        isShort: false, // Cloud Export does not currently support the 'short' override via UI toggle
-        shortStartTime: 0,
-        customAudioPath: S.track.customAudioPath,
-        channel: channelSelect ? channelSelect.value : 'local',
-        seoKeywords: Array.from(document.querySelectorAll('#tag-list .tag')).map(t => t.textContent.replace('├ù','').trim())
-      };
-
-      formData.append('project', JSON.stringify(projectData));
-
-      lastPct = 0; // Reset progress bar state
-      setProgress(20, 'Uploading audio & payload to cloud...');
-      
-      const res = await fetch('/api/cloud-export', {
-        method: 'POST',
-        body: formData
-      });
-      
-      const data = await res.json();
-      
-      if (data.success) {
-        setProgress(100, 'Cloud Render Queued!');
-        logLine('Video successfully queued in GitHub Actions!', 'ok');
-        logLine('You can safely close this app or start another project.', 'ok');
-      } else {
-        throw new Error(data.error || 'Unknown error');
-      }
-    } catch (e) {
-      logLine(`ERROR: ${e.message}`, 'error');
-      setProgress(20, 'Cloud Export Failed.');
-    }
-  });
-}
 
 if (btnShort) {
   btnShort.addEventListener('mouseenter', () => {
@@ -4524,7 +4454,6 @@ if (localAudioUpload) {
     try {
       const prevText = btnCompile.innerHTML;
       btnCompile.disabled = true;
-      if(btnCloudExport) btnCloudExport.disabled = true;
       btnCompile.textContent = 'Uploading Audio...';
       const res = await fetch('/api/upload-audio', { method: 'POST', body: formData });
       const data = await res.json();
@@ -4561,12 +4490,10 @@ if (localAudioUpload) {
       }
 
       btnCompile.disabled = false;
-      if(btnCloudExport) btnCloudExport.disabled = false;
       btnCompile.innerHTML = prevText;
     } catch (err) {
       alert('Failed to upload custom audio: ' + err.message);
       btnCompile.disabled = false;
-      if(btnCloudExport) btnCloudExport.disabled = false;
       btnCompile.innerHTML = 'Compile Video';
     }
   });
@@ -4746,10 +4673,6 @@ document.querySelectorAll('.yt-publish-btn').forEach(btn => {
 });
 
 
-// --- Quota & Pipeline Dashboard ---
-async function fetchQuota() {
-  // Quota tracker UI removed — function kept as stub to avoid breaking any callers
-}
 
 async function fetchDailyStatus() {
   try {
@@ -4959,7 +4882,6 @@ if (previewCanvas) {
 }
 
 updateYouTubeChannelNames();
-fetchQuota();
 fetchDailyStatus();
 
 // ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
