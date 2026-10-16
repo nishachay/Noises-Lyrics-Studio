@@ -7,10 +7,6 @@ polished lyrics video. Search for a track (or upload your own audio), sync the
 lyrics, render a 1080p MP4 in the browser, and generate a thumbnail plus
 YouTube-ready title, description and tags — all on your own machine.
 
-![Demo](docs/demo.gif)
-
-> `docs/demo.gif` is a placeholder — see the owner TODO below.
-
 ## Features
 
 ### Core (no configuration needed)

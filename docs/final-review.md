@@ -41,24 +41,22 @@ own credentials.
    **vestigial UI element**; there is no server route for slideshows anymore.
    *Not removed*, because it lives in the core UI flow and removal was not
    approved. **Owner: decide to remove or reimplement.**
-2. **`docs/demo.gif` is referenced by the README but not present yet** — the
-   README says so explicitly. Add a short screen recording there.
-3. **`public/app.js` is a large, monolithic file (~5.3k lines).** Works fine, but
+2. **`public/app.js` is a large, monolithic file (~5.3k lines).** Works fine, but
    a reviewer may ask for it to be split into modules.
-4. **`/api/quota` and `/api/daily-status` are functional but have no UI.** They
+3. **`/api/quota` and `/api/daily-status` are functional but have no UI.** They
    track upload usage in `.data/`, but the in-app quota widget was removed. Kept
    as optional endpoints on purpose.
-5. **`UPLOAD_TIME_IST` is a legacy name** — it is a wall-clock label, not a real
+4. **`UPLOAD_TIME_IST` is a legacy name** — it is a wall-clock label, not a real
    timezone conversion. The code comment was corrected to say so.
-6. **Cloud render is kept but is not part of the local UI.** `run-cloud.js`,
+5. **Cloud render is kept but is not part of the local UI.** `run-cloud.js`,
    `video_renderer.js` and `.github/workflows/cloud-render.yml` exist only for
    the manual GitHub Actions workflow (Secrets-only, `workflow_dispatch`). A
    reader might wonder why a server-side renderer exists when the browser does
    the rendering — the file header now explains this.
-7. **Third-party dependence.** Search/lyrics/artwork/translation all call public
+6. **Third-party dependence.** Search/lyrics/artwork/translation all call public
    services; behavior depends on their availability and terms. See the README
    "Data sources" table.
-8. **A live YouTube download can fail on some hosts/networks** (HTTP 403 / JS
+7. **A live YouTube download can fail on some hosts/networks** (HTTP 403 / JS
    runtime requirements) — that is a YouTube/yt-dlp environment issue, not this
    code; the app tries several formats and fails gracefully.
 
@@ -71,6 +69,5 @@ own credentials.
 
 ## Owner TODO
 
-- [ ] Add `docs/demo.gif` (screen recording) and any screenshots.
 - [ ] Decide on the vestigial Slideshow button (remove or reimplement).
 - [ ] Optional: split `public/app.js` into modules.
